@@ -6,6 +6,12 @@
 #
 # Use option --help for full usage details.
 
+#
+#
+# Taken from https://community.getvera.com/t/python-script-for-ezlo-fw-http-api-curl-commands/214852
+#
+#
+
 debug = False
 certverify = False
 
@@ -178,4 +184,4 @@ if __name__ == '__main__':
     #print("-H \"token: {}\"".format(wss_token))
     print("--insecure")
     print("--http1.1")
-    
+
