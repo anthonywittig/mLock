@@ -127,6 +127,8 @@ def EzloLoginLocal(user_id, password, controller_ip, serial):
                     if key_data.get('meta').get('entity').get('id'):
                         if key_data.get('meta').get('entity').get('id') == serial:
                             contr_uuid = key_data.get('meta').get('entity').get('uuid')
+                        else:
+                            print("Non-matching serial found: " + key_data.get('meta').get('entity').get('id'))
         if contr_uuid == '':
             print("Controller serial not found\n")
             return '',0
@@ -138,6 +140,7 @@ def EzloLoginLocal(user_id, password, controller_ip, serial):
                         wss_token = key_data.get('data').get('string')
                         wss_user = key_data.get('meta').get('entity').get('uuid')
                         wss_data = wss_user+":"+wss_token
+                        print("--- wss_data: " + wss_data)
                         wss_authorization = str(base64.b64encode(wss_data.encode("utf-8")), "utf-8")
     else:
         if debug:
