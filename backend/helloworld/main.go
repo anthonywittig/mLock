@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/aws/aws-lambda-go/lambda"
 )
@@ -11,8 +10,12 @@ type MyEvent struct {
 	Name string `json:"name"`
 }
 
-func HandleRequest(ctx context.Context, name MyEvent) (string, error) {
-	return fmt.Sprintf("Hello 1 %s!", name.Name), nil
+type Response struct {
+	Message string `json:"Answer:"`
+}
+
+func HandleRequest(ctx context.Context, name MyEvent) (Response, error) {
+	return Response{Message: "hello world"}, nil
 }
 
 func main() {
