@@ -6,6 +6,7 @@ import {
   } from 'react-router-dom';
 import { Home } from './pages/Home'
 import { PrivacyPolicy } from './pages/PrivacyPolicy'
+import { TermsOfService } from './pages/TermsOfService'
 
 export const Routes = () => {
     return (
@@ -22,6 +23,9 @@ export const Routes = () => {
                 </Route>
                 <Route path="/privacy-policy">
                     <PrivacyPolicy />
+                </Route>
+                <Route path="/terms-of-service">
+                    <TermsOfService/>
                 </Route>
                 <Route path="/">
                     <Home />

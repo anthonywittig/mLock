@@ -7,7 +7,7 @@ export const PrivacyPolicy = () => {
             <p>
                 Last updated: 11/19/2020
 
-                Murset Lock ("us", "we", or "our") operates https://zcclock.com/ (the "Site"). This page informs you of our policies regarding the collection, use and disclosure of Personal Information we receive from users of the Site.
+                Anthony Wittig ("us", "we", or "our") operates https://zcclock.com/ (the "Site"). This page informs you of our policies regarding the collection, use and disclosure of Personal Information we receive from users of the Site.
 
                 We use your Personal Information only for providing and improving the Site. By using the Site, you agree to the collection and use of information in accordance with this policy.
             </p>
