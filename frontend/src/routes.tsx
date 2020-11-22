@@ -7,6 +7,7 @@ import {
 import { Home } from './pages/Home'
 import { PrivacyPolicy } from './pages/PrivacyPolicy'
 import { TermsOfService } from './pages/TermsOfService'
+import { Users } from './pages/Users'
 
 export const Routes = () => {
     return (
@@ -38,8 +39,4 @@ export const Routes = () => {
 
 function About() {
     return <h2>About</h2>;
-}
-
-function Users() {
-    return <h2>Users</h2>;
 }

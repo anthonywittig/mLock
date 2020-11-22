@@ -10,8 +10,8 @@ cd ../
 rm -rf build
 mkdir build
 
-lambdas=('helloworld' 'helloworld2')
-#lambdas=('helloworld')
+#lambdas=('helloworld' 'helloworld2' 'users')
+lambdas=('users')
 for lambda in "${lambdas[@]}" ; do
     buildDir="build/${lambda}"
     mkdir $buildDir
