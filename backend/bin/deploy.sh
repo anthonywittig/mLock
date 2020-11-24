@@ -4,8 +4,8 @@ set -ex
 
 # start in the script directory
 cd "$(dirname "$0")"
-# move up one level
-cd ../
+# move where we need to be
+cd ../lambdas
 
 rm -rf build
 mkdir build
