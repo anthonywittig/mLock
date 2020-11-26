@@ -7,6 +7,7 @@ import {
 import { Home } from './pages/Home'
 import { PrivacyPolicy } from './pages/PrivacyPolicy'
 import { TermsOfService } from './pages/TermsOfService'
+import { SignIn } from './pages/SignIn'
 import { Users } from './pages/Users'
 
 export const Routes = () => {
@@ -19,14 +20,18 @@ export const Routes = () => {
                 <Route path="/about">
                     <About />
                 </Route>
-                <Route path="/users">
-                    <Users />
-                </Route>
                 <Route path="/privacy-policy">
                     <PrivacyPolicy />
                 </Route>
+                <Route path="/sign-in">
+                    <SignIn />
+                </Route>
+                {/*Sign out?*/}
                 <Route path="/terms-of-service">
                     <TermsOfService/>
+                </Route>
+                <Route path="/users">
+                    <Users />
                 </Route>
                 <Route path="/">
                     <Home />
