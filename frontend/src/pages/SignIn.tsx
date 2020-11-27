@@ -18,7 +18,7 @@ export const SignIn = () => {
         <h2>Sign In</h2>
         <br />
         <GoogleLogin
-            clientId="278545785364-vpm7qvrccmultq5rml71auhq5qa7co97.apps.googleusercontent.com"
+            clientId={process.env.REACT_APP_GOOGLE_SIGNIN_CLIENT_ID || ""}
             buttonText="Login"
             onSuccess={responseGoogleSuccess}
             onFailure={responseGoogleFailure}
