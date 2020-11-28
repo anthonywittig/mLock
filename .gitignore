@@ -1,5 +1,5 @@
 .DS_Store
+.env
 ezlo/env/
 ezlo/node_modules/
-
 *\.swp
