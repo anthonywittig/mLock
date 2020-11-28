@@ -4,5 +4,6 @@ go 1.14
 
 require (
 	github.com/aws/aws-lambda-go v1.20.0
+	github.com/jackc/pgx/v4 v4.9.2
 	github.com/joho/godotenv v1.3.0
 )
