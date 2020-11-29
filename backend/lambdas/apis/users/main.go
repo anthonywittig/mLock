@@ -13,6 +13,10 @@ type Response struct {
 	Users []string `json:"Users"`
 }
 
+func main() {
+	lambda.Start(HandleRequest)
+}
+
 func HandleRequest(ctx context.Context, event MyEvent) (Response, error) {
 	return Response{
 		Users: []string{
@@ -20,8 +24,4 @@ func HandleRequest(ctx context.Context, event MyEvent) (Response, error) {
 			"joe.smith@gmail.com",
 		},
 	}, nil
-}
-
-func main() {
-	lambda.Start(HandleRequest)
 }

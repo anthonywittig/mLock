@@ -3,14 +3,12 @@ package main
 import (
 	"context"
 	"database/sql"
-	"errors"
 	"fmt"
-	"os"
-	"path"
+	"mlock/shared"
+	"mlock/shared/datastore"
 
 	"github.com/aws/aws-lambda-go/lambda"
 	_ "github.com/jackc/pgx/v4/stdlib"
-	"github.com/joho/godotenv"
 	"github.com/pressly/goose"
 )
 
@@ -26,16 +24,11 @@ func main() {
 }
 
 func HandleRequest(ctx context.Context, event MyEvent) (Response, error) {
-	ex, err := os.Executable()
-	if err != nil {
-		return Response{}, err
-	}
-	dir := path.Dir(ex)
-	if err := godotenv.Load(dir + "/.env"); err != nil {
-		return Response{}, errors.New("Error loading .env file")
+	if err := shared.LoadConfig(); err != nil {
+		return Response{}, fmt.Errorf("error loading config: %s", err.Error())
 	}
 
-	db, err := sql.Open("pgx", getConnectionString())
+	db, err := datastore.GetDB()
 	if err != nil {
 		return Response{}, fmt.Errorf("error opening DB: %s", err.Error())
 	}
@@ -49,7 +42,7 @@ func HandleRequest(ctx context.Context, event MyEvent) (Response, error) {
 		return Response{}, fmt.Errorf("error migrating DB: %s", err.Error())
 	}
 
-	dbName := getCurrentDatabase(db)
+	dbName := datastore.GetCurrentDatabase(db)
 
 	return Response{
 		Messages: []string{
@@ -59,60 +52,7 @@ func HandleRequest(ctx context.Context, event MyEvent) (Response, error) {
 	}, nil
 }
 
-func getConnectionString() string {
-	return fmt.Sprintf(
-		"host=%s port=%d user=%s password=%s dbname=%s",
-		getConfig("DB_HOST"),
-		5432,
-		getConfig("DB_USER"),
-		getConfig("DB_PASSWORD"),
-		getConfig("DB_NAME"),
-	)
-}
-
-func getConfig(name string) string {
-	val := os.Getenv(name)
-	if val == "" {
-		fmt.Printf("can't find config for \"%s\"\n", name)
-	}
-	return val
-}
-
-func getCurrentDatabase(db *sql.DB) string {
-	row := db.QueryRow("SELECT current_database()")
-	if row == nil {
-		return "error querying DB"
-	}
-
-	var name string
-	if err := row.Scan(&name); err != nil {
-		return fmt.Sprintf("err: %s", err.Error())
-	}
-
-	return name
-}
-
-func getDatabases(db *sql.DB) []string {
-	rows, err := db.Query("SELECT datname FROM pg_database")
-	if err != nil {
-		return []string{fmt.Sprintf("err: %s", err.Error())}
-	}
-	defer rows.Close()
-
-	dbs := []string{}
-	for rows.Next() {
-		var name string
-		if err := rows.Scan(&name); err != nil {
-			name = fmt.Sprintf("err: %s", err.Error())
-		}
-		dbs = append(dbs, name)
-	}
-
-	return dbs
-}
-
 func migrateUp(db *sql.DB) error {
-	// maybe we should do more?
 	goose.SetTableName("goose_db_version")
 	return goose.Up(db, "goosemigrations")
 }

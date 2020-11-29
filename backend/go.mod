@@ -1,4 +1,4 @@
-module mlog
+module mlock
 
 go 1.14
 
