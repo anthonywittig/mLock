@@ -8,7 +8,6 @@ import (
 	"mlock/shared/datastore"
 
 	"github.com/aws/aws-lambda-go/lambda"
-	_ "github.com/jackc/pgx/v4/stdlib"
 	"github.com/pressly/goose"
 )
 

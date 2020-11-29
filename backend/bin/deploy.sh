@@ -49,7 +49,5 @@ scriptDir=$(dirname "$0")
 cd $scriptDir
 scriptDir=$(pwd)
 
-handleDb
-
 handleApis
-
+handleDb

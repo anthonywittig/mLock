@@ -1,12 +1,17 @@
 import React from 'react'
 import { Button } from 'react-bootstrap';
 
+type User = {
+    ID: string;
+    Email: string;
+}
+
 type Props = {
-    users: string[];
+    users: User[];
 };
 
 type State = {
-    users: string[];
+    users: User[];
 };
 
 export class Users extends React.Component<Props, State> {
@@ -53,7 +58,7 @@ export class Users extends React.Component<Props, State> {
                         <tbody>
                             {this.state.users.map(user =>
                                 <tr>
-                                    <th scope="row">---{user}----</th>
+                                    <th scope="row">{user.Email}</th>
                                     <td><Button variant="secondary">Remove</Button></td>
                                 </tr>
                             )}

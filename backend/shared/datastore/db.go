@@ -4,6 +4,8 @@ import (
 	"database/sql"
 	"fmt"
 	"mlock/shared"
+
+	_ "github.com/jackc/pgx/v4/stdlib"
 )
 
 func GetDB() (*sql.DB, error) {

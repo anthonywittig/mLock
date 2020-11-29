@@ -2,6 +2,9 @@ package main
 
 import (
 	"context"
+	"fmt"
+	"mlock/shared"
+	"mlock/shared/datastore"
 
 	"github.com/aws/aws-lambda-go/lambda"
 )
@@ -10,7 +13,7 @@ type MyEvent struct {
 }
 
 type Response struct {
-	Users []string `json:"Users"`
+	Users []datastore.User
 }
 
 func main() {
@@ -18,10 +21,16 @@ func main() {
 }
 
 func HandleRequest(ctx context.Context, event MyEvent) (Response, error) {
+	if err := shared.LoadConfig(); err != nil {
+		return Response{}, fmt.Errorf("error loading config: %s", err.Error())
+	}
+
+	users, err := datastore.GetUsers()
+	if err != nil {
+		return Response{}, fmt.Errorf("error getting users: %s", err.Error())
+	}
+
 	return Response{
-		Users: []string{
-			"hello world",
-			"joe.smith@gmail.com",
-		},
+		Users: users,
 	}, nil
 }
