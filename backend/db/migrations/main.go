@@ -11,6 +11,7 @@ import (
 	"github.com/aws/aws-lambda-go/lambda"
 	_ "github.com/jackc/pgx/v4/stdlib"
 	"github.com/joho/godotenv"
+	"github.com/pressly/goose"
 )
 
 type MyEvent struct {
@@ -18,6 +19,10 @@ type MyEvent struct {
 
 type Response struct {
 	Messages []string `json:"Messages"`
+}
+
+func main() {
+	lambda.Start(HandleRequest)
 }
 
 func HandleRequest(ctx context.Context, event MyEvent) (Response, error) {
@@ -40,10 +45,17 @@ func HandleRequest(ctx context.Context, event MyEvent) (Response, error) {
 		return Response{}, fmt.Errorf("error pinging DB: %s", err.Error())
 	}
 
-	dbs := getDatabases(db)
+	if err := migrateUp(db); err != nil {
+		return Response{}, fmt.Errorf("error migrating DB: %s", err.Error())
+	}
+
+	dbName := getCurrentDatabase(db)
 
 	return Response{
-		Messages: dbs,
+		Messages: []string{
+			"current db",
+			dbName,
+		},
 	}, nil
 }
 
@@ -66,6 +78,20 @@ func getConfig(name string) string {
 	return val
 }
 
+func getCurrentDatabase(db *sql.DB) string {
+	row := db.QueryRow("SELECT current_database()")
+	if row == nil {
+		return "error querying DB"
+	}
+
+	var name string
+	if err := row.Scan(&name); err != nil {
+		return fmt.Sprintf("err: %s", err.Error())
+	}
+
+	return name
+}
+
 func getDatabases(db *sql.DB) []string {
 	rows, err := db.Query("SELECT datname FROM pg_database")
 	if err != nil {
@@ -85,6 +111,8 @@ func getDatabases(db *sql.DB) []string {
 	return dbs
 }
 
-func main() {
-	lambda.Start(HandleRequest)
+func migrateUp(db *sql.DB) error {
+	// maybe we should do more?
+	goose.SetTableName("goose_db_version")
+	return goose.Up(db, "goosemigrations")
 }
