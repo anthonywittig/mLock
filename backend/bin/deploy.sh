@@ -19,7 +19,7 @@ handleLambda () {
 
 handleDb () {
     cd $scriptDir
-    cd ../db
+    cd ../lambdas/db
 
     rm -rf build
     mkdir build
@@ -33,7 +33,7 @@ handleDb () {
 
 handleApis () {
     cd $scriptDir
-    cd ../apis
+    cd ../lambdas/apis
 
     rm -rf build
     mkdir build
