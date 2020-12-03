@@ -7,6 +7,20 @@ import {
 
 const responseGoogleSuccess = (response: GoogleLoginResponse | GoogleLoginResponseOffline) => {
     console.log(response);
+
+    /*
+    if ((response as GoogleLoginResponse).profileObj) {
+        const user = response as GoogleLoginResponse
+        const email = user.getBasicProfile().getEmail()
+        if (email.split('@')[email.split('@').length-1] === 'cps.edu') {
+            //this.setState({log:'Form', account:response as GoogleLoginResponse})
+        } else{
+
+        }
+    } else {
+        //this.failureResponse(response)
+    }
+    */
 }
 
 const responseGoogleFailure = (response: any) => {
