@@ -12,8 +12,12 @@ import (
 	"github.com/aws/aws-lambda-go/lambda"
 )
 
-type Response struct {
+type ListResponse struct {
 	Users []datastore.User
+}
+
+type CreateUserBody struct {
+	Email string
 }
 
 func main() {
@@ -29,31 +33,55 @@ func HandleRequest(ctx context.Context, req events.APIGatewayProxyRequest) (*eve
 	switch req.HTTPMethod {
 	case "GET":
 		return list(ctx, req)
-	/*case "POST":
-		return handlers.CreateUser(req, tableName, dynaClient)
-	case "PUT":
-		return handlers.UpdateUser(req, tableName, dynaClient)
-	case "DELETE":
-		return handlers.DeleteUser(req, tableName, dynaClient)*/
+	case "POST":
+		return createUser(ctx, req)
 	default:
-		//return apiResponse(http.StatusNotImplemented, "not implemented")
 		return apiResponse(http.StatusNotImplemented, "not implemented")
 	}
 }
 
 func list(ctx context.Context, req events.APIGatewayProxyRequest) (*events.APIGatewayProxyResponse, error) {
-	users, err := datastore.GetUsers()
+	users, err := datastore.GetUsers(nil)
 	if err != nil {
 		return nil, fmt.Errorf("error getting users: %s", err.Error())
 	}
 
-	return apiResponse(http.StatusOK, users)
+	return apiResponse(http.StatusOK, ListResponse{Users: users})
+}
+
+func createUser(ctx context.Context, req events.APIGatewayProxyRequest) (*events.APIGatewayProxyResponse, error) {
+	var body CreateUserBody
+	if err := json.Unmarshal([]byte(req.Body), &body); err != nil {
+		return nil, fmt.Errorf("error unmarshalling body: %s", err.Error())
+	}
+
+	db, err := datastore.GetDB()
+	if err != nil {
+		return nil, fmt.Errorf("error getting DB: %s", err.Error())
+	}
+
+	if err := datastore.InsertUser(db, body.Email); err != nil {
+		return nil, fmt.Errorf("error inserting user: %s", err.Error())
+	}
+
+	users, err := datastore.GetUsers(db)
+	if err != nil {
+		return nil, fmt.Errorf("error getting users: %s", err.Error())
+	}
+
+	return apiResponse(http.StatusOK, ListResponse{Users: users})
 }
 
 func apiResponse(status int, body interface{}) (*events.APIGatewayProxyResponse, error) {
-	resp := &events.APIGatewayProxyResponse{Headers: map[string]string{"Content-Type": "application/json"}}
+	resp := &events.APIGatewayProxyResponse{Headers: map[string]string{
+		"Content-Type":                "application/json",
+		"access-control-allow-origin": "*",
+	}}
 	resp.StatusCode = status
-	jsonBody, _ := json.Marshal(body)
+	jsonBody, err := json.Marshal(body)
+	if err != nil {
+		return nil, fmt.Errorf("error marshalling body: %s", err.Error())
+	}
 	resp.Body = string(jsonBody)
 	return resp, nil
 }
