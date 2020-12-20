@@ -6,21 +6,36 @@ import {
 } from 'react-google-login';
 
 const responseGoogleSuccess = (response: GoogleLoginResponse | GoogleLoginResponseOffline) => {
-    console.log(response);
 
-    /*
+
     if ((response as GoogleLoginResponse).profileObj) {
-        const user = response as GoogleLoginResponse
-        const email = user.getBasicProfile().getEmail()
-        if (email.split('@')[email.split('@').length-1] === 'cps.edu') {
-            //this.setState({log:'Form', account:response as GoogleLoginResponse})
-        } else{
+        const user = response as GoogleLoginResponse;
+        const gToken = user.getAuthResponse().id_token;
 
-        }
+        fetch("https://api2.zcclock.com/sign-in", {
+            method: "POST",
+            body: JSON.stringify({googleToken: gToken})
+        })
+        .then(response => response.json())
+        .then(response => {
+            console.log(response);
+            /*
+            this.setState({
+                users: response.Users,
+                newUser: "",
+                newUserFieldEnabled: true,
+            });
+            */
+        })
+        .catch(err => {
+            // Need to indicate error...
+            console.log(err);
+        });
+
     } else {
+        // consider failure?
         //this.failureResponse(response)
     }
-    */
 }
 
 const responseGoogleFailure = (response: any) => {

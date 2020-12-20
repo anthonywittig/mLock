@@ -73,7 +73,6 @@ export class Users extends React.Component<Props, State> {
             newUserFieldEnabled: false,
             newUserButtonEnabled: false,
         });
-        console.log(this.state.newUser);
 
         fetch("https://api2.zcclock.com/users", {
             method: "POST",
@@ -84,7 +83,6 @@ export class Users extends React.Component<Props, State> {
         })
         .then(response => response.json())
         .then(response => {
-            console.log(response);
             this.setState({
                 users: response.Users,
                 newUser: "",

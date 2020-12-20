@@ -11,7 +11,7 @@ handleLambda () {
         cp ${lambda}/.env $buildDir
     fi
     GOOS=linux GOARCH=amd64 go build -o $buildDir ${lambda}/main.go
-    (cd $buildDir && zip -r function.zip .* *) # .* for hidden files
+    (cd $buildDir && zip -r function.zip .env *) # Couldn't get just the hidden files without pulling in "." and "..".
     aws --profile=mLock lambda update-function-code \
         --function-name $lambda \
         --zip-file fileb://${buildDir}/function.zip
@@ -39,7 +39,7 @@ handleApis () {
     mkdir build
 
     #lambdas=('helloworld' 'helloworld2' 'users')
-    lambdas=('users')
+    lambdas=('signin' 'users')
     for lambda in "${lambdas[@]}" ; do
         handleLambda $lambda
     done

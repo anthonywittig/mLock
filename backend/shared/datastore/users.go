@@ -15,6 +15,25 @@ type User struct {
 
 var emailRegex = regexp.MustCompile("^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$")
 
+func GetUserByEmail(db *sql.DB, email string) (User, error) {
+	if db == nil {
+		var err error
+		db, err = GetDB()
+		if err != nil {
+			return User{}, fmt.Errorf("error getting DB: %s", err.Error())
+		}
+	}
+
+	row := db.QueryRow("SELECT id, email FROM users WHERE email = $1", email)
+	var idResult string
+	var emailResult string
+	if err := row.Scan(&idResult, &emailResult); err != nil {
+		return User{}, fmt.Errorf("error scanning row: %s", err.Error())
+	}
+
+	return User{ID: idResult, Email: emailResult}, nil
+}
+
 func GetUsers(db *sql.DB) ([]User, error) {
 	if db == nil {
 		var err error

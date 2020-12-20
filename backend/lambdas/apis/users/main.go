@@ -36,7 +36,7 @@ func HandleRequest(ctx context.Context, req events.APIGatewayProxyRequest) (*eve
 	case "POST":
 		return createUser(ctx, req)
 	default:
-		return apiResponse(http.StatusNotImplemented, "not implemented")
+		return shared.APIResponse(http.StatusNotImplemented, "not implemented")
 	}
 }
 
@@ -46,7 +46,7 @@ func list(ctx context.Context, req events.APIGatewayProxyRequest) (*events.APIGa
 		return nil, fmt.Errorf("error getting users: %s", err.Error())
 	}
 
-	return apiResponse(http.StatusOK, ListResponse{Users: users})
+	return shared.APIResponse(http.StatusOK, ListResponse{Users: users})
 }
 
 func createUser(ctx context.Context, req events.APIGatewayProxyRequest) (*events.APIGatewayProxyResponse, error) {
@@ -69,19 +69,5 @@ func createUser(ctx context.Context, req events.APIGatewayProxyRequest) (*events
 		return nil, fmt.Errorf("error getting users: %s", err.Error())
 	}
 
-	return apiResponse(http.StatusOK, ListResponse{Users: users})
-}
-
-func apiResponse(status int, body interface{}) (*events.APIGatewayProxyResponse, error) {
-	resp := &events.APIGatewayProxyResponse{Headers: map[string]string{
-		"Content-Type":                "application/json",
-		"access-control-allow-origin": "*",
-	}}
-	resp.StatusCode = status
-	jsonBody, err := json.Marshal(body)
-	if err != nil {
-		return nil, fmt.Errorf("error marshalling body: %s", err.Error())
-	}
-	resp.Body = string(jsonBody)
-	return resp, nil
+	return shared.APIResponse(http.StatusOK, ListResponse{Users: users})
 }
