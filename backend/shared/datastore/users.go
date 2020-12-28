@@ -31,6 +31,11 @@ func GetUserByEmail(db *sql.DB, email string) (User, error) {
 		return User{}, fmt.Errorf("error scanning row: %s", err.Error())
 	}
 
+	// This is redundant as the `Scan` will fail if there aren't any results too.
+	if idResult == "" {
+		return User{}, fmt.Errorf("error finding user")
+	}
+
 	return User{ID: idResult, Email: emailResult}, nil
 }
 

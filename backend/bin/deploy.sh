@@ -49,5 +49,7 @@ scriptDir=$(dirname "$0")
 cd $scriptDir
 scriptDir=$(pwd)
 
+go test ../...
+
 handleApis
 handleDb

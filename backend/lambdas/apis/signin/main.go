@@ -5,12 +5,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"mlock/shared"
-	"mlock/shared/datastore"
+	"mlock/shared/token"
 	"net/http"
 
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
-	googleAuthIDTokenVerifier "github.com/futurenda/google-auth-id-token-verifier"
 )
 
 type CreateBody struct {
@@ -29,59 +28,6 @@ func main() {
 	lambda.Start(HandleRequest)
 }
 
-/*
-Need a GCP session for this to work.
-func getEmail(token string) (string, error) {
-	json := []byte{}
-	tokenValidator, err := idtoken.NewValidator(context.Background(), option.WithCredentialsJSON(json))
-	if err != nil {
-		return "", err
-	}
-
-	googleClientID := shared.GetConfig("GOOGLE_SIGNIN_CLIENT_ID")
-
-	payload, err := tokenValidator.Validate(context.Background(), token, googleClientID)
-	if err != nil {
-		return "", err
-	}
-
-	email, ok := (payload.Claims["email"]).(string)
-	if !ok {
-		return "", fmt.Errorf("couldn't get email from token")
-	}
-
-	return email, nil
-}
-*/
-
-/*
-Never tried this one out.
-func getEmail(idToken string) (*oauth2.Tokeninfo, error) {
-	oauth2Service, err := oauth2.New(httpClient)
-	tokenInfoCall := oauth2Service.Tokeninfo()
-	tokenInfoCall.IdToken(idToken)
-	tokenInfo, err := tokenInfoCall.Do()
-	if err != nil {
-		return nil, err
-	}
-	return tokenInfo, nil
-}
-*/
-
-func getEmail(token string) (string, error) {
-	v := googleAuthIDTokenVerifier.Verifier{}
-	if err := v.VerifyIDToken(token, []string{shared.GetConfig("GOOGLE_SIGNIN_CLIENT_ID")}); err != nil {
-		return "", err
-	}
-
-	claimSet, err := googleAuthIDTokenVerifier.Decode(token)
-	if err != nil {
-		return "", err
-	}
-
-	return claimSet.Email, nil
-}
-
 func HandleRequest(ctx context.Context, req events.APIGatewayProxyRequest) (*events.APIGatewayProxyResponse, error) {
 	switch req.HTTPMethod {
 	case "POST":
@@ -97,17 +43,12 @@ func create(ctx context.Context, req events.APIGatewayProxyRequest) (*events.API
 		return nil, fmt.Errorf("error unmarshalling body: %s", err.Error())
 	}
 
-	// Validate and get email.
-	email, err := getEmail(body.GoogleToken)
-	if err != nil {
-		return nil, fmt.Errorf("error getting email: %s", err.Error())
-	}
-
-	// Verify that we have the user in our DB.
-	user, err := datastore.GetUserByEmail(nil, email)
+	// Validate the token.
+	_, err := token.GetUserFromToken(nil, body.GoogleToken)
 	if err != nil {
 		return nil, fmt.Errorf("error getting user: %s", err.Error())
 	}
 
-	return shared.APIResponse(http.StatusOK, CreateResponse{Token: user.Email})
+	// In the future we could create our own token, but for now we'll just piggy back on Google's.
+	return shared.APIResponse(http.StatusOK, CreateResponse{Token: body.GoogleToken})
 }
