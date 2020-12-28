@@ -21,7 +21,7 @@ func TestAPIError_As(t *testing.T) {
 		t.Fatal("expected ok but was !ok")
 	}
 
-	if apiErr.Message != "hi" || apiErr.ResponseCode != 400 {
+	if apiErr.Message != "hi" || apiErr.StatusCode != 400 {
 		t.Fatalf("unexpected: %+v", apiErr)
 	}
 }

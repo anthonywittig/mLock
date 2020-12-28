@@ -2,6 +2,7 @@ package datastore
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 	"regexp"
 
@@ -15,12 +16,12 @@ type User struct {
 
 var emailRegex = regexp.MustCompile("^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$")
 
-func GetUserByEmail(db *sql.DB, email string) (User, error) {
+func GetUserByEmail(db *sql.DB, email string) (User, bool, error) {
 	if db == nil {
 		var err error
 		db, err = GetDB()
 		if err != nil {
-			return User{}, fmt.Errorf("error getting DB: %s", err.Error())
+			return User{}, false, fmt.Errorf("error getting DB: %s", err.Error())
 		}
 	}
 
@@ -28,15 +29,14 @@ func GetUserByEmail(db *sql.DB, email string) (User, error) {
 	var idResult string
 	var emailResult string
 	if err := row.Scan(&idResult, &emailResult); err != nil {
-		return User{}, fmt.Errorf("error scanning row: %s", err.Error())
+		if errors.Is(err, sql.ErrNoRows) {
+			return User{}, false, nil // Not really an error.
+		}
+
+		return User{}, false, fmt.Errorf("error scanning row: %s", err.Error())
 	}
 
-	// This is redundant as the `Scan` will fail if there aren't any results too.
-	if idResult == "" {
-		return User{}, fmt.Errorf("error finding user")
-	}
-
-	return User{ID: idResult, Email: emailResult}, nil
+	return User{ID: idResult, Email: emailResult}, true, nil
 }
 
 func GetUsers(db *sql.DB) ([]User, error) {

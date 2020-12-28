@@ -3,13 +3,13 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"mlock/shared"
 	"mlock/shared/token"
 	"net/http"
 
 	"github.com/aws/aws-lambda-go/events"
-	"github.com/aws/aws-lambda-go/lambda"
 )
 
 type CreateBody struct {
@@ -25,7 +25,7 @@ func main() {
 		fmt.Printf("ERROR loading config: %s\n", err.Error())
 		return
 	}
-	lambda.Start(HandleRequest)
+	shared.StartAPILambda(HandleRequest)
 }
 
 func HandleRequest(ctx context.Context, req events.APIGatewayProxyRequest) (*events.APIGatewayProxyResponse, error) {
@@ -44,11 +44,19 @@ func create(ctx context.Context, req events.APIGatewayProxyRequest) (*events.API
 	}
 
 	// Validate the token.
-	_, err := token.GetUserFromToken(nil, body.GoogleToken)
+	tokenData, err := token.GetUserFromToken(nil, body.GoogleToken)
 	if err != nil {
 		return nil, fmt.Errorf("error getting user: %s", err.Error())
 	}
 
-	// In the future we could create our own token, but for now we'll just piggy back on Google's.
+	if tokenData.Error != nil {
+		var apiErr *shared.APIError
+		if ok := errors.As(tokenData.Error, &apiErr); ok {
+			return shared.APIResponse(apiErr.StatusCode, apiErr)
+		}
+
+		return nil, tokenData.Error
+	}
+
 	return shared.APIResponse(http.StatusOK, CreateResponse{Token: body.GoogleToken})
 }
