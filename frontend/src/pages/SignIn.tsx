@@ -4,8 +4,6 @@ import {
     GoogleLoginResponse,
     GoogleLoginResponseOffline, 
 } from 'react-google-login';
-//import { useHistory } from 'react-router-dom';
-
 
 type Props = {};
 
@@ -26,8 +24,9 @@ export class SignIn extends React.Component<Props, State> {
             const user = response as GoogleLoginResponse;
             const gToken = user.getAuthResponse().id_token;
 
-            fetch("https://api2.zcclock.com/sign-in", {
+            fetch((process.env.REACT_APP_BACKEND_DOMAIN || "") + "/sign-in", {
                 method: "POST",
+                credentials: "include",
                 body: JSON.stringify({googleToken: gToken})
             })
             .then(response => {

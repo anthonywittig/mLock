@@ -17,7 +17,7 @@ type CreateBody struct {
 }
 
 type CreateResponse struct {
-	Token string
+	Message string
 }
 
 func main() {
@@ -58,5 +58,14 @@ func create(ctx context.Context, req events.APIGatewayProxyRequest) (*shared.API
 		return nil, tokenData.Error
 	}
 
-	return shared.NewAPIResponse(http.StatusOK, CreateResponse{Token: body.GoogleToken})
+	resp, err := shared.NewAPIResponse(http.StatusOK, CreateResponse{Message: "ok"})
+	if err != nil {
+		return nil, err
+	}
+
+	if err := resp.AddCookie("auth-v1", body.GoogleToken); err != nil {
+		return nil, err
+	}
+
+	return resp, nil
 }

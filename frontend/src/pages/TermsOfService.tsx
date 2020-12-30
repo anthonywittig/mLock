@@ -6,7 +6,7 @@ export const TermsOfService = () => {
             <h2>Terms of Service</h2>
 
             <p>
-                Please read these terms of service ("terms", "terms of service") carefully before using zcclock.com website (the "service") operated by Anthony Wittig ("us", 'we", "our").
+                Please read these terms of service ("terms", "terms of service") carefully before using {process.env.REACT_APP_BACKEND_DOMAIN || ""} website (the "service") operated by Anthony Wittig ("us", 'we", "our").
             </p>
 
             <h3>Conditions of Use</h3>

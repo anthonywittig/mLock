@@ -48,7 +48,7 @@ export class Users extends React.Component<Props, State> {
       }
 
     componentDidMount() {
-        fetch("https://api2.zcclock.com/users", {
+        fetch((process.env.REACT_APP_BACKEND_DOMAIN || "") + "/users", {
             "method": "GET",
             "headers": {
                 "apikey": "apikey",
@@ -74,7 +74,7 @@ export class Users extends React.Component<Props, State> {
             newUserButtonEnabled: false,
         });
 
-        fetch("https://api2.zcclock.com/users", {
+        fetch((process.env.REACT_APP_BACKEND_DOMAIN || "") + "/users", {
             method: "POST",
             headers: {
                 "apikey": "apikey",

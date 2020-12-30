@@ -14,9 +14,9 @@ func StartAPILambda(handler func(context.Context, events.APIGatewayProxyRequest)
 
 func handlerWrapper(
 	handler func(context.Context, events.APIGatewayProxyRequest) (*APIResponse, error),
-) func(context.Context, events.APIGatewayProxyRequest) (*events.APIGatewayProxyResponse, error) {
+) func(context.Context, events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
 
-	return func(ctx context.Context, req events.APIGatewayProxyRequest) (*events.APIGatewayProxyResponse, error) {
+	return func(ctx context.Context, req events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
 		resp, err := handler(ctx, req)
 		if err != nil {
 			log.Printf("error in lambda: %s\n", err.Error())
