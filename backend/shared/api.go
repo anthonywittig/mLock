@@ -15,21 +15,27 @@ type APIResponse struct {
 
 const (
 	SetCookieHeaderName = "Set-Cookie"
+	AuthCookie          = "auth-v1"
 )
 
 func NewAPIResponse(status int, body interface{}) (*APIResponse, error) {
 	resp := events.APIGatewayProxyResponse{Headers: map[string]string{
 		"Content-Type": "application/json",
-		// pull in from config...
+		// Not all of the CORS headers need to be in every request, but to make things easy we'll include them all.
+		"Access-Control-Allow-Methods":     "GET, HEAD, POST, PUT, DELETE, OPTIONS, PATCH", // Can't use `*` with credentials.
 		"Access-Control-Allow-Origin":      GetConfig("FRONTEND_DOMAIN"),
 		"Access-Control-Allow-Credentials": "true",
 	}}
 	resp.StatusCode = status
-	jsonBody, err := json.Marshal(body)
-	if err != nil {
-		return nil, fmt.Errorf("error marshalling body: %s", err.Error())
+
+	if body != nil {
+		jsonBody, err := json.Marshal(body)
+		if err != nil {
+			return nil, fmt.Errorf("error marshalling body: %s", err.Error())
+		}
+		resp.Body = string(jsonBody)
 	}
-	resp.Body = string(jsonBody)
+
 	return &APIResponse{Proxy: resp}, nil
 }
 
@@ -52,4 +58,13 @@ func (a *APIResponse) AddCookie(name string, value string) error {
 	a.Proxy.Headers[SetCookieHeaderName] = cookie.String()
 
 	return nil
+}
+
+func (a *APIResponse) DeleteAuthCookie() error {
+	// Clearing isn't exactly the same as deleting but we need to handle a messed up cookie anyway.
+	return a.AddCookie(AuthCookie, "")
+}
+
+func (a *APIResponse) SetAuthCookie(token string) error {
+	return a.AddCookie(AuthCookie, token)
 }

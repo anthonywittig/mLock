@@ -3,12 +3,15 @@ import {
     GoogleLogin,
     GoogleLoginResponse,
     GoogleLoginResponseOffline, 
+    GoogleLogout,
 } from 'react-google-login';
 
 type Props = {};
 
 type State = {
-    error: string;
+    message: string;
+    messageClass: string;
+    processing: boolean;
 };
 
 const ERROR_NOT_AUTHORIZED = 'not authorized';
@@ -16,7 +19,9 @@ const ERROR_UNKNOWN = 'unknown';
 
 export class SignIn extends React.Component<Props, State> {
     state: Readonly<State> = {
-        error: "",
+        message: "",
+        messageClass: "",
+        processing: false,
     }
 
     responseGoogleSuccess(response: GoogleLoginResponse | GoogleLoginResponseOffline) {
@@ -24,6 +29,7 @@ export class SignIn extends React.Component<Props, State> {
             const user = response as GoogleLoginResponse;
             const gToken = user.getAuthResponse().id_token;
 
+            this.setState({processing: true});
             fetch((process.env.REACT_APP_BACKEND_DOMAIN || "") + "/sign-in", {
                 method: "POST",
                 credentials: "include",
@@ -32,7 +38,7 @@ export class SignIn extends React.Component<Props, State> {
             .then(response => {
                 switch(response.status) {
                     case 403:
-                        this.setState({ error: ERROR_NOT_AUTHORIZED });
+                        this.setAlert("", ERROR_NOT_AUTHORIZED);
                         return
                 }
 
@@ -40,11 +46,12 @@ export class SignIn extends React.Component<Props, State> {
                 // grab token from response and redirect to somewhere useful?
             }).catch(err => {
                 console.log(err);
-                this.setState({ error: ERROR_UNKNOWN });
+                this.setAlert("", ERROR_UNKNOWN);
+            }).finally(() => {
+                this.setState({processing: false});
             });
         } else {
-            // consider failure?
-            //this.failureResponse(response)
+            this.setAlert("", ERROR_UNKNOWN);
         }
     }
 
@@ -52,24 +59,75 @@ export class SignIn extends React.Component<Props, State> {
         console.log(response);
     }
 
-    render() {
-        let errorMessage = ""
-        switch(this.state.error) {
-            case "":
-                // Do nothing.
-                break;
-            case ERROR_NOT_AUTHORIZED:
-                errorMessage = "Not Authorized - request access from an administrator"
-                break;
-            default: // Includes `ERROR_UNKNOWN`.
-                errorMessage = "An error has occurred"
+    signOut() {
+        this.setState({processing: true});
+        fetch((process.env.REACT_APP_BACKEND_DOMAIN || "") + "/sign-in", {
+            method: "DELETE",
+            credentials: "include",
+        })
+        .then(response => {
+            this.setState({ message: "Signed out successfully" })
+        }).catch(err => {
+            console.log(err);
+            this.setAlert("", ERROR_UNKNOWN)
+        }).finally(() => {
+            this.setState({processing: false});
+        });
+    }
+
+    setAlert(message: string, errorCode: string) {
+        if (message === "" && errorCode === "") {
+            this.setState({
+                message: "",
+                messageClass: "",
+            })
+            return
         }
+
+        let messageClass = "alert-primary"
+        if (message === "") {
+            messageClass = "alert-danger"
+            switch(errorCode) {
+                case "":
+                    // Do nothing.
+                    break;
+                case ERROR_NOT_AUTHORIZED:
+                    message = "Not Authorized - request access from an administrator"
+                    break;
+                default: // Includes `ERROR_UNKNOWN`.
+                    message = "An error has occurred"
+            }
+        }
+
+        this.setState({
+            message: message,
+            messageClass: messageClass,
+        })
+
+    }
+
+    render() {
+        let innerContent = this.renderNonProcessing();
+        if (this.state.processing) {
+            innerContent = this.renderProcessing();
+        }
+
         return (<div>
             <h2>Sign In</h2>
             <br />
+            {innerContent}
+        </div>);
+    }
+
+    renderProcessing() {
+        return <div>Processing...</div>;
+    }
+
+    renderNonProcessing() {
+        return (<div>
             {
-                errorMessage &&
-                <div className="alert alert-danger" role="alert">{errorMessage}</div>
+                this.state.message &&
+                <div className={"alert " + this.state.messageClass} role="alert">{this.state.message}</div>
             }
             <br />
             <GoogleLogin
@@ -77,9 +135,16 @@ export class SignIn extends React.Component<Props, State> {
                 buttonText="Login"
                 onSuccess={this.responseGoogleSuccess.bind(this)}
                 onFailure={this.responseGoogleFailure.bind(this)}
-                cookiePolicy={'single_host_origin'}
+                cookiePolicy="single_host_origin"
+                prompt="select_account"
             />
-            <div className="g-signin2" data-onsuccess="onSignIn"></div>
+            <br />
+            <br />
+            <GoogleLogout
+                clientId={process.env.REACT_APP_GOOGLE_SIGNIN_CLIENT_ID || ""}
+                buttonText="Logout"
+                onLogoutSuccess={this.signOut.bind(this)}
+            />
         </div>);
     }
 }

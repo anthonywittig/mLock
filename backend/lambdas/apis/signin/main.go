@@ -30,6 +30,10 @@ func main() {
 
 func HandleRequest(ctx context.Context, req events.APIGatewayProxyRequest) (*shared.APIResponse, error) {
 	switch req.HTTPMethod {
+	case "DELETE":
+		return delete(ctx, req)
+	case "OPTIONS":
+		return shared.NewAPIResponse(http.StatusOK, nil)
 	case "POST":
 		return create(ctx, req)
 	default:
@@ -63,7 +67,21 @@ func create(ctx context.Context, req events.APIGatewayProxyRequest) (*shared.API
 		return nil, err
 	}
 
-	if err := resp.AddCookie("auth-v1", body.GoogleToken); err != nil {
+	if err := resp.SetAuthCookie(body.GoogleToken); err != nil {
+		return nil, err
+	}
+
+	return resp, nil
+}
+
+func delete(ctx context.Context, req events.APIGatewayProxyRequest) (*shared.APIResponse, error) {
+	// For now, we just need to delete the cookie.
+	resp, err := shared.NewAPIResponse(http.StatusOK, CreateResponse{Message: "ok"})
+	if err != nil {
+		return nil, err
+	}
+
+	if err := resp.DeleteAuthCookie(); err != nil {
 		return nil, err
 	}
 
