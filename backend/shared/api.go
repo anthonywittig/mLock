@@ -7,7 +7,11 @@ import (
 	"github.com/aws/aws-lambda-go/events"
 )
 
-func APIResponse(status int, body interface{}) (*events.APIGatewayProxyResponse, error) {
+type APIResponse struct {
+	Proxy *events.APIGatewayProxyResponse
+}
+
+func NewAPIResponse(status int, body interface{}) (*APIResponse, error) {
 	resp := &events.APIGatewayProxyResponse{Headers: map[string]string{
 		"Content-Type":                "application/json",
 		"access-control-allow-origin": "*",
@@ -18,5 +22,5 @@ func APIResponse(status int, body interface{}) (*events.APIGatewayProxyResponse,
 		return nil, fmt.Errorf("error marshalling body: %s", err.Error())
 	}
 	resp.Body = string(jsonBody)
-	return resp, nil
+	return &APIResponse{Proxy: resp}, nil
 }

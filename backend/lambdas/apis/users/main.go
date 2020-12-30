@@ -9,7 +9,6 @@ import (
 	"net/http"
 
 	"github.com/aws/aws-lambda-go/events"
-	"github.com/aws/aws-lambda-go/lambda"
 )
 
 type ListResponse struct {
@@ -25,10 +24,10 @@ func main() {
 		fmt.Printf("ERROR loading config: %s\n", err.Error())
 		return
 	}
-	lambda.Start(HandleRequest)
+	shared.StartAPILambda(HandleRequest)
 }
 
-func HandleRequest(ctx context.Context, req events.APIGatewayProxyRequest) (*events.APIGatewayProxyResponse, error) {
+func HandleRequest(ctx context.Context, req events.APIGatewayProxyRequest) (*shared.APIResponse, error) {
 
 	switch req.HTTPMethod {
 	case "GET":
@@ -36,20 +35,20 @@ func HandleRequest(ctx context.Context, req events.APIGatewayProxyRequest) (*eve
 	case "POST":
 		return createUser(ctx, req)
 	default:
-		return shared.APIResponse(http.StatusNotImplemented, "not implemented")
+		return shared.NewAPIResponse(http.StatusNotImplemented, "not implemented")
 	}
 }
 
-func list(ctx context.Context, req events.APIGatewayProxyRequest) (*events.APIGatewayProxyResponse, error) {
+func list(ctx context.Context, req events.APIGatewayProxyRequest) (*shared.APIResponse, error) {
 	users, err := datastore.GetUsers(nil)
 	if err != nil {
 		return nil, fmt.Errorf("error getting users: %s", err.Error())
 	}
 
-	return shared.APIResponse(http.StatusOK, ListResponse{Users: users})
+	return shared.NewAPIResponse(http.StatusOK, ListResponse{Users: users})
 }
 
-func createUser(ctx context.Context, req events.APIGatewayProxyRequest) (*events.APIGatewayProxyResponse, error) {
+func createUser(ctx context.Context, req events.APIGatewayProxyRequest) (*shared.APIResponse, error) {
 	var body CreateUserBody
 	if err := json.Unmarshal([]byte(req.Body), &body); err != nil {
 		return nil, fmt.Errorf("error unmarshalling body: %s", err.Error())
@@ -69,5 +68,5 @@ func createUser(ctx context.Context, req events.APIGatewayProxyRequest) (*events
 		return nil, fmt.Errorf("error getting users: %s", err.Error())
 	}
 
-	return shared.APIResponse(http.StatusOK, ListResponse{Users: users})
+	return shared.NewAPIResponse(http.StatusOK, ListResponse{Users: users})
 }

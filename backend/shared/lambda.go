@@ -8,12 +8,12 @@ import (
 	"github.com/aws/aws-lambda-go/lambda"
 )
 
-func StartAPILambda(handler func(context.Context, events.APIGatewayProxyRequest) (*events.APIGatewayProxyResponse, error)) {
+func StartAPILambda(handler func(context.Context, events.APIGatewayProxyRequest) (*APIResponse, error)) {
 	lambda.Start(handlerWrapper(handler))
 }
 
 func handlerWrapper(
-	handler func(context.Context, events.APIGatewayProxyRequest) (*events.APIGatewayProxyResponse, error),
+	handler func(context.Context, events.APIGatewayProxyRequest) (*APIResponse, error),
 ) func(context.Context, events.APIGatewayProxyRequest) (*events.APIGatewayProxyResponse, error) {
 
 	return func(ctx context.Context, req events.APIGatewayProxyRequest) (*events.APIGatewayProxyResponse, error) {
@@ -21,6 +21,6 @@ func handlerWrapper(
 		if err != nil {
 			log.Printf("error in lambda: %s\n", err.Error())
 		}
-		return resp, err
+		return resp.Proxy, err
 	}
 }
