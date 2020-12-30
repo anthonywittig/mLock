@@ -25,6 +25,8 @@ export class SignIn extends React.Component<Props, State> {
     }
 
     responseGoogleSuccess(response: GoogleLoginResponse | GoogleLoginResponseOffline) {
+        this.setAlert("", "");
+
         if ((response as GoogleLoginResponse).profileObj) {
             const user = response as GoogleLoginResponse;
             const gToken = user.getAuthResponse().id_token;
@@ -56,17 +58,19 @@ export class SignIn extends React.Component<Props, State> {
     }
 
     responseGoogleFailure(response: any) {
+        this.setAlert("", "");
         console.log(response);
     }
 
     signOut() {
+        this.setAlert("", "");
         this.setState({processing: true});
         fetch((process.env.REACT_APP_BACKEND_DOMAIN || "") + "/sign-in", {
             method: "DELETE",
             credentials: "include",
         })
         .then(response => {
-            this.setState({ message: "Signed out successfully" })
+            this.setAlert("Signed out successfully", "")
         }).catch(err => {
             console.log(err);
             this.setAlert("", ERROR_UNKNOWN)
@@ -80,30 +84,29 @@ export class SignIn extends React.Component<Props, State> {
             this.setState({
                 message: "",
                 messageClass: "",
-            })
-            return
+            });
+            return;
         }
 
-        let messageClass = "alert-primary"
+        let messageClass = "alert-primary";
         if (message === "") {
-            messageClass = "alert-danger"
+            messageClass = "alert-danger";
             switch(errorCode) {
                 case "":
                     // Do nothing.
                     break;
                 case ERROR_NOT_AUTHORIZED:
-                    message = "Not Authorized - request access from an administrator"
+                    message = "Not Authorized - request access from an administrator";
                     break;
                 default: // Includes `ERROR_UNKNOWN`.
-                    message = "An error has occurred"
+                    message = "An error has occurred";
             }
         }
 
         this.setState({
             message: message,
             messageClass: messageClass,
-        })
-
+        });
     }
 
     render() {
