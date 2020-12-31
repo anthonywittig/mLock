@@ -1,23 +1,20 @@
-package datastore
+package shared
 
 import (
 	"context"
 	"database/sql"
 	"fmt"
-	"log"
-	"mlock/shared"
 
 	_ "github.com/jackc/pgx/v4/stdlib"
 )
 
 func GetDB(ctx context.Context) (*sql.DB, error) {
-	cd, err := shared.GetContextData(ctx)
+	cd, err := GetContextData(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("error getting context data: %s", err.Error())
 	}
 
 	if cd.DB != nil {
-		log.Print("already have DB, no need to create another")
 		return cd.DB, nil
 	}
 
@@ -34,11 +31,11 @@ func GetDB(ctx context.Context) (*sql.DB, error) {
 func getConnectionString() string {
 	return fmt.Sprintf(
 		"host=%s port=%d user=%s password=%s dbname=%s",
-		shared.GetConfig("DB_HOST"),
+		GetConfig("DB_HOST"),
 		5432,
-		shared.GetConfig("DB_USER"),
-		shared.GetConfig("DB_PASSWORD"),
-		shared.GetConfig("DB_NAME"),
+		GetConfig("DB_USER"),
+		GetConfig("DB_PASSWORD"),
+		GetConfig("DB_NAME"),
 	)
 }
 

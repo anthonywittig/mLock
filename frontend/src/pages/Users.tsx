@@ -49,10 +49,8 @@ export class Users extends React.Component<Props, State> {
 
     componentDidMount() {
         fetch((process.env.REACT_APP_BACKEND_DOMAIN || "") + "/users", {
-            "method": "GET",
-            "headers": {
-                "apikey": "apikey",
-            }
+            method: "GET",
+            credentials: "include",
         })
         .then(response => response.json())
         .then(response => {
@@ -76,9 +74,7 @@ export class Users extends React.Component<Props, State> {
 
         fetch((process.env.REACT_APP_BACKEND_DOMAIN || "") + "/users", {
             method: "POST",
-            headers: {
-                "apikey": "apikey",
-            },
+            credentials: "include",
             body: JSON.stringify({ email: this.state.newUser })
         })
         .then(response => response.json())

@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/aws/aws-lambda-go/events"
 )
@@ -15,8 +16,9 @@ type APIResponse struct {
 }
 
 const (
-	SetCookieHeaderName = "Set-Cookie"
+	CookieHeaderName    = "cookie"
 	AuthCookie          = "auth-v1"
+	SetCookieHeaderName = "Set-Cookie"
 )
 
 func NewAPIResponse(status int, body interface{}) (*APIResponse, error) {
@@ -68,4 +70,55 @@ func (a *APIResponse) DeleteAuthCookie() error {
 
 func (a *APIResponse) SetAuthCookie(token string) error {
 	return a.AddCookie(AuthCookie, token)
+}
+
+func AddAuthToContext(ctx context.Context, req events.APIGatewayProxyRequest) error {
+	cookies := req.Headers[CookieHeaderName]
+	if cookies == "" {
+		return nil
+	}
+
+	authCookieValue := ""
+	for _, cookie := range strings.Split(cookies, ";") {
+		cookie = strings.TrimSpace(cookie)
+		cookieParts := strings.SplitN(cookie, "=", 2)
+		if len(cookieParts) != 2 {
+			return fmt.Errorf("unexpected cookie format: %s", cookie)
+		}
+
+		if cookieParts[0] == AuthCookie {
+			authCookieValue = cookieParts[1]
+			break
+		}
+	}
+	if authCookieValue == "" {
+		return nil
+	}
+
+	tokenData, err := GetUserFromToken(ctx, authCookieValue)
+	if err != nil {
+		return fmt.Errorf("error getting user from token: %s", err.Error())
+	}
+	if tokenData.Error != nil || !tokenData.TokenValid || !tokenData.UserValid {
+		// Could probably just check if the user is not nil.
+		return nil
+	}
+
+	cd, err := GetContextData(ctx)
+	if err != nil {
+		return fmt.Errorf("error getting context data: %s", err.Error())
+	}
+
+	cd.User = &tokenData.User
+
+	return nil
+}
+
+func GetAuthUser(ctx context.Context) (*User, error) {
+	cd, err := GetContextData(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("error getting context data: %s", err.Error())
+	}
+
+	return cd.User, nil
 }

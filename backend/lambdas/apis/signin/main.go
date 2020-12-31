@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"mlock/shared"
-	"mlock/shared/token"
 	"net/http"
 
 	"github.com/aws/aws-lambda-go/events"
@@ -44,7 +43,7 @@ func create(ctx context.Context, req events.APIGatewayProxyRequest) (*shared.API
 	}
 
 	// Validate the token.
-	tokenData, err := token.GetUserFromToken(ctx, body.GoogleToken)
+	tokenData, err := shared.GetUserFromToken(ctx, body.GoogleToken)
 	if err != nil {
 		return nil, fmt.Errorf("error getting user: %s", err.Error())
 	}

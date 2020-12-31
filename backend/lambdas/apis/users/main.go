@@ -5,14 +5,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"mlock/shared"
-	"mlock/shared/datastore"
 	"net/http"
 
 	"github.com/aws/aws-lambda-go/events"
 )
 
 type ListResponse struct {
-	Users []datastore.User
+	Users []shared.User
 }
 
 type CreateUserBody struct {
@@ -35,7 +34,7 @@ func HandleRequest(ctx context.Context, req events.APIGatewayProxyRequest) (*sha
 }
 
 func list(ctx context.Context, req events.APIGatewayProxyRequest) (*shared.APIResponse, error) {
-	users, err := datastore.GetUsers(ctx)
+	users, err := shared.GetUsers(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("error getting users: %s", err.Error())
 	}
@@ -49,11 +48,11 @@ func createUser(ctx context.Context, req events.APIGatewayProxyRequest) (*shared
 		return nil, fmt.Errorf("error unmarshalling body: %s", err.Error())
 	}
 
-	if err := datastore.InsertUser(ctx, body.Email); err != nil {
+	if err := shared.InsertUser(ctx, body.Email); err != nil {
 		return nil, fmt.Errorf("error inserting user: %s", err.Error())
 	}
 
-	users, err := datastore.GetUsers(ctx)
+	users, err := shared.GetUsers(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("error getting users: %s", err.Error())
 	}

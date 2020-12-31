@@ -1,9 +1,7 @@
-package token
+package shared
 
 import (
 	"context"
-	"mlock/shared"
-	"mlock/shared/datastore"
 	"net/http"
 
 	googleAuthIDTokenVerifier "github.com/futurenda/google-auth-id-token-verifier"
@@ -12,7 +10,7 @@ import (
 type TokenData struct {
 	Token      string
 	TokenValid bool
-	User       datastore.User
+	User       User
 	UserValid  bool
 	Error      error
 }
@@ -21,7 +19,7 @@ type TokenData struct {
 func GetUserFromToken(ctx context.Context, token string) (TokenData, error) {
 	// Verify the token.
 	v := googleAuthIDTokenVerifier.Verifier{}
-	if err := v.VerifyIDToken(token, []string{shared.GetConfig("GOOGLE_SIGNIN_CLIENT_ID")}); err != nil {
+	if err := v.VerifyIDToken(token, []string{GetConfig("GOOGLE_SIGNIN_CLIENT_ID")}); err != nil {
 		// For now we'll just assume the token is bad (could be network error etc.).
 		return TokenData{Error: err}, nil
 	}
@@ -33,7 +31,7 @@ func GetUserFromToken(ctx context.Context, token string) (TokenData, error) {
 	}
 
 	// Grab the user.
-	user, ok, err := datastore.GetUserByEmail(ctx, claimSet.Email)
+	user, ok, err := GetUserByEmail(ctx, claimSet.Email)
 	if err != nil {
 		return TokenData{}, err
 	}
@@ -42,7 +40,7 @@ func GetUserFromToken(ctx context.Context, token string) (TokenData, error) {
 	tokenData := TokenData{Token: token, TokenValid: true}
 
 	if !ok {
-		tokenData.Error = shared.NewAPIError("user not authorized", http.StatusForbidden)
+		tokenData.Error = NewAPIError("user not authorized", http.StatusForbidden)
 		return tokenData, nil
 	}
 
