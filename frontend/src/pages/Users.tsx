@@ -1,10 +1,12 @@
-import React from 'react'
+import React from 'react';
 import { Button } from 'react-bootstrap';
-import { Loading } from './utils/Loading'
+import { Loading } from './utils/Loading';
+import { StandardFetch } from './utils/FetchHelper';
 
 type User = {
     ID: string;
     Email: string;
+    CreatedBy: string;
 }
 
 type Props = {};
@@ -18,15 +20,6 @@ type State = {
 };
 
 export class Users extends React.Component<Props, State> {
-    /*
-    static defaultProps: Props = {
-        users: [],
-        newUser: "",
-        newUserFieldEnabled: true,
-        newUserButtonEnabled: false,
-    }
-    */
-
     state: Readonly<State> = {
         users: [],
         newUser: "",
@@ -35,23 +28,8 @@ export class Users extends React.Component<Props, State> {
         loadingUsers: true,
     }
 
-    constructor(props: Props) {
-        super(props);
-        /*
-        this.state = {
-            users: props.users,
-            newUser: props.newUser,
-            newUserFieldEnabled: props.newUserFieldEnabled,
-            newUserButtonEnabled: props.newUserButtonEnabled,
-        };
-        */
-      }
-
     componentDidMount() {
-        fetch((process.env.REACT_APP_BACKEND_DOMAIN || "") + "/users", {
-            method: "GET",
-            credentials: "include",
-        })
+        StandardFetch("users", {method: "GET"})
         .then(response => response.json())
         .then(response => {
             console.log(response);
@@ -72,9 +50,8 @@ export class Users extends React.Component<Props, State> {
             newUserButtonEnabled: false,
         });
 
-        fetch((process.env.REACT_APP_BACKEND_DOMAIN || "") + "/users", {
+        StandardFetch("users", {
             method: "POST",
-            credentials: "include",
             body: JSON.stringify({ email: this.state.newUser })
         })
         .then(response => response.json())
@@ -98,7 +75,7 @@ export class Users extends React.Component<Props, State> {
         this.setState({
             newUser: evt.target.value,
             newUserButtonEnabled: evt.target.value !== "",
-        })
+        });
     }
 
     renderUsersTable() {
@@ -110,6 +87,7 @@ export class Users extends React.Component<Props, State> {
                 <thead>
                     <tr>
                         <th scope="col">Email Address</th>
+                        <th scope="col">Created By</th>
                         <th scope="col">Actions</th>
                     </tr>
                 </thead>
@@ -117,13 +95,15 @@ export class Users extends React.Component<Props, State> {
                     {this.state.users.map(user =>
                         <tr key={user.Email}>
                             <th scope="row">{user.Email}</th>
-                            <td><Button variant="secondary" onClick={() => {alert('Need to complete this functionality')}}>Remove</Button></td>
+                            <td>{user.CreatedBy}</td>
+                            <td><Button variant="secondary" onClick={() => {alert('Need to complete this functionality');}}>Remove</Button></td>
                         </tr>
                     )}
                     <tr key="newUser">
                         <th scope="row">
-                            <input type="text" className="form-control" id="newUser" placeholder="Enter Google email address" value={this.state.newUser} onChange={evt => this.updateNewUserValue(evt)} disabled={!this.state.newUserFieldEnabled} />
+                            <input type="text" className="form-control" id="newUser" placeholder="Enter new user's Google email address" value={this.state.newUser} onChange={evt => this.updateNewUserValue(evt)} disabled={!this.state.newUserFieldEnabled} />
                         </th>
+                        <td></td>
                         <td><Button variant="secondary" onClick={() => this.newUserClick()} disabled={!this.state.newUserButtonEnabled}>Add User</Button></td>
                     </tr>
                 </tbody>

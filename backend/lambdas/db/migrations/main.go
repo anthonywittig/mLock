@@ -34,7 +34,7 @@ func HandleRequest(ctx context.Context, event MyEvent) (Response, error) {
 	}
 	defer db.Close()
 
-	if err = db.Ping(); err != nil {
+	if err = db.PingContext(ctx); err != nil {
 		return Response{}, fmt.Errorf("error pinging DB: %s", err.Error())
 	}
 
@@ -42,7 +42,7 @@ func HandleRequest(ctx context.Context, event MyEvent) (Response, error) {
 		return Response{}, fmt.Errorf("error migrating DB: %s", err.Error())
 	}
 
-	dbName := shared.GetCurrentDatabase(db)
+	dbName := shared.GetCurrentDatabase(ctx)
 
 	return Response{
 		Messages: []string{

@@ -39,8 +39,13 @@ func getConnectionString() string {
 	)
 }
 
-func GetCurrentDatabase(db *sql.DB) string {
-	row := db.QueryRow("SELECT current_database()")
+func GetCurrentDatabase(ctx context.Context) string {
+	db, err := GetDB(ctx)
+	if err != nil {
+		return fmt.Sprintf("error getting DB: %s", err.Error())
+	}
+
+	row := db.QueryRowContext(ctx, "SELECT current_database()")
 	if row == nil {
 		return "error querying DB"
 	}
@@ -53,8 +58,13 @@ func GetCurrentDatabase(db *sql.DB) string {
 	return name
 }
 
-func GetDatabases(db *sql.DB) []string {
-	rows, err := db.Query("SELECT datname FROM pg_database")
+func GetDatabases(ctx context.Context) []string {
+	db, err := GetDB(ctx)
+	if err != nil {
+		return []string{fmt.Sprintf("error getting DB: %s", err.Error())}
+	}
+
+	rows, err := db.QueryContext(ctx, "SELECT datname FROM pg_database")
 	if err != nil {
 		return []string{fmt.Sprintf("err: %s", err.Error())}
 	}

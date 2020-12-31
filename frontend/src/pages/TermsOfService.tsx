@@ -1,4 +1,4 @@
-import React from 'react'
+import React from 'react';
 
 export const TermsOfService = () => {
     return (
@@ -72,4 +72,4 @@ export const TermsOfService = () => {
             </p>
         </div>
     );
-}
+};

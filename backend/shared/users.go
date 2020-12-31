@@ -11,8 +11,9 @@ import (
 )
 
 type User struct {
-	ID    string
-	Email string
+	ID        string
+	Email     string
+	CreatedBy string
 }
 
 var emailRegex = regexp.MustCompile("^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$")
@@ -23,10 +24,11 @@ func GetUserByEmail(ctx context.Context, email string) (User, bool, error) {
 		return User{}, false, fmt.Errorf("error getting DB: %s", err.Error())
 	}
 
-	row := db.QueryRow("SELECT id, email FROM users WHERE email = $1", email)
+	row := db.QueryRowContext(ctx, "SELECT id, email, created_by FROM users WHERE email = $1", email)
 	var idResult string
 	var emailResult string
-	if err := row.Scan(&idResult, &emailResult); err != nil {
+	var createdByResult string
+	if err := row.Scan(&idResult, &emailResult, &createdByResult); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return User{}, false, nil // Not really an error.
 		}
@@ -34,7 +36,7 @@ func GetUserByEmail(ctx context.Context, email string) (User, bool, error) {
 		return User{}, false, fmt.Errorf("error scanning row: %s", err.Error())
 	}
 
-	return User{ID: idResult, Email: emailResult}, true, nil
+	return User{ID: idResult, Email: emailResult, CreatedBy: createdByResult}, true, nil
 }
 
 func GetUsers(ctx context.Context) ([]User, error) {
@@ -43,7 +45,7 @@ func GetUsers(ctx context.Context) ([]User, error) {
 		return []User{}, fmt.Errorf("error getting DB: %s", err.Error())
 	}
 
-	rows, err := db.Query("SELECT id, email FROM users")
+	rows, err := db.QueryContext(ctx, "SELECT id, email, created_by FROM users ORDER BY email")
 	if err != nil {
 		return []User{}, fmt.Errorf("error doing query: %s", err.Error())
 	}
@@ -53,10 +55,11 @@ func GetUsers(ctx context.Context) ([]User, error) {
 	for rows.Next() {
 		var id string
 		var email string
-		if err := rows.Scan(&id, &email); err != nil {
+		var createdBy string
+		if err := rows.Scan(&id, &email, &createdBy); err != nil {
 			return []User{}, fmt.Errorf("error scanning row: %s", err.Error())
 		}
-		users = append(users, User{ID: id, Email: email})
+		users = append(users, User{ID: id, Email: email, CreatedBy: createdBy})
 	}
 
 	return users, nil
@@ -73,10 +76,22 @@ func InsertUser(ctx context.Context, email string) error {
 		return fmt.Errorf("email isn't formatted correctly")
 	}
 
-	_, err = db.Exec(
-		`INSERT INTO users (id, email) VALUES ($1, $2)`,
+	cd, err := GetContextData(ctx)
+	if err != nil {
+		return fmt.Errorf("can't get context data: %s", err.Error())
+	}
+
+	currentUser := cd.User
+	if currentUser == nil {
+		return fmt.Errorf("no current user")
+	}
+
+	_, err = db.ExecContext(
+		ctx,
+		`INSERT INTO users (id, email, created_by) VALUES ($1, $2, $3)`,
 		uuid.New(),
 		email,
+		currentUser.Email,
 	)
 	if err != nil {
 		return fmt.Errorf("error inserting into DB: %s", err.Error())

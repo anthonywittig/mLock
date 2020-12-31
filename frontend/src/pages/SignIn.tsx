@@ -5,9 +5,15 @@ import {
     GoogleLoginResponseOffline, 
     GoogleLogout,
 } from 'react-google-login';
-import {Redirect} from 'react-router-dom';
+import {
+    Redirect,
+    //useLocation,
+} from 'react-router-dom';
+import { StandardFetch } from './utils/FetchHelper';
 
-type Props = {};
+type Props = {
+
+};
 
 type State = {
     message: string;
@@ -27,6 +33,13 @@ export class SignIn extends React.Component<Props, State> {
         successfullyLoggedIn: false,
     }
 
+    componentDidMount() {
+        const name = new URLSearchParams(window.location.search).get('state');
+        if (name === "unauthorized") {
+            this.setAlert("", ERROR_NOT_AUTHORIZED);
+        }
+    }
+
     responseGoogleSuccess(response: GoogleLoginResponse | GoogleLoginResponseOffline) {
         this.setAlert("", "");
 
@@ -35,23 +48,22 @@ export class SignIn extends React.Component<Props, State> {
             const gToken = user.getAuthResponse().id_token;
 
             this.setState({processing: true});
-            fetch((process.env.REACT_APP_BACKEND_DOMAIN || "") + "/sign-in", {
+            StandardFetch("sign-in", {
                 method: "POST",
-                credentials: "include",
-                body: JSON.stringify({googleToken: gToken})
+                body: JSON.stringify({googleToken: gToken}),
             })
             .then(response => {
                 switch(response.status) {
                     case 403:
                         this.setAlert("", ERROR_NOT_AUTHORIZED);
-                        return
+                        return;
                     case 200:
                         this.setState({successfullyLoggedIn: true});
-                        return
+                        return;
                     default:
-                        console.log("unhandled response code: " + response.status)
+                        console.log("unhandled response code: " + response.status);
                         this.setAlert("", ERROR_UNKNOWN);
-                        return
+                        return;
                 }
 
             }).catch(err => {
@@ -73,15 +85,12 @@ export class SignIn extends React.Component<Props, State> {
     signOut() {
         this.setAlert("", "");
         this.setState({processing: true});
-        fetch((process.env.REACT_APP_BACKEND_DOMAIN || "") + "/sign-in", {
-            method: "DELETE",
-            credentials: "include",
-        })
+        StandardFetch("sign-in", {method: "DELETE"})
         .then(response => {
-            this.setAlert("Signed out successfully", "")
+            this.setAlert("Signed out successfully", "");
         }).catch(err => {
             console.log(err);
-            this.setAlert("", ERROR_UNKNOWN)
+            this.setAlert("", ERROR_UNKNOWN);
         }).finally(() => {
             this.setState({processing: false});
         });
@@ -121,7 +130,7 @@ export class SignIn extends React.Component<Props, State> {
 
         if (this.state.successfullyLoggedIn) {
             // Redirect to `users` till we have a better place to go.
-            return <Redirect  to="/users/" />
+            return <Redirect  to="/users/" />;
         }
 
         let innerContent = this.renderNonProcessing();

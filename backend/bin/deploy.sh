@@ -28,7 +28,7 @@ handleDb () {
     cp -r migrations/goosemigrations/ build/migrations/goosemigrations
 
     handleLambda migrations
-    # TODO: execute lambda with "forward" option to run the migrations forward
+    # TODO: execute lambda with "forward" option to run the migrations forward.
 }
 
 handleApis () {
