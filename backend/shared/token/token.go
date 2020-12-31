@@ -1,7 +1,7 @@
 package token
 
 import (
-	"database/sql"
+	"context"
 	"mlock/shared"
 	"mlock/shared/datastore"
 	"net/http"
@@ -18,7 +18,7 @@ type TokenData struct {
 }
 
 // GetUserFromToken will first verify that the token is valid, then return the corresponding user object.
-func GetUserFromToken(db *sql.DB, token string) (TokenData, error) {
+func GetUserFromToken(ctx context.Context, token string) (TokenData, error) {
 	// Verify the token.
 	v := googleAuthIDTokenVerifier.Verifier{}
 	if err := v.VerifyIDToken(token, []string{shared.GetConfig("GOOGLE_SIGNIN_CLIENT_ID")}); err != nil {
@@ -33,7 +33,7 @@ func GetUserFromToken(db *sql.DB, token string) (TokenData, error) {
 	}
 
 	// Grab the user.
-	user, ok, err := datastore.GetUserByEmail(db, claimSet.Email)
+	user, ok, err := datastore.GetUserByEmail(ctx, claimSet.Email)
 	if err != nil {
 		return TokenData{}, err
 	}

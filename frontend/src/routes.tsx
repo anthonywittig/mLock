@@ -1,8 +1,9 @@
 import React from 'react'
 import {
     BrowserRouter as Router,
-    Switch,
+    Redirect,
     Route,
+    Switch,
   } from 'react-router-dom';
 import { Home } from './pages/Home'
 import { PrivacyPolicy } from './pages/PrivacyPolicy'
@@ -26,7 +27,6 @@ export const Routes = () => {
                 <Route path="/sign-in">
                     <SignIn />
                 </Route>
-                {/*Sign out?*/}
                 <Route path="/terms-of-service">
                     <TermsOfService/>
                 </Route>
@@ -34,7 +34,7 @@ export const Routes = () => {
                     <Users />
                 </Route>
                 <Route path="/">
-                    <Home />
+                    <Redirect to="/sign-in" />
                 </Route>
                 </Switch>
             </div>

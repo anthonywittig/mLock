@@ -5,6 +5,7 @@ import {
     GoogleLoginResponseOffline, 
     GoogleLogout,
 } from 'react-google-login';
+import {Redirect} from 'react-router-dom';
 
 type Props = {};
 
@@ -12,6 +13,7 @@ type State = {
     message: string;
     messageClass: string;
     processing: boolean;
+    successfullyLoggedIn: boolean;
 };
 
 const ERROR_NOT_AUTHORIZED = 'not authorized';
@@ -22,6 +24,7 @@ export class SignIn extends React.Component<Props, State> {
         message: "",
         messageClass: "",
         processing: false,
+        successfullyLoggedIn: false,
     }
 
     responseGoogleSuccess(response: GoogleLoginResponse | GoogleLoginResponseOffline) {
@@ -42,10 +45,15 @@ export class SignIn extends React.Component<Props, State> {
                     case 403:
                         this.setAlert("", ERROR_NOT_AUTHORIZED);
                         return
+                    case 200:
+                        this.setState({successfullyLoggedIn: true});
+                        return
+                    default:
+                        console.log("unhandled response code: " + response.status)
+                        this.setAlert("", ERROR_UNKNOWN);
+                        return
                 }
 
-                // this is a promise: console.log(response.json());
-                // grab token from response and redirect to somewhere useful?
             }).catch(err => {
                 console.log(err);
                 this.setAlert("", ERROR_UNKNOWN);
@@ -58,7 +66,7 @@ export class SignIn extends React.Component<Props, State> {
     }
 
     responseGoogleFailure(response: any) {
-        this.setAlert("", "");
+        this.setAlert("", ERROR_UNKNOWN);
         console.log(response);
     }
 
@@ -110,6 +118,12 @@ export class SignIn extends React.Component<Props, State> {
     }
 
     render() {
+
+        if (this.state.successfullyLoggedIn) {
+            // Redirect to `users` till we have a better place to go.
+            return <Redirect  to="/users/" />
+        }
+
         let innerContent = this.renderNonProcessing();
         if (this.state.processing) {
             innerContent = this.renderProcessing();

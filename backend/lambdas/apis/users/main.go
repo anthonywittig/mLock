@@ -20,15 +20,10 @@ type CreateUserBody struct {
 }
 
 func main() {
-	if err := shared.LoadConfig(); err != nil {
-		fmt.Printf("ERROR loading config: %s\n", err.Error())
-		return
-	}
-	shared.StartAPILambda(HandleRequest)
+	shared.StartAPILambda(HandleRequest, []string{shared.MiddlewareAuth})
 }
 
 func HandleRequest(ctx context.Context, req events.APIGatewayProxyRequest) (*shared.APIResponse, error) {
-
 	switch req.HTTPMethod {
 	case "GET":
 		return list(ctx, req)
@@ -40,7 +35,7 @@ func HandleRequest(ctx context.Context, req events.APIGatewayProxyRequest) (*sha
 }
 
 func list(ctx context.Context, req events.APIGatewayProxyRequest) (*shared.APIResponse, error) {
-	users, err := datastore.GetUsers(nil)
+	users, err := datastore.GetUsers(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("error getting users: %s", err.Error())
 	}
@@ -54,16 +49,11 @@ func createUser(ctx context.Context, req events.APIGatewayProxyRequest) (*shared
 		return nil, fmt.Errorf("error unmarshalling body: %s", err.Error())
 	}
 
-	db, err := datastore.GetDB()
-	if err != nil {
-		return nil, fmt.Errorf("error getting DB: %s", err.Error())
-	}
-
-	if err := datastore.InsertUser(db, body.Email); err != nil {
+	if err := datastore.InsertUser(ctx, body.Email); err != nil {
 		return nil, fmt.Errorf("error inserting user: %s", err.Error())
 	}
 
-	users, err := datastore.GetUsers(db)
+	users, err := datastore.GetUsers(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("error getting users: %s", err.Error())
 	}

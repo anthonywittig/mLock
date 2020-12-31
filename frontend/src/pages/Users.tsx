@@ -121,7 +121,7 @@ export class Users extends React.Component<Props, State> {
                     {this.state.users.map(user =>
                         <tr key={user.Email}>
                             <th scope="row">{user.Email}</th>
-                            <td><Button variant="secondary">Remove</Button></td>
+                            <td><Button variant="secondary" onClick={() => {alert('Need to complete this functionality')}}>Remove</Button></td>
                         </tr>
                     )}
                     <tr key="newUser">

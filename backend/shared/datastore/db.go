@@ -1,18 +1,32 @@
 package datastore
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
+	"log"
 	"mlock/shared"
 
 	_ "github.com/jackc/pgx/v4/stdlib"
 )
 
-func GetDB() (*sql.DB, error) {
+func GetDB(ctx context.Context) (*sql.DB, error) {
+	cd, err := shared.GetContextData(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("error getting context data: %s", err.Error())
+	}
+
+	if cd.DB != nil {
+		log.Print("already have DB, no need to create another")
+		return cd.DB, nil
+	}
+
 	db, err := sql.Open("pgx", getConnectionString())
 	if err != nil {
 		return nil, fmt.Errorf("error opening DB: %s", err.Error())
 	}
+
+	cd.DB = db
 
 	return db, nil
 }

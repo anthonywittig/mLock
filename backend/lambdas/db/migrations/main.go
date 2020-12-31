@@ -27,7 +27,9 @@ func HandleRequest(ctx context.Context, event MyEvent) (Response, error) {
 		return Response{}, fmt.Errorf("error loading config: %s", err.Error())
 	}
 
-	db, err := datastore.GetDB()
+	ctx = shared.CreateContextData(ctx)
+
+	db, err := datastore.GetDB(ctx)
 	if err != nil {
 		return Response{}, fmt.Errorf("error opening DB: %s", err.Error())
 	}

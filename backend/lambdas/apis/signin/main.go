@@ -21,11 +21,7 @@ type CreateResponse struct {
 }
 
 func main() {
-	if err := shared.LoadConfig(); err != nil {
-		fmt.Printf("ERROR loading config: %s\n", err.Error())
-		return
-	}
-	shared.StartAPILambda(HandleRequest)
+	shared.StartAPILambda(HandleRequest, []string{})
 }
 
 func HandleRequest(ctx context.Context, req events.APIGatewayProxyRequest) (*shared.APIResponse, error) {
@@ -48,7 +44,7 @@ func create(ctx context.Context, req events.APIGatewayProxyRequest) (*shared.API
 	}
 
 	// Validate the token.
-	tokenData, err := token.GetUserFromToken(nil, body.GoogleToken)
+	tokenData, err := token.GetUserFromToken(ctx, body.GoogleToken)
 	if err != nil {
 		return nil, fmt.Errorf("error getting user: %s", err.Error())
 	}

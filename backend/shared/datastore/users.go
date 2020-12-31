@@ -1,6 +1,7 @@
 package datastore
 
 import (
+	"context"
 	"database/sql"
 	"errors"
 	"fmt"
@@ -16,13 +17,10 @@ type User struct {
 
 var emailRegex = regexp.MustCompile("^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$")
 
-func GetUserByEmail(db *sql.DB, email string) (User, bool, error) {
-	if db == nil {
-		var err error
-		db, err = GetDB()
-		if err != nil {
-			return User{}, false, fmt.Errorf("error getting DB: %s", err.Error())
-		}
+func GetUserByEmail(ctx context.Context, email string) (User, bool, error) {
+	db, err := GetDB(ctx)
+	if err != nil {
+		return User{}, false, fmt.Errorf("error getting DB: %s", err.Error())
 	}
 
 	row := db.QueryRow("SELECT id, email FROM users WHERE email = $1", email)
@@ -39,13 +37,10 @@ func GetUserByEmail(db *sql.DB, email string) (User, bool, error) {
 	return User{ID: idResult, Email: emailResult}, true, nil
 }
 
-func GetUsers(db *sql.DB) ([]User, error) {
-	if db == nil {
-		var err error
-		db, err = GetDB()
-		if err != nil {
-			return []User{}, fmt.Errorf("error getting DB: %s", err.Error())
-		}
+func GetUsers(ctx context.Context) ([]User, error) {
+	db, err := GetDB(ctx)
+	if err != nil {
+		return []User{}, fmt.Errorf("error getting DB: %s", err.Error())
 	}
 
 	rows, err := db.Query("SELECT id, email FROM users")
@@ -67,13 +62,10 @@ func GetUsers(db *sql.DB) ([]User, error) {
 	return users, nil
 }
 
-func InsertUser(db *sql.DB, email string) error {
-	if db == nil {
-		var err error
-		db, err = GetDB()
-		if err != nil {
-			return fmt.Errorf("error getting DB: %s", err.Error())
-		}
+func InsertUser(ctx context.Context, email string) error {
+	db, err := GetDB(ctx)
+	if err != nil {
+		return fmt.Errorf("error getting DB: %s", err.Error())
 	}
 
 	if !isEmailValid(email) {
@@ -81,7 +73,7 @@ func InsertUser(db *sql.DB, email string) error {
 		return fmt.Errorf("email isn't formatted correctly")
 	}
 
-	_, err := db.Exec(
+	_, err = db.Exec(
 		`INSERT INTO users (id, email) VALUES ($1, $2)`,
 		uuid.New(),
 		email,
