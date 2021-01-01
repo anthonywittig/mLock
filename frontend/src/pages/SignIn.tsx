@@ -23,6 +23,7 @@ type State = {
 };
 
 const ERROR_NOT_AUTHORIZED = 'not authorized';
+const ERROR_NOT_AUTHENTICATED = 'not authenticated';
 const ERROR_UNKNOWN = 'unknown';
 
 export class SignIn extends React.Component<Props, State> {
@@ -35,8 +36,8 @@ export class SignIn extends React.Component<Props, State> {
 
     componentDidMount() {
         const name = new URLSearchParams(window.location.search).get('state');
-        if (name === "unauthorized") {
-            this.setAlert("", ERROR_NOT_AUTHORIZED);
+        if (name === "unauthenticated") {
+            this.setAlert("", ERROR_NOT_AUTHENTICATED);
         }
     }
 
@@ -114,6 +115,9 @@ export class SignIn extends React.Component<Props, State> {
                     break;
                 case ERROR_NOT_AUTHORIZED:
                     message = "Not Authorized - request access from an administrator";
+                    break;
+                case ERROR_NOT_AUTHENTICATED:
+                    message = "Not Authenticated - log in to authenticate";
                     break;
                 default: // Includes `ERROR_UNKNOWN`.
                     message = "An error has occurred";

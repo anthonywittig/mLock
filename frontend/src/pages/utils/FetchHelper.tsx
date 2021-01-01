@@ -14,7 +14,7 @@ function getStandardFetch(retries: number, path: string, init?: RequestInit): Pr
     .then(response => {
         if (response.status === 401 || response.status === 403) {
             // This is probably not a good pattern, right?
-            window.location.href = "/sign-in?state=unauthorized";
+            window.location.href = "/sign-in?state=unauthenticated";
             return Promise.reject(); 
         } else if (response.status === 504) {
             // To help with Aurora waking up.

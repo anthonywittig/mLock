@@ -19,6 +19,10 @@ type CreateResponse struct {
 	Message string
 }
 
+type DeleteResponse struct {
+	Message string
+}
+
 func main() {
 	shared.StartAPILambda(HandleRequest, []string{})
 }
@@ -71,7 +75,7 @@ func create(ctx context.Context, req events.APIGatewayProxyRequest) (*shared.API
 
 func delete(ctx context.Context, req events.APIGatewayProxyRequest) (*shared.APIResponse, error) {
 	// For now, we just need to delete the cookie.
-	resp, err := shared.NewAPIResponse(http.StatusOK, CreateResponse{Message: "ok"})
+	resp, err := shared.NewAPIResponse(http.StatusOK, DeleteResponse{Message: "deleted session"})
 	if err != nil {
 		return nil, err
 	}

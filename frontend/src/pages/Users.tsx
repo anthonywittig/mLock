@@ -44,6 +44,24 @@ export class Users extends React.Component<Props, State> {
         });
     }
 
+    removeUserClick(id: string) {
+        this.setState({loadingUsers: true});
+
+        StandardFetch("users/" + id, {method: "DELETE"})
+        .then(response => response.json())
+        .then(response => {
+            this.setState({
+                users: response.Users,
+                loadingUsers: false,
+            });
+        })
+        .catch(err => {
+            // Need to indicate error...
+            window.location.href = "/users";
+            return Promise.reject();
+        });
+    }
+
     newUserClick() {
         this.setState({
             newUserFieldEnabled: false,
@@ -96,7 +114,7 @@ export class Users extends React.Component<Props, State> {
                         <tr key={user.Email}>
                             <th scope="row">{user.Email}</th>
                             <td>{user.CreatedBy}</td>
-                            <td><Button variant="secondary" onClick={() => {alert('Need to complete this functionality');}}>Remove</Button></td>
+                            <td><Button variant="secondary" onClick={evt => this.removeUserClick(user.ID)}>Remove</Button></td>
                         </tr>
                     )}
                     <tr key="newUser">

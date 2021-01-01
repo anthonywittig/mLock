@@ -17,7 +17,7 @@ func TestAPIResponse_AddCookie_Simple(t *testing.T) {
 		t.Fatal("cookie doesn't exist")
 	}
 
-	expectedVal := "A=1; Max-Age=86400; HttpOnly; Secure; SameSite=Strict"
+	expectedVal := "A=1; Path=/; Max-Age=86400; HttpOnly; Secure; SameSite=Strict"
 	if val != expectedVal {
 		t.Fatalf("unexpected cookie value; expected \"%s\", was \"%s\"", expectedVal, val)
 	}

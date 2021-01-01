@@ -52,6 +52,7 @@ func (a *APIResponse) AddCookie(name string, value string) error {
 	cookie := http.Cookie{
 		Name:     name,
 		Value:    value,
+		Path:     "/",
 		MaxAge:   60 * 60 * 24, // Seems like browsers handle session cookies differently, so we'll just set an expiration.
 		Secure:   true,
 		HttpOnly: true,

@@ -48,7 +48,8 @@ func handlerWrapper(
 
 		select {
 		case <-ctx.Done():
-			<-c // Is it best to wait for `handleRequest` to end too or should we just ignore it?
+			// Wait just a little to see if `handleRequest` will finish.
+			waitForIt(c, 4*time.Second)
 			resp, err := NewAPIResponse(http.StatusGatewayTimeout, simpleBody{Message: "forced timeout"})
 			return resp.Proxy, err
 		case hr := <-c:
@@ -72,6 +73,10 @@ func handleRequest(
 			response: events.APIGatewayProxyResponse{},
 			err:      fmt.Errorf("error loading config: %s", err.Error()),
 		}
+	}
+
+	if req.HTTPMethod == "OPTIONS" {
+		return optionsResponse()
 	}
 
 	// Must be done after `LoadConfig`.
@@ -101,9 +106,16 @@ func handleRequest(
 	}
 
 	resp, err := handler(ctx, req)
+	if err != nil {
+		return handlerResponse{
+			response: events.APIGatewayProxyResponse{},
+			err:      fmt.Errorf("error executing handler: %s", err.Error()),
+		}
+	}
+
 	return handlerResponse{
 		response: resp.Proxy,
-		err:      err,
+		err:      nil,
 	}
 }
 
@@ -131,4 +143,29 @@ func handleMiddlewares(ctx context.Context, req events.APIGatewayProxyRequest, m
 	}
 
 	return nil
+}
+
+func waitForIt(c chan handlerResponse, d time.Duration) {
+	ticker := time.NewTicker(d)
+
+	select {
+	case <-c:
+		log.Print("handler response came soon after we canceled the context")
+	case <-ticker.C:
+		log.Print("handler response didn't come fast enough, returning without waiting")
+	}
+}
+
+func optionsResponse() handlerResponse {
+	resp, err := NewAPIResponse(http.StatusOK, nil)
+	if err != nil {
+		return handlerResponse{
+			response: events.APIGatewayProxyResponse{},
+			err:      fmt.Errorf("error creating options api response: %s", err.Error()),
+		}
+	}
+	return handlerResponse{
+		response: resp.Proxy,
+		err:      nil,
+	}
 }
