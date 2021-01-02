@@ -54,7 +54,7 @@ func handlerWrapper(
 			return resp.Proxy, err
 		case hr := <-c:
 			if hr.err != nil {
-				log.Print(fmt.Printf("error handling request: %s", hr.err.Error()))
+				log.Printf("error handling request: %s", hr.err.Error())
 			}
 			return hr.response, hr.err
 		}
@@ -149,10 +149,10 @@ func waitForIt(c chan handlerResponse, d time.Duration) {
 	ticker := time.NewTicker(d)
 
 	select {
-	case <-c:
-		log.Print("handler response came soon after we canceled the context")
+	case hr := <-c:
+		log.Printf("handler response came soon after we canceled the context; returned error: %+v\n", hr.err)
 	case <-ticker.C:
-		log.Print("handler response didn't come fast enough, returning without waiting")
+		log.Println("handler response didn't come fast enough, returning without waiting")
 	}
 }
 

@@ -38,8 +38,7 @@ handleApis () {
     rm -rf build
     mkdir build
 
-    #lambdas=('helloworld' 'helloworld2' 'users')
-    lambdas=('signin' 'users')
+    lambdas=('properties' 'signin' 'users')
     for lambda in "${lambdas[@]}" ; do
         handleLambda $lambda
     done

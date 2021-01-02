@@ -5,6 +5,7 @@ import {
     Route,
     Switch,
   } from 'react-router-dom';
+import { Properties } from './pages/Properties';
 import { PrivacyPolicy } from './pages/PrivacyPolicy';
 import { TermsOfService } from './pages/TermsOfService';
 import { SignIn } from './pages/SignIn';
@@ -14,11 +15,9 @@ export const Routes = () => {
     return (
         <Router>
             <div>
-                {/* A <Switch> looks through its children <Route>s and
-                    renders the first one that matches the current URL. */}
                 <Switch>
-                <Route path="/about">
-                    <About />
+                <Route path="/properties">
+                    <Properties />
                 </Route>
                 <Route path="/privacy-policy">
                     <PrivacyPolicy />
@@ -40,7 +39,3 @@ export const Routes = () => {
         </Router>
     );
 };
-
-function About() {
-    return <h2>About</h2>;
-}

@@ -117,7 +117,7 @@ export class Users extends React.Component<Props, State> {
                         <tr key={user.Email}>
                             <th scope="row">{user.Email}</th>
                             <td>{user.CreatedBy}</td>
-                            <td><Button variant="secondary" onClick={evt => this.removeUserClick(user.ID)}>Remove</Button></td>
+                            <td><Button variant="secondary" onClick={evt => this.removeUserClick(user.ID)}>Delete</Button></td>
                         </tr>
                     )}
                     <tr key="newUser">
@@ -125,7 +125,7 @@ export class Users extends React.Component<Props, State> {
                             <input type="text" className="form-control" id="newUser" placeholder="Enter new user's Google email address" value={this.state.newUser} onChange={evt => this.updateNewUserValue(evt)} disabled={!this.state.newUserFieldEnabled} onKeyUp={(evt) => evt.key === "Enter" ? this.newUserClick() : ""}/>
                         </th>
                         <td></td>
-                        <td><Button variant="secondary" onClick={() => this.newUserClick()} disabled={!this.state.newUserButtonEnabled}>Add User</Button></td>
+                        <td><Button variant="secondary" onClick={() => this.newUserClick()} disabled={!this.state.newUserButtonEnabled}>Create</Button></td>
                     </tr>
                 </tbody>
             </table>
