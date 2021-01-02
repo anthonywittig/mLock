@@ -18,6 +18,33 @@ type User struct {
 
 var emailRegex = regexp.MustCompile("^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$")
 
+func GetUserByID(ctx context.Context, id string) (User, bool, error) {
+	db, err := GetDB(ctx)
+	if err != nil {
+		return User{}, false, fmt.Errorf("error getting DB: %s", err.Error())
+	}
+
+	// Verify id is a uuid.
+	parsedID, err := uuid.Parse(id)
+	if err != nil {
+		return User{}, false, fmt.Errorf("error parsing ID: %s", err.Error())
+	}
+
+	row := db.QueryRowContext(ctx, "SELECT id, email, created_by FROM users WHERE id = $1", parsedID)
+	var idResult string
+	var emailResult string
+	var createdByResult string
+	if err := row.Scan(&idResult, &emailResult, &createdByResult); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return User{}, false, nil // Not really an error.
+		}
+
+		return User{}, false, fmt.Errorf("error scanning row: %s", err.Error())
+	}
+
+	return User{ID: idResult, Email: emailResult, CreatedBy: createdByResult}, true, nil
+}
+
 func GetUserByEmail(ctx context.Context, email string) (User, bool, error) {
 	db, err := GetDB(ctx)
 	if err != nil {
@@ -63,6 +90,32 @@ func GetUsers(ctx context.Context) ([]User, error) {
 	}
 
 	return users, nil
+}
+
+func DeleteUser(ctx context.Context, id string) error {
+	db, err := GetDB(ctx)
+	if err != nil {
+		return fmt.Errorf("error getting DB: %s", err.Error())
+	}
+
+	// No audit trail for deletes. :(
+
+	// Verify id is a uuid.
+	parsedID, err := uuid.Parse(id)
+	if err != nil {
+		return fmt.Errorf("error parsing ID: %s", err.Error())
+	}
+
+	_, err = db.ExecContext(
+		ctx,
+		`DELETE FROM users WHERE id = $1`,
+		parsedID,
+	)
+	if err != nil {
+		return fmt.Errorf("error deleting from DB: %s", err.Error())
+	}
+
+	return nil
 }
 
 func InsertUser(ctx context.Context, email string) error {

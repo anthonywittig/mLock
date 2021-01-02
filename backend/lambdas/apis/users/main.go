@@ -6,12 +6,14 @@ import (
 	"fmt"
 	"mlock/shared"
 	"net/http"
+	"strings"
 
 	"github.com/aws/aws-lambda-go/events"
 )
 
 type DeleteResponse struct {
-	Message string
+	Error string
+	Users *[]shared.User
 }
 
 type ListResponse struct {
@@ -40,19 +42,39 @@ func HandleRequest(ctx context.Context, req events.APIGatewayProxyRequest) (*sha
 }
 
 func delete(ctx context.Context, req events.APIGatewayProxyRequest) (*shared.APIResponse, error) {
+	userID := strings.Replace(req.Path, "/users/", "", 1)
+	if userID == "" {
+		return shared.NewAPIResponse(http.StatusBadRequest, DeleteResponse{Error: "unable to parse user"})
+	}
+
+	user, ok, err := shared.GetUserByID(ctx, userID)
+	if err != nil {
+		return nil, fmt.Errorf("error getting user: %s", err.Error())
+	}
+	if !ok {
+		return nil, fmt.Errorf("unable to find user")
+	}
+
+	cd, err := shared.GetContextData(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("error getting context data: %s", err.Error())
+	}
 
 	// Can't delete yourself.
+	if user.ID == cd.User.ID {
+		return shared.NewAPIResponse(http.StatusBadRequest, DeleteResponse{Error: "can't delete oneself"})
+	}
 
-	return shared.NewAPIResponse(http.StatusOK, DeleteResponse{Message: req.Path})
+	if err := shared.DeleteUser(ctx, user.ID); err != nil {
+		return nil, fmt.Errorf("error deleting user: %s", err.Error())
+	}
 
-	/*
-		users, err := shared.GetUsers(ctx)
-		if err != nil {
-			return nil, fmt.Errorf("error getting users: %s", err.Error())
-		}
+	users, err := shared.GetUsers(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("error getting users: %s", err.Error())
+	}
 
-		return shared.NewAPIResponse(http.StatusOK, ListResponse{Users: users})
-	*/
+	return shared.NewAPIResponse(http.StatusOK, DeleteResponse{Users: &users})
 }
 
 func list(ctx context.Context, req events.APIGatewayProxyRequest) (*shared.APIResponse, error) {

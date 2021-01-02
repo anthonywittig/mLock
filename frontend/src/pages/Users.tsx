@@ -50,15 +50,18 @@ export class Users extends React.Component<Props, State> {
         StandardFetch("users/" + id, {method: "DELETE"})
         .then(response => response.json())
         .then(response => {
+            if (response.Users) {
+                this.setState({
+                    users: response.Users,
+                });
+            }
             this.setState({
-                users: response.Users,
                 loadingUsers: false,
             });
         })
         .catch(err => {
             // Need to indicate error...
-            window.location.href = "/users";
-            return Promise.reject();
+            console.log("error: " + err);
         });
     }
 
@@ -119,7 +122,7 @@ export class Users extends React.Component<Props, State> {
                     )}
                     <tr key="newUser">
                         <th scope="row">
-                            <input type="text" className="form-control" id="newUser" placeholder="Enter new user's Google email address" value={this.state.newUser} onChange={evt => this.updateNewUserValue(evt)} disabled={!this.state.newUserFieldEnabled} />
+                            <input type="text" className="form-control" id="newUser" placeholder="Enter new user's Google email address" value={this.state.newUser} onChange={evt => this.updateNewUserValue(evt)} disabled={!this.state.newUserFieldEnabled} onKeyUp={(evt) => evt.key === "Enter" ? this.newUserClick() : ""}/>
                         </th>
                         <td></td>
                         <td><Button variant="secondary" onClick={() => this.newUserClick()} disabled={!this.state.newUserButtonEnabled}>Add User</Button></td>
