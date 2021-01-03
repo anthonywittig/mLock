@@ -12,8 +12,7 @@ import (
 )
 
 type DeleteResponse struct {
-	Error    string
-	Entities *[]shared.Property
+	Error string
 }
 
 type ListResponse struct {
@@ -22,6 +21,10 @@ type ListResponse struct {
 
 type CreateRequest struct {
 	Name string
+}
+
+type CreateResponse struct {
+	Entity shared.Property
 }
 
 func main() {
@@ -61,23 +64,16 @@ func delete(ctx context.Context, req events.APIGatewayProxyRequest) (*shared.API
 		return nil, fmt.Errorf("error deleting entity: %s", err.Error())
 	}
 
+	return shared.NewAPIResponse(http.StatusOK, DeleteResponse{})
+}
+
+func list(ctx context.Context, req events.APIGatewayProxyRequest) (*shared.APIResponse, error) {
 	entities, err := shared.GetProperties(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("error getting entities: %s", err.Error())
 	}
 
-	return shared.NewAPIResponse(http.StatusOK, DeleteResponse{Entities: &entities})
-}
-
-func list(ctx context.Context, req events.APIGatewayProxyRequest) (*shared.APIResponse, error) {
-	/*
-		entities, err := shared.GetProperties(ctx)
-		if err != nil {
-			return nil, fmt.Errorf("error getting entities: %s", err.Error())
-		}
-	*/
-
-	return shared.NewAPIResponse(http.StatusOK, ListResponse{Entities: []shared.Property{}})
+	return shared.NewAPIResponse(http.StatusOK, ListResponse{Entities: entities})
 }
 
 func create(ctx context.Context, req events.APIGatewayProxyRequest) (*shared.APIResponse, error) {
@@ -86,14 +82,10 @@ func create(ctx context.Context, req events.APIGatewayProxyRequest) (*shared.API
 		return nil, fmt.Errorf("error unmarshalling body: %s", err.Error())
 	}
 
-	if err := shared.InsertProperty(ctx, body.Name); err != nil {
+	entity, err := shared.InsertProperty(ctx, body.Name)
+	if err != nil {
 		return nil, fmt.Errorf("error inserting entity: %s", err.Error())
 	}
 
-	entities, err := shared.GetProperties(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("error getting entities: %s", err.Error())
-	}
-
-	return shared.NewAPIResponse(http.StatusOK, ListResponse{Entities: entities})
+	return shared.NewAPIResponse(http.StatusOK, CreateResponse{Entity: entity})
 }

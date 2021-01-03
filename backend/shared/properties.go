@@ -118,22 +118,22 @@ func DeleteProperty(ctx context.Context, id string) error {
 	return nil
 }
 
-func InsertProperty(ctx context.Context, name string) error {
+func InsertProperty(ctx context.Context, name string) (Property, error) {
 	name = strings.TrimSpace(name)
 
 	db, err := GetDB(ctx)
 	if err != nil {
-		return fmt.Errorf("error getting DB: %s", err.Error())
+		return Property{}, fmt.Errorf("error getting DB: %s", err.Error())
 	}
 
 	cd, err := GetContextData(ctx)
 	if err != nil {
-		return fmt.Errorf("can't get context data: %s", err.Error())
+		return Property{}, fmt.Errorf("can't get context data: %s", err.Error())
 	}
 
 	currentUser := cd.User
 	if currentUser == nil {
-		return fmt.Errorf("no current user")
+		return Property{}, fmt.Errorf("no current user")
 	}
 
 	_, err = db.ExecContext(
@@ -144,8 +144,16 @@ func InsertProperty(ctx context.Context, name string) error {
 		currentUser.Email,
 	)
 	if err != nil {
-		return fmt.Errorf("error inserting into DB: %s", err.Error())
+		return Property{}, fmt.Errorf("error inserting into DB: %s", err.Error())
 	}
 
-	return nil
+	entity, ok, err := GetPropertyByName(ctx, name)
+	if err != nil {
+		return Property{}, err
+	}
+	if !ok {
+		return Property{}, fmt.Errorf("couldn't find entity after insert")
+	}
+
+	return entity, nil
 }

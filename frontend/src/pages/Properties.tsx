@@ -1,7 +1,7 @@
 import React from 'react';
-import { Button } from 'react-bootstrap';
 import { Loading } from './utils/Loading';
 import { StandardFetch } from './utils/FetchHelper';
+import { Property } from './components/Property';
 
 type Entity = {
     ID: string;
@@ -14,8 +14,6 @@ type Props = {};
 type State = {
     entities: Entity[];
     newEntity: string;
-    newEntityFieldEnabled: boolean;
-    newEntityButtonEnabled: boolean;
     loadingEntities: boolean;
 };
 
@@ -23,8 +21,6 @@ export class Properties extends React.Component<Props, State> {
     state: Readonly<State> = {
         entities: [],
         newEntity: "",
-        newEntityFieldEnabled: true,
-        newEntityButtonEnabled: false,
         loadingEntities: true,
     }
 
@@ -43,58 +39,21 @@ export class Properties extends React.Component<Props, State> {
         });
     }
 
-    removeEntityClick(id: string) {
-        this.setState({loadingEntities: true});
-
-        StandardFetch("properties/" + id, {method: "DELETE"})
-        .then(response => response.json())
-        .then(response => {
-            if (response.Entities) {
-                this.setState({
-                    entities: response.Entities,
-                });
-            }
-            this.setState({
-                loadingEntities: false,
-            });
-        })
-        .catch(err => {
-            // TODO: need to indicate error.
-            console.log("error: " + err);
+    removeEntity(id: string) {
+        this.setState({
+            entities: this.state.entities.filter(value => {
+                return value.ID !== id;
+            }),
         });
     }
 
-    newEntityClick() {
+    addEntity(id: string, name: string, createdBy: string) {
         this.setState({
-            newEntityFieldEnabled: false,
-            newEntityButtonEnabled: false,
-        });
-
-        StandardFetch("properties", {
-            method: "POST",
-            body: JSON.stringify({ name: this.state.newEntity })
-        })
-        .then(response => response.json())
-        .then(response => {
-            this.setState({
-                entities: response.Entities,
-                newEntity: "",
-                newEntityFieldEnabled: true,
-            });
-        })
-        .catch(err => {
-            // TODO: indicate error.
-            this.setState({
-                newEntityFieldEnabled: true,
-                newEntityButtonEnabled: true,
-            });
-        });
-    }
-
-    updateNewEntityValue(evt: React.ChangeEvent<HTMLInputElement>) {
-        this.setState({
-            newEntity: evt.target.value,
-            newEntityButtonEnabled: evt.target.value !== "",
+            entities: this.state.entities.concat([{
+                ID: id,
+                Name: name,
+                CreatedBy: createdBy,
+            }]),
         });
     }
 
@@ -107,25 +66,15 @@ export class Properties extends React.Component<Props, State> {
                 <thead>
                     <tr>
                         <th scope="col">Name</th>
-                        <th scope="col">Created By</th>
+                        <th scope="col">Last Updated By</th>
                         <th scope="col">Actions</th>
                     </tr>
                 </thead>
                 <tbody>
                     {this.state.entities.map(entity =>
-                        <tr key={entity.Name}>
-                            <th scope="row">{entity.Name}</th>
-                            <td>{entity.CreatedBy}</td>
-                            <td><Button variant="secondary" onClick={evt => this.removeEntityClick(entity.ID)}>Delete</Button></td>
-                        </tr>
+                        <Property id={entity.ID} entityName={entity.Name} createdBy={entity.CreatedBy} removeEntity={id => this.removeEntity(id)} addEntity={props => console.log("should never happen")}/>
                     )}
-                    <tr key="newEntity">
-                        <th scope="row">
-                            <input type="text" className="form-control" id="newEntity" placeholder="Property Name" value={this.state.newEntity} onChange={evt => this.updateNewEntityValue(evt)} disabled={!this.state.newEntityFieldEnabled} onKeyUp={(evt) => evt.key === "Enter" ? this.newEntityClick() : ""}/>
-                        </th>
-                        <td></td>
-                        <td><Button variant="secondary" onClick={() => this.newEntityClick()} disabled={!this.state.newEntityButtonEnabled}>Create</Button></td>
-                    </tr>
+                    <Property id="" entityName="" createdBy="" removeEntity={id => console.log("should never happen")} addEntity={(id, name, createdBy) => this.addEntity(id, name, createdBy)}/>
                 </tbody>
             </table>
         );
