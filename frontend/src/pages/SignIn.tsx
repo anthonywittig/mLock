@@ -11,9 +11,7 @@ import {
 } from 'react-router-dom';
 import { StandardFetch } from './utils/FetchHelper';
 
-type Props = {
-
-};
+type Props = {};
 
 type State = {
     message: string;
@@ -35,9 +33,11 @@ export class SignIn extends React.Component<Props, State> {
     }
 
     componentDidMount() {
-        const name = new URLSearchParams(window.location.search).get('state');
-        if (name === "unauthenticated") {
+        const state = new URLSearchParams(window.location.search).get('state');
+        if (state === "401") {
             this.setAlert("", ERROR_NOT_AUTHENTICATED);
+        } else if (state === "403") {
+            this.setAlert("", ERROR_NOT_AUTHORIZED);
         }
     }
 

@@ -5,7 +5,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"mlock/lambdas/helpers"
 	"mlock/shared"
+	"mlock/shared/postgres/user"
 	"net/http"
 
 	"github.com/aws/aws-lambda-go/events"
@@ -24,7 +26,7 @@ type DeleteResponse struct {
 }
 
 func main() {
-	shared.StartAPILambda(HandleRequest, []string{})
+	helpers.StartAPILambda(HandleRequest, []string{})
 }
 
 func HandleRequest(ctx context.Context, req events.APIGatewayProxyRequest) (*shared.APIResponse, error) {
@@ -47,7 +49,7 @@ func create(ctx context.Context, req events.APIGatewayProxyRequest) (*shared.API
 	}
 
 	// Validate the token.
-	tokenData, err := shared.GetUserFromToken(ctx, body.GoogleToken)
+	tokenData, err := shared.GetUserFromToken(ctx, body.GoogleToken, user.NewUserService())
 	if err != nil {
 		return nil, fmt.Errorf("error getting user: %s", err.Error())
 	}

@@ -15,7 +15,7 @@ type Props = {
     id: string,
     entityName: string,
     propertyId: string,
-    createdBy: string,
+    updatedBy: string,
     properties: Property[],
     addEntity: Adder,
     removeEntity: Remover,
@@ -88,7 +88,7 @@ export class Unit extends React.Component<Props, State> {
         .then(response => {
             // add to parent
             let e = response.entity;
-            this.props.addEntity(e.id, e.name, e.propertyId, e.createdBy);
+            this.props.addEntity(e.id, e.name, e.propertyId, e.updatedBy);
             this.setState(this.getResetState());
         })
         .catch(err => {
@@ -140,7 +140,7 @@ export class Unit extends React.Component<Props, State> {
             <tr key={this.props.id}>
                 <th scope="row">{this.props.entityName}</th>
                 <td>{ this.props.properties.find(e => e.id === this.props.propertyId)?.name }</td>
-                <td>{this.props.createdBy}</td>
+                <td>{this.props.updatedBy}</td>
                 <td><Button variant="secondary" onClick={evt => this.removeClick(this.props.id)}>Delete</Button></td>
             </tr>
         );

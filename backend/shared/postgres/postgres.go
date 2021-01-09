@@ -1,15 +1,16 @@
-package shared
+package postgres
 
 import (
 	"context"
 	"database/sql"
 	"fmt"
+	"mlock/shared"
 
 	_ "github.com/jackc/pgx/v4/stdlib"
 )
 
 func GetDB(ctx context.Context) (*sql.DB, error) {
-	cd, err := GetContextData(ctx)
+	cd, err := shared.GetContextData(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("error getting context data: %s", err.Error())
 	}
@@ -31,11 +32,11 @@ func GetDB(ctx context.Context) (*sql.DB, error) {
 func getConnectionString() string {
 	return fmt.Sprintf(
 		"host=%s port=%d user=%s password=%s dbname=%s",
-		GetConfig("DB_HOST"),
+		shared.GetConfig("DB_HOST"),
 		5432,
-		GetConfig("DB_USER"),
-		GetConfig("DB_PASSWORD"),
-		GetConfig("DB_NAME"),
+		shared.GetConfig("DB_USER"),
+		shared.GetConfig("DB_PASSWORD"),
+		shared.GetConfig("DB_NAME"),
 	)
 }
 

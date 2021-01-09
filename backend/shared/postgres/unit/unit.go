@@ -1,4 +1,4 @@
-package units
+package unit
 
 import (
 	"context"
@@ -6,32 +6,26 @@ import (
 	"errors"
 	"fmt"
 	"mlock/shared"
+	"mlock/shared/postgres"
 	"strings"
 
 	"github.com/google/uuid"
 )
 
-type Entity struct {
-	ID         string `json:"id"`
-	Name       string `json:"name"`
-	PropertyID string `json:"propertyId"`
-	UpdatedBy  string `json:"updatedBy"`
-}
-
 const (
 	table = "units"
 )
 
-func GetByID(ctx context.Context, id string) (Entity, bool, error) {
-	db, err := shared.GetDB(ctx)
+func GetByID(ctx context.Context, id string) (shared.Unit, bool, error) {
+	db, err := postgres.GetDB(ctx)
 	if err != nil {
-		return Entity{}, false, fmt.Errorf("error getting DB: %s", err.Error())
+		return shared.Unit{}, false, fmt.Errorf("error getting DB: %s", err.Error())
 	}
 
 	// Verify id is a uuid.
 	parsedID, err := uuid.Parse(id)
 	if err != nil {
-		return Entity{}, false, fmt.Errorf("error parsing ID: %s", err.Error())
+		return shared.Unit{}, false, fmt.Errorf("error parsing ID: %s", err.Error())
 	}
 
 	row := db.QueryRowContext(ctx, "SELECT id, name, property_id, updated_by FROM "+table+" WHERE id = $1", parsedID)
@@ -41,21 +35,21 @@ func GetByID(ctx context.Context, id string) (Entity, bool, error) {
 	var updatedByResult string
 	if err := row.Scan(&idResult, &nameResult, &propertyIDResult, &updatedByResult); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return Entity{}, false, nil // Not really an error.
+			return shared.Unit{}, false, nil // Not really an error.
 		}
 
-		return Entity{}, false, fmt.Errorf("error scanning row: %s", err.Error())
+		return shared.Unit{}, false, fmt.Errorf("error scanning row: %s", err.Error())
 	}
 
-	return Entity{ID: idResult, Name: nameResult, PropertyID: propertyIDResult, UpdatedBy: updatedByResult}, true, nil
+	return shared.Unit{ID: idResult, Name: nameResult, PropertyID: propertyIDResult, UpdatedBy: updatedByResult}, true, nil
 }
 
-func GetByName(ctx context.Context, name string) (Entity, bool, error) {
+func GetByName(ctx context.Context, name string) (shared.Unit, bool, error) {
 	name = strings.TrimSpace(name)
 
-	db, err := shared.GetDB(ctx)
+	db, err := postgres.GetDB(ctx)
 	if err != nil {
-		return Entity{}, false, fmt.Errorf("error getting DB: %s", err.Error())
+		return shared.Unit{}, false, fmt.Errorf("error getting DB: %s", err.Error())
 	}
 
 	row := db.QueryRowContext(ctx, "SELECT id, name, property_id, updated_by FROM "+table+" WHERE name = $1", name)
@@ -65,44 +59,44 @@ func GetByName(ctx context.Context, name string) (Entity, bool, error) {
 	var updatedByResult string
 	if err := row.Scan(&idResult, &nameResult, &propertyIDResult, &updatedByResult); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return Entity{}, false, nil // Not really an error.
+			return shared.Unit{}, false, nil // Not really an error.
 		}
 
-		return Entity{}, false, fmt.Errorf("error scanning row: %s", err.Error())
+		return shared.Unit{}, false, fmt.Errorf("error scanning row: %s", err.Error())
 	}
 
-	return Entity{ID: idResult, Name: nameResult, PropertyID: propertyIDResult, UpdatedBy: updatedByResult}, true, nil
+	return shared.Unit{ID: idResult, Name: nameResult, PropertyID: propertyIDResult, UpdatedBy: updatedByResult}, true, nil
 }
 
-func GetAll(ctx context.Context) ([]Entity, error) {
-	db, err := shared.GetDB(ctx)
+func GetAll(ctx context.Context) ([]shared.Unit, error) {
+	db, err := postgres.GetDB(ctx)
 	if err != nil {
-		return []Entity{}, fmt.Errorf("error getting DB: %s", err.Error())
+		return []shared.Unit{}, fmt.Errorf("error getting DB: %s", err.Error())
 	}
 
 	rows, err := db.QueryContext(ctx, "SELECT id, name, property_id, updated_by FROM "+table+" ORDER BY name")
 	if err != nil {
-		return []Entity{}, fmt.Errorf("error doing query: %s", err.Error())
+		return []shared.Unit{}, fmt.Errorf("error doing query: %s", err.Error())
 	}
 	defer rows.Close()
 
-	entities := []Entity{}
+	entities := []shared.Unit{}
 	for rows.Next() {
 		var id string
 		var name string
 		var propertyID string
 		var updatedBy string
 		if err := rows.Scan(&id, &name, &propertyID, &updatedBy); err != nil {
-			return []Entity{}, fmt.Errorf("error scanning row: %s", err.Error())
+			return []shared.Unit{}, fmt.Errorf("error scanning row: %s", err.Error())
 		}
-		entities = append(entities, Entity{ID: id, Name: name, PropertyID: propertyID, UpdatedBy: updatedBy})
+		entities = append(entities, shared.Unit{ID: id, Name: name, PropertyID: propertyID, UpdatedBy: updatedBy})
 	}
 
 	return entities, nil
 }
 
 func Delete(ctx context.Context, id string) error {
-	db, err := shared.GetDB(ctx)
+	db, err := postgres.GetDB(ctx)
 	if err != nil {
 		return fmt.Errorf("error getting DB: %s", err.Error())
 	}
@@ -127,22 +121,22 @@ func Delete(ctx context.Context, id string) error {
 	return nil
 }
 
-func Insert(ctx context.Context, name string, propertyID uuid.UUID) (Entity, error) {
+func Insert(ctx context.Context, name string, propertyID uuid.UUID) (shared.Unit, error) {
 	name = strings.TrimSpace(name)
 
-	db, err := shared.GetDB(ctx)
+	db, err := postgres.GetDB(ctx)
 	if err != nil {
-		return Entity{}, fmt.Errorf("error getting DB: %s", err.Error())
+		return shared.Unit{}, fmt.Errorf("error getting DB: %s", err.Error())
 	}
 
 	cd, err := shared.GetContextData(ctx)
 	if err != nil {
-		return Entity{}, fmt.Errorf("can't get context data: %s", err.Error())
+		return shared.Unit{}, fmt.Errorf("can't get context data: %s", err.Error())
 	}
 
 	currentUser := cd.User
 	if currentUser == nil {
-		return Entity{}, fmt.Errorf("no current user")
+		return shared.Unit{}, fmt.Errorf("no current user")
 	}
 
 	_, err = db.ExecContext(
@@ -154,16 +148,16 @@ func Insert(ctx context.Context, name string, propertyID uuid.UUID) (Entity, err
 		currentUser.Email,
 	)
 	if err != nil {
-		return Entity{}, fmt.Errorf("error inserting into DB: %s", err.Error())
+		return shared.Unit{}, fmt.Errorf("error inserting into DB: %s", err.Error())
 	}
 
-	entity, ok, err := GetByName(ctx, name)
+	unit, ok, err := GetByName(ctx, name)
 	if err != nil {
-		return Entity{}, err
+		return shared.Unit{}, err
 	}
 	if !ok {
-		return Entity{}, fmt.Errorf("couldn't find entity after insert")
+		return shared.Unit{}, fmt.Errorf("couldn't find unit after insert")
 	}
 
-	return entity, nil
+	return unit, nil
 }

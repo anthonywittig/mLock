@@ -13,8 +13,8 @@ function getStandardFetch(retries: number, path: string, init?: RequestInit): Pr
     return fetch((process.env.REACT_APP_BACKEND_DOMAIN || "") + "/" + path, init)
     .then(response => {
         if (response.status === 401 || response.status === 403) {
-            // This is probably not a good pattern, right?
-            window.location.href = "/sign-in?state=unauthenticated";
+            // Setting the location probably isn't a good pattern, right?
+            window.location.href = "/sign-in?state=" + response.status;
             return Promise.reject(); 
         } else if (response.status === 504) {
             // To help with Aurora waking up.

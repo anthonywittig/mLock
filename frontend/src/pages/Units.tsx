@@ -7,7 +7,7 @@ type Entity = {
     id: string,
     name: string,
     propertyId: string,
-    createdBy: string,
+    updatedBy: string,
 }
 
 type Property = {
@@ -57,13 +57,13 @@ export class Units extends React.Component<Props, State> {
         });
     }
 
-    addEntity(id: string, name: string, propertyId: string, createdBy: string) {
+    addEntity(id: string, name: string, propertyId: string, updatedBy: string) {
         this.setState({
             entities: this.state.entities.concat([{
                 id,
                 name,
                 propertyId,
-                createdBy,
+                updatedBy,
             }]),
         });
     }
@@ -88,7 +88,7 @@ export class Units extends React.Component<Props, State> {
                             id={entity.id}
                             entityName={entity.name}
                             propertyId={entity.propertyId}
-                            createdBy={entity.createdBy}
+                            updatedBy={entity.updatedBy}
                             properties={this.state.properties}
                             addEntity={props => console.log("should never happen")}
                             removeEntity={id => this.removeEntity(id)}
@@ -98,9 +98,9 @@ export class Units extends React.Component<Props, State> {
                         id=""
                         entityName=""
                         propertyId=""
-                        createdBy=""
+                        updatedBy=""
                         properties={this.state.properties}
-                        addEntity={(id, name, propertyId, createdBy) => this.addEntity(id, name, propertyId, createdBy)}
+                        addEntity={(id, name, propertyId, updatedBy) => this.addEntity(id, name, propertyId, updatedBy)}
                         removeEntity={id => console.log("should never happen")}
                     />
                 </tbody>

@@ -73,7 +73,7 @@ func (a *APIResponse) SetAuthCookie(token string) error {
 	return a.AddCookie(AuthCookie, token)
 }
 
-func AddAuthToContext(ctx context.Context, req events.APIGatewayProxyRequest) error {
+func AddAuthToContext(ctx context.Context, req events.APIGatewayProxyRequest, userService UserService) error {
 	cookies := req.Headers[CookieHeaderName]
 	if cookies == "" {
 		return nil
@@ -96,7 +96,7 @@ func AddAuthToContext(ctx context.Context, req events.APIGatewayProxyRequest) er
 		return nil
 	}
 
-	tokenData, err := GetUserFromToken(ctx, authCookieValue)
+	tokenData, err := GetUserFromToken(ctx, authCookieValue, userService)
 	if err != nil {
 		return fmt.Errorf("error getting user from token: %s", err.Error())
 	}

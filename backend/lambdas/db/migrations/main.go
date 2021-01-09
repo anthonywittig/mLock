@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 	"mlock/shared"
+	"mlock/shared/postgres"
 
 	"github.com/aws/aws-lambda-go/lambda"
 	"github.com/pressly/goose"
@@ -28,7 +29,7 @@ func HandleRequest(ctx context.Context, event MyEvent) (Response, error) {
 
 	ctx = shared.CreateContextData(ctx)
 
-	db, err := shared.GetDB(ctx)
+	db, err := postgres.GetDB(ctx)
 	if err != nil {
 		return Response{}, fmt.Errorf("error opening DB: %s", err.Error())
 	}
@@ -42,7 +43,7 @@ func HandleRequest(ctx context.Context, event MyEvent) (Response, error) {
 		return Response{}, fmt.Errorf("error migrating DB: %s", err.Error())
 	}
 
-	dbName := shared.GetCurrentDatabase(ctx)
+	dbName := postgres.GetCurrentDatabase(ctx)
 
 	return Response{
 		Messages: []string{

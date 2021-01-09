@@ -1,10 +1,12 @@
-package shared
+package helpers
 
 import (
 	"context"
 	"errors"
 	"fmt"
 	"log"
+	"mlock/shared"
+	"mlock/shared/postgres/user"
 	"net/http"
 	"time"
 
@@ -26,14 +28,14 @@ const (
 )
 
 func StartAPILambda(
-	handler func(context.Context, events.APIGatewayProxyRequest) (*APIResponse, error),
+	handler func(context.Context, events.APIGatewayProxyRequest) (*shared.APIResponse, error),
 	middlewares []string,
 ) {
 	lambda.Start(handlerWrapper(handler, middlewares))
 }
 
 func handlerWrapper(
-	handler func(context.Context, events.APIGatewayProxyRequest) (*APIResponse, error),
+	handler func(context.Context, events.APIGatewayProxyRequest) (*shared.APIResponse, error),
 	middlewares []string,
 ) func(context.Context, events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
 
@@ -50,7 +52,7 @@ func handlerWrapper(
 		case <-ctx.Done():
 			// Wait just a little to see if `handleRequest` will finish.
 			waitForIt(c, 4*time.Second)
-			resp, err := NewAPIResponse(http.StatusGatewayTimeout, simpleBody{Message: "forced timeout"})
+			resp, err := shared.NewAPIResponse(http.StatusGatewayTimeout, simpleBody{Message: "forced timeout"})
 			return resp.Proxy, err
 		case hr := <-c:
 			if hr.err != nil {
@@ -64,11 +66,11 @@ func handlerWrapper(
 func handleRequest(
 	ctx context.Context,
 	req events.APIGatewayProxyRequest,
-	handler func(context.Context, events.APIGatewayProxyRequest) (*APIResponse, error),
+	handler func(context.Context, events.APIGatewayProxyRequest) (*shared.APIResponse, error),
 	middlewares []string,
 ) handlerResponse {
 
-	if err := LoadConfig(); err != nil {
+	if err := shared.LoadConfig(); err != nil {
 		return handlerResponse{
 			response: events.APIGatewayProxyResponse{},
 			err:      fmt.Errorf("error loading config: %s", err.Error()),
@@ -80,13 +82,13 @@ func handleRequest(
 	}
 
 	// Must be done after `LoadConfig`.
-	ctx = CreateContextData(ctx)
+	ctx = shared.CreateContextData(ctx)
 
 	// Super lame middleware, maybe we'll need something better one day.
 	if err := handleMiddlewares(ctx, req, middlewares); err != nil {
-		var apiErr *APIError
+		var apiErr *shared.APIError
 		if ok := errors.As(err, &apiErr); ok {
-			resp, err := NewAPIResponse(apiErr.StatusCode, apiErr)
+			resp, err := shared.NewAPIResponse(apiErr.StatusCode, apiErr)
 			if err != nil {
 				return handlerResponse{
 					response: events.APIGatewayProxyResponse{},
@@ -120,19 +122,19 @@ func handleRequest(
 }
 
 func handleMiddlewares(ctx context.Context, req events.APIGatewayProxyRequest, middlewares []string) error {
-	if err := AddAuthToContext(ctx, req); err != nil {
+	if err := shared.AddAuthToContext(ctx, req, user.NewUserService()); err != nil {
 		return fmt.Errorf("error adding auth: %s", err.Error())
 	}
 
 	for _, middleware := range middlewares {
 		switch middleware {
 		case MiddlewareAuth:
-			user, err := GetAuthUser(ctx)
+			user, err := shared.GetAuthUser(ctx)
 			if err != nil {
 				return fmt.Errorf("error getting auth user: %s", err.Error())
 			}
 			if user == nil {
-				return &APIError{
+				return &shared.APIError{
 					StatusCode: http.StatusUnauthorized,
 					Message:    "unauthorized",
 				}
@@ -157,7 +159,7 @@ func waitForIt(c chan handlerResponse, d time.Duration) {
 }
 
 func optionsResponse() handlerResponse {
-	resp, err := NewAPIResponse(http.StatusOK, nil)
+	resp, err := shared.NewAPIResponse(http.StatusOK, nil)
 	if err != nil {
 		return handlerResponse{
 			response: events.APIGatewayProxyResponse{},

@@ -1,33 +1,35 @@
-package shared
+package user
 
 import (
 	"context"
 	"database/sql"
 	"errors"
 	"fmt"
+	"mlock/shared"
+	"mlock/shared/postgres"
 	"regexp"
 
 	"github.com/google/uuid"
 )
 
-type User struct {
-	ID        string
-	Email     string
-	CreatedBy string
-}
+type UserServiceImpl struct{}
 
 var emailRegex = regexp.MustCompile("^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$")
 
-func GetUserByID(ctx context.Context, id string) (User, bool, error) {
-	db, err := GetDB(ctx)
+func NewUserService() *UserServiceImpl {
+	return &UserServiceImpl{}
+}
+
+func GetByID(ctx context.Context, id string) (shared.User, bool, error) {
+	db, err := postgres.GetDB(ctx)
 	if err != nil {
-		return User{}, false, fmt.Errorf("error getting DB: %s", err.Error())
+		return shared.User{}, false, fmt.Errorf("error getting DB: %s", err.Error())
 	}
 
 	// Verify id is a uuid.
 	parsedID, err := uuid.Parse(id)
 	if err != nil {
-		return User{}, false, fmt.Errorf("error parsing ID: %s", err.Error())
+		return shared.User{}, false, fmt.Errorf("error parsing ID: %s", err.Error())
 	}
 
 	row := db.QueryRowContext(ctx, "SELECT id, email, created_by FROM users WHERE id = $1", parsedID)
@@ -36,19 +38,19 @@ func GetUserByID(ctx context.Context, id string) (User, bool, error) {
 	var createdByResult string
 	if err := row.Scan(&idResult, &emailResult, &createdByResult); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return User{}, false, nil // Not really an error.
+			return shared.User{}, false, nil // Not really an error.
 		}
 
-		return User{}, false, fmt.Errorf("error scanning row: %s", err.Error())
+		return shared.User{}, false, fmt.Errorf("error scanning row: %s", err.Error())
 	}
 
-	return User{ID: idResult, Email: emailResult, CreatedBy: createdByResult}, true, nil
+	return shared.User{ID: idResult, Email: emailResult, CreatedBy: createdByResult}, true, nil
 }
 
-func GetUserByEmail(ctx context.Context, email string) (User, bool, error) {
-	db, err := GetDB(ctx)
+func (u *UserServiceImpl) GetByEmail(ctx context.Context, email string) (shared.User, bool, error) {
+	db, err := postgres.GetDB(ctx)
 	if err != nil {
-		return User{}, false, fmt.Errorf("error getting DB: %s", err.Error())
+		return shared.User{}, false, fmt.Errorf("error getting DB: %s", err.Error())
 	}
 
 	row := db.QueryRowContext(ctx, "SELECT id, email, created_by FROM users WHERE email = $1", email)
@@ -57,43 +59,43 @@ func GetUserByEmail(ctx context.Context, email string) (User, bool, error) {
 	var createdByResult string
 	if err := row.Scan(&idResult, &emailResult, &createdByResult); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return User{}, false, nil // Not really an error.
+			return shared.User{}, false, nil // Not really an error.
 		}
 
-		return User{}, false, fmt.Errorf("error scanning row: %s", err.Error())
+		return shared.User{}, false, fmt.Errorf("error scanning row: %s", err.Error())
 	}
 
-	return User{ID: idResult, Email: emailResult, CreatedBy: createdByResult}, true, nil
+	return shared.User{ID: idResult, Email: emailResult, CreatedBy: createdByResult}, true, nil
 }
 
-func GetUsers(ctx context.Context) ([]User, error) {
-	db, err := GetDB(ctx)
+func GetAll(ctx context.Context) ([]shared.User, error) {
+	db, err := postgres.GetDB(ctx)
 	if err != nil {
-		return []User{}, fmt.Errorf("error getting DB: %s", err.Error())
+		return []shared.User{}, fmt.Errorf("error getting DB: %s", err.Error())
 	}
 
 	rows, err := db.QueryContext(ctx, "SELECT id, email, created_by FROM users ORDER BY email")
 	if err != nil {
-		return []User{}, fmt.Errorf("error doing query: %s", err.Error())
+		return []shared.User{}, fmt.Errorf("error doing query: %s", err.Error())
 	}
 	defer rows.Close()
 
-	users := []User{}
+	users := []shared.User{}
 	for rows.Next() {
 		var id string
 		var email string
 		var createdBy string
 		if err := rows.Scan(&id, &email, &createdBy); err != nil {
-			return []User{}, fmt.Errorf("error scanning row: %s", err.Error())
+			return []shared.User{}, fmt.Errorf("error scanning row: %s", err.Error())
 		}
-		users = append(users, User{ID: id, Email: email, CreatedBy: createdBy})
+		users = append(users, shared.User{ID: id, Email: email, CreatedBy: createdBy})
 	}
 
 	return users, nil
 }
 
-func DeleteUser(ctx context.Context, id string) error {
-	db, err := GetDB(ctx)
+func Delete(ctx context.Context, id string) error {
+	db, err := postgres.GetDB(ctx)
 	if err != nil {
 		return fmt.Errorf("error getting DB: %s", err.Error())
 	}
@@ -118,8 +120,8 @@ func DeleteUser(ctx context.Context, id string) error {
 	return nil
 }
 
-func InsertUser(ctx context.Context, email string) error {
-	db, err := GetDB(ctx)
+func Insert(ctx context.Context, email string) error {
+	db, err := postgres.GetDB(ctx)
 	if err != nil {
 		return fmt.Errorf("error getting DB: %s", err.Error())
 	}
@@ -129,7 +131,7 @@ func InsertUser(ctx context.Context, email string) error {
 		return fmt.Errorf("email isn't formatted correctly")
 	}
 
-	cd, err := GetContextData(ctx)
+	cd, err := shared.GetContextData(ctx)
 	if err != nil {
 		return fmt.Errorf("can't get context data: %s", err.Error())
 	}

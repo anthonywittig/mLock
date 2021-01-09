@@ -4,7 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"mlock/lambdas/helpers"
 	"mlock/shared"
+	"mlock/shared/postgres/property"
 	"net/http"
 	"strings"
 
@@ -28,7 +30,7 @@ type CreateResponse struct {
 }
 
 func main() {
-	shared.StartAPILambda(HandleRequest, []string{shared.MiddlewareAuth})
+	helpers.StartAPILambda(HandleRequest, []string{helpers.MiddlewareAuth})
 }
 
 func HandleRequest(ctx context.Context, req events.APIGatewayProxyRequest) (*shared.APIResponse, error) {
@@ -50,7 +52,7 @@ func delete(ctx context.Context, req events.APIGatewayProxyRequest) (*shared.API
 		return shared.NewAPIResponse(http.StatusBadRequest, DeleteResponse{Error: "unable to parse id"})
 	}
 
-	entity, ok, err := shared.GetPropertyByID(ctx, id)
+	entity, ok, err := property.GetByID(ctx, id)
 	if err != nil {
 		return nil, fmt.Errorf("error getting entity: %s", err.Error())
 	}
@@ -60,7 +62,7 @@ func delete(ctx context.Context, req events.APIGatewayProxyRequest) (*shared.API
 
 	// TODO: Can't delete a property with existing units.
 
-	if err := shared.DeleteProperty(ctx, entity.ID); err != nil {
+	if err := property.Delete(ctx, entity.ID); err != nil {
 		return nil, fmt.Errorf("error deleting entity: %s", err.Error())
 	}
 
@@ -68,7 +70,7 @@ func delete(ctx context.Context, req events.APIGatewayProxyRequest) (*shared.API
 }
 
 func list(ctx context.Context, req events.APIGatewayProxyRequest) (*shared.APIResponse, error) {
-	entities, err := shared.GetProperties(ctx)
+	entities, err := property.GetAll(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("error getting entities: %s", err.Error())
 	}
@@ -82,7 +84,7 @@ func create(ctx context.Context, req events.APIGatewayProxyRequest) (*shared.API
 		return nil, fmt.Errorf("error unmarshalling body: %s", err.Error())
 	}
 
-	entity, err := shared.InsertProperty(ctx, body.Name)
+	entity, err := property.Insert(ctx, body.Name)
 	if err != nil {
 		return nil, fmt.Errorf("error inserting entity: %s", err.Error())
 	}
