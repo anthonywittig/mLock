@@ -5,10 +5,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"mlock/shared"
+	"mlock/shared/models/units"
 	"net/http"
 	"strings"
 
 	"github.com/aws/aws-lambda-go/events"
+	"github.com/google/uuid"
 )
 
 type DeleteResponse struct {
@@ -16,15 +18,21 @@ type DeleteResponse struct {
 }
 
 type ListResponse struct {
-	Entities []shared.Property `json:"entities"`
+	Entities []units.Entity `json:"entities"`
+	Extra    ExtraEntities  `json:"extra"`
 }
 
 type CreateRequest struct {
-	Name string `json:"name"`
+	Name       string    `json:"name"`
+	PropertyID uuid.UUID `json:"PropertyId"`
 }
 
 type CreateResponse struct {
-	Entity shared.Property `json:"entity"`
+	Entity units.Entity `json:"entity"`
+}
+
+type ExtraEntities struct {
+	Properties []shared.Property `json:"properties"`
 }
 
 func main() {
@@ -45,12 +53,12 @@ func HandleRequest(ctx context.Context, req events.APIGatewayProxyRequest) (*sha
 }
 
 func delete(ctx context.Context, req events.APIGatewayProxyRequest) (*shared.APIResponse, error) {
-	id := strings.Replace(req.Path, "/properties/", "", 1)
+	id := strings.Replace(req.Path, "/units/", "", 1)
 	if id == "" {
 		return shared.NewAPIResponse(http.StatusBadRequest, DeleteResponse{Error: "unable to parse id"})
 	}
 
-	entity, ok, err := shared.GetPropertyByID(ctx, id)
+	entity, ok, err := units.GetByID(ctx, id)
 	if err != nil {
 		return nil, fmt.Errorf("error getting entity: %s", err.Error())
 	}
@@ -58,9 +66,7 @@ func delete(ctx context.Context, req events.APIGatewayProxyRequest) (*shared.API
 		return nil, fmt.Errorf("unable to find entity")
 	}
 
-	// TODO: Can't delete a property with existing units.
-
-	if err := shared.DeleteProperty(ctx, entity.ID); err != nil {
+	if err := units.Delete(ctx, entity.ID); err != nil {
 		return nil, fmt.Errorf("error deleting entity: %s", err.Error())
 	}
 
@@ -68,12 +74,22 @@ func delete(ctx context.Context, req events.APIGatewayProxyRequest) (*shared.API
 }
 
 func list(ctx context.Context, req events.APIGatewayProxyRequest) (*shared.APIResponse, error) {
-	entities, err := shared.GetProperties(ctx)
+	entities, err := units.GetAll(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("error getting entities: %s", err.Error())
 	}
 
-	return shared.NewAPIResponse(http.StatusOK, ListResponse{Entities: entities})
+	properties, err := shared.GetProperties(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("error getting properties: %s", err.Error())
+	}
+
+	return shared.NewAPIResponse(http.StatusOK, ListResponse{
+		Entities: entities,
+		Extra: ExtraEntities{
+			Properties: properties,
+		},
+	})
 }
 
 func create(ctx context.Context, req events.APIGatewayProxyRequest) (*shared.APIResponse, error) {
@@ -82,7 +98,7 @@ func create(ctx context.Context, req events.APIGatewayProxyRequest) (*shared.API
 		return nil, fmt.Errorf("error unmarshalling body: %s", err.Error())
 	}
 
-	entity, err := shared.InsertProperty(ctx, body.Name)
+	entity, err := units.Insert(ctx, body.Name, body.PropertyID)
 	if err != nil {
 		return nil, fmt.Errorf("error inserting entity: %s", err.Error())
 	}

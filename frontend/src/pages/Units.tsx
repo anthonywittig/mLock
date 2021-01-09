@@ -1,34 +1,46 @@
 import React from 'react';
 import { Loading } from './utils/Loading';
 import { StandardFetch } from './utils/FetchHelper';
-import { Property } from './components/Property';
+import { Unit } from './components/Unit';
 
 type Entity = {
-    id: string;
-    name: string;
-    createdBy: string;
+    id: string,
+    name: string,
+    propertyId: string,
+    createdBy: string,
+}
+
+type Property = {
+    id: string,
+    name: string,
+    createdBy: string,
 }
 
 type Props = {};
 
 type State = {
-    entities: Entity[];
-    loadingEntities: boolean;
+    entities: Entity[],
+    loadingEntities: boolean,
+    properties: Property[],
 };
 
-export class Properties extends React.Component<Props, State> {
+const Endpoint = "units";
+
+export class Units extends React.Component<Props, State> {
     state: Readonly<State> = {
         entities: [],
         loadingEntities: true,
+        properties: [],
     }
 
     componentDidMount() {
-        StandardFetch("properties", {method: "GET"})
+        StandardFetch(Endpoint, {method: "GET"})
         .then(response => response.json())
         .then(response => {
             this.setState({
-                loadingEntities: false,
                 entities: response.entities,
+                loadingEntities: false,
+                properties: response.extra.properties,
             });
         })
         .catch(err => {
@@ -45,11 +57,12 @@ export class Properties extends React.Component<Props, State> {
         });
     }
 
-    addEntity(id: string, name: string, createdBy: string) {
+    addEntity(id: string, name: string, propertyId: string, createdBy: string) {
         this.setState({
             entities: this.state.entities.concat([{
                 id,
                 name,
+                propertyId,
                 createdBy,
             }]),
         });
@@ -64,15 +77,32 @@ export class Properties extends React.Component<Props, State> {
                 <thead>
                     <tr>
                         <th scope="col">Name</th>
+                        <th scope="col">Property</th>
                         <th scope="col">Last Updated By</th>
                         <th scope="col">Actions</th>
                     </tr>
                 </thead>
                 <tbody>
                     {this.state.entities.map(entity =>
-                        <Property id={entity.id} entityName={entity.name} createdBy={entity.createdBy} removeEntity={id => this.removeEntity(id)} addEntity={props => console.log("should never happen")}/>
+                        <Unit
+                            id={entity.id}
+                            entityName={entity.name}
+                            propertyId={entity.propertyId}
+                            createdBy={entity.createdBy}
+                            properties={this.state.properties}
+                            addEntity={props => console.log("should never happen")}
+                            removeEntity={id => this.removeEntity(id)}
+                        />
                     )}
-                    <Property id="" entityName="" createdBy="" removeEntity={id => console.log("should never happen")} addEntity={(id, name, createdBy) => this.addEntity(id, name, createdBy)}/>
+                    <Unit
+                        id=""
+                        entityName=""
+                        propertyId=""
+                        createdBy=""
+                        properties={this.state.properties}
+                        addEntity={(id, name, propertyId, createdBy) => this.addEntity(id, name, propertyId, createdBy)}
+                        removeEntity={id => console.log("should never happen")}
+                    />
                 </tbody>
             </table>
         );
@@ -83,7 +113,7 @@ export class Properties extends React.Component<Props, State> {
             <div>
                 <div className="card" style={{marginBottom: "1rem", marginTop: "1rem"}}>
                     <div className="card-body">
-                    <h2 className="card-title">Properties</h2>
+                    <h2 className="card-title">Units</h2>
                     {this.renderEntitiesTable()}
                     </div>
                 </div>

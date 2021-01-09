@@ -11,9 +11,9 @@ import (
 )
 
 type Property struct {
-	ID        string
-	Name      string
-	CreatedBy string
+	ID        string `json:"id"`
+	Name      string `json:"name"`
+	CreatedBy string `json:"createdBy"`
 }
 
 func GetPropertyByID(ctx context.Context, id string) (Property, bool, error) {

@@ -133,8 +133,7 @@ export class SignIn extends React.Component<Props, State> {
     render() {
 
         if (this.state.successfullyLoggedIn) {
-            // Redirect to `users` till we have a better place to go.
-            return <Redirect  to="/users/" />;
+            return <Redirect  to="/units/" />;
         }
 
         let innerContent = this.renderNonProcessing();

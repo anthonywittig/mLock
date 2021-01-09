@@ -2,34 +2,44 @@ import React from 'react';
 import { Button } from 'react-bootstrap';
 import { StandardFetch } from '../utils/FetchHelper';
 
-type Adder = (id: string, name: string, createdBy: string) => void;
+type Adder = (id: string, name: string, property: string, updatedBy: string) => void;
 type Remover = (id: string) => void;
+
+type Property = {
+    id: string,
+    name: string,
+    createdBy: string,
+}
 
 type Props = {
     id: string,
     entityName: string,
+    propertyId: string,
     createdBy: string,
+    properties: Property[],
     addEntity: Adder,
     removeEntity: Remover,
 };
 
 type State = {
     entityName: string,
+    propertyId: string,
     state: string,
     entityFieldsDisabled: boolean,
 };
 
-const Endpoint = "properties";
+const Endpoint = "units";
 
-export class Property extends React.Component<Props, State> {
+export class Unit extends React.Component<Props, State> {
     constructor(props: Props) {
         super(props);
         this.state = this.getResetState();
     }
 
-    getResetState() {
+    getResetState(): State {
         return {
             entityName: this.props.entityName,
+            propertyId: this.props.propertyId,
             state: this.props.id ? "exists" : "new",
             entityFieldsDisabled: false,
         };
@@ -54,8 +64,14 @@ export class Property extends React.Component<Props, State> {
         });
     }
 
+    updatePropertyId(evt: React.ChangeEvent<HTMLSelectElement>) {
+        this.setState({
+            propertyId: evt.target.value,
+        });
+    }
+
     newEntitySubmit() {
-        if (this.state.entityName === "") {
+        if (!this.state.entityName || !this.state.propertyId) {
             // TODO: indicate error.
             return;
         }
@@ -66,13 +82,13 @@ export class Property extends React.Component<Props, State> {
 
         StandardFetch(Endpoint, {
             method: "POST",
-            body: JSON.stringify({ name: this.state.entityName })
+            body: JSON.stringify({ name: this.state.entityName, propertyId: this.state.propertyId })
         })
         .then(response => response.json())
         .then(response => {
             // add to parent
-            const e = response.entity;
-            this.props.addEntity(e.id, e.name, e.createdBy);
+            let e = response.entity;
+            this.props.addEntity(e.id, e.name, e.propertyId, e.createdBy);
             this.setState(this.getResetState());
         })
         .catch(err => {
@@ -88,8 +104,32 @@ export class Property extends React.Component<Props, State> {
             return (
                 <tr key="newEntity">
                     <th scope="row">
-                        <input type="text" className="form-control" id="newEntity" placeholder="Property Name" value={this.state.entityName} onChange={evt => this.updateEntityName(evt)} disabled={this.state.entityFieldsDisabled} onKeyUp={(evt) => evt.key === "Enter" ? this.newEntitySubmit() : ""}/>
+                        <input
+                            type="text"
+                            className="form-control"
+                            id="newName"
+                            placeholder="Name"
+                            value={this.state.entityName}
+                            onChange={evt => this.updateEntityName(evt)}
+                            disabled={this.state.entityFieldsDisabled}
+                            onKeyUp={(evt) => evt.key === "Enter" ? this.newEntitySubmit() : ""}
+                        />
                     </th>
+                    <td>
+                        <select
+                            id="newProperty"
+                            className="form-control"
+                            onChange={evt => this.updatePropertyId(evt)}
+                            disabled={this.state.entityFieldsDisabled}
+                        >
+                            <option></option>
+                            {this.props.properties.map(property =>
+                                <option value={property.id} selected={property.id === this.state.propertyId}>
+                                    {property.name}
+                                </option>
+                            )}
+                        </select>
+                    </td>
                     <td></td>
                     <td><Button variant="secondary" onClick={() => this.newEntitySubmit()} disabled={this.state.entityFieldsDisabled}>Create</Button></td>
                 </tr>
@@ -99,6 +139,7 @@ export class Property extends React.Component<Props, State> {
         return (
             <tr key={this.props.id}>
                 <th scope="row">{this.props.entityName}</th>
+                <td>{ this.props.properties.find(e => e.id === this.props.propertyId)?.name }</td>
                 <td>{this.props.createdBy}</td>
                 <td><Button variant="secondary" onClick={evt => this.removeClick(this.props.id)}>Delete</Button></td>
             </tr>
