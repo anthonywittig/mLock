@@ -130,7 +130,6 @@ export class Unit extends React.Component<Props, State> {
                             )}
                         </select>
                     </td>
-                    <td></td>
                     <td><Button variant="secondary" onClick={() => this.newEntitySubmit()} disabled={this.state.entityFieldsDisabled}>Create</Button></td>
                 </tr>
             );
@@ -140,7 +139,6 @@ export class Unit extends React.Component<Props, State> {
             <tr key={this.props.id}>
                 <th scope="row">{this.props.entityName}</th>
                 <td>{ this.props.properties.find(e => e.id === this.props.propertyId)?.name }</td>
-                <td>{this.props.updatedBy}</td>
                 <td><Button variant="secondary" onClick={evt => this.removeClick(this.props.id)}>Delete</Button></td>
             </tr>
         );

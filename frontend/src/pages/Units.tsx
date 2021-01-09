@@ -78,7 +78,6 @@ export class Units extends React.Component<Props, State> {
                     <tr>
                         <th scope="col">Name</th>
                         <th scope="col">Property</th>
-                        <th scope="col">Last Updated By</th>
                         <th scope="col">Actions</th>
                     </tr>
                 </thead>
