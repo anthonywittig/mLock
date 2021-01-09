@@ -9,7 +9,7 @@ import { Properties } from './pages/Properties';
 import { PrivacyPolicy } from './pages/PrivacyPolicy';
 import { TermsOfService } from './pages/TermsOfService';
 import { SignIn } from './pages/SignIn';
-import { Units } from './pages/Units';
+import { Units } from './pages/units/Units';
 import { Users } from './pages/Users';
 
 export const Routes = () => {

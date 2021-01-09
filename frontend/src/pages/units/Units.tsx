@@ -1,7 +1,7 @@
 import React from 'react';
-import { Loading } from './utils/Loading';
-import { StandardFetch } from './utils/FetchHelper';
-import { Unit } from './components/Unit';
+import { Loading } from '../utils/Loading';
+import { StandardFetch } from '../utils/FetchHelper';
+import { Unit } from '../components/Unit';
 
 type Entity = {
     id: string,
