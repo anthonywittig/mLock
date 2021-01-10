@@ -1,7 +1,9 @@
 import React from 'react';
 import { Loading } from '../utils/Loading';
 import { StandardFetch } from '../utils/FetchHelper';
-import { Unit } from '../components/Unit';
+import { Unit } from './Unit';
+
+type UpdatePath = (path: string) => void;
 
 type Entity = {
     id: string,
@@ -16,7 +18,9 @@ type Property = {
     createdBy: string,
 }
 
-type Props = {};
+type Props = {
+    updatePath: UpdatePath,
+};
 
 type State = {
     entities: Entity[],
@@ -26,7 +30,7 @@ type State = {
 
 const Endpoint = "units";
 
-export class Units extends React.Component<Props, State> {
+export class List extends React.Component<Props, State> {
     state: Readonly<State> = {
         entities: [],
         loadingEntities: true,
@@ -50,6 +54,7 @@ export class Units extends React.Component<Props, State> {
     }
 
     removeEntity(id: string) {
+        console.log("removeEntity");
         this.setState({
             entities: this.state.entities.filter(value => {
                 return value.id !== id;
@@ -89,7 +94,8 @@ export class Units extends React.Component<Props, State> {
                             propertyId={entity.propertyId}
                             updatedBy={entity.updatedBy}
                             properties={this.state.properties}
-                            addEntity={props => console.log("should never happen")}
+                            addEntity={null}
+                            navToDetail={id => this.props.updatePath(id)}
                             removeEntity={id => this.removeEntity(id)}
                         />
                     )}
@@ -100,7 +106,8 @@ export class Units extends React.Component<Props, State> {
                         updatedBy=""
                         properties={this.state.properties}
                         addEntity={(id, name, propertyId, updatedBy) => this.addEntity(id, name, propertyId, updatedBy)}
-                        removeEntity={id => console.log("should never happen")}
+                        navToDetail={null}
+                        removeEntity={null}
                     />
                 </tbody>
             </table>

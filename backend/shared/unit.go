@@ -1,10 +1,12 @@
 package shared
 
+import "github.com/google/uuid"
+
 type Unit struct {
-	ID         string `json:"id"`
-	Name       string `json:"name"`
-	PropertyID string `json:"propertyId"`
-	UpdatedBy  string `json:"updatedBy"`
+	ID         string    `json:"id"`
+	Name       string    `json:"name"`
+	PropertyID uuid.UUID `json:"propertyId"`
+	UpdatedBy  string    `json:"updatedBy"`
 }
 
 /*

@@ -25,13 +25,13 @@ func GetByID(ctx context.Context, id string) (shared.Unit, bool, error) {
 	// Verify id is a uuid.
 	parsedID, err := uuid.Parse(id)
 	if err != nil {
-		return shared.Unit{}, false, fmt.Errorf("error parsing ID: %s", err.Error())
+		return shared.Unit{}, false, fmt.Errorf("error parsing ID (%s): %s", id, err.Error())
 	}
 
 	row := db.QueryRowContext(ctx, "SELECT id, name, property_id, updated_by FROM "+table+" WHERE id = $1", parsedID)
 	var idResult string
 	var nameResult string
-	var propertyIDResult string
+	var propertyIDResult uuid.UUID
 	var updatedByResult string
 	if err := row.Scan(&idResult, &nameResult, &propertyIDResult, &updatedByResult); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
@@ -55,7 +55,7 @@ func GetByName(ctx context.Context, name string) (shared.Unit, bool, error) {
 	row := db.QueryRowContext(ctx, "SELECT id, name, property_id, updated_by FROM "+table+" WHERE name = $1", name)
 	var idResult string
 	var nameResult string
-	var propertyIDResult string
+	var propertyIDResult uuid.UUID
 	var updatedByResult string
 	if err := row.Scan(&idResult, &nameResult, &propertyIDResult, &updatedByResult); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
@@ -84,7 +84,7 @@ func GetAll(ctx context.Context) ([]shared.Unit, error) {
 	for rows.Next() {
 		var id string
 		var name string
-		var propertyID string
+		var propertyID uuid.UUID
 		var updatedBy string
 		if err := rows.Scan(&id, &name, &propertyID, &updatedBy); err != nil {
 			return []shared.Unit{}, fmt.Errorf("error scanning row: %s", err.Error())
@@ -157,6 +157,46 @@ func Insert(ctx context.Context, name string, propertyID uuid.UUID) (shared.Unit
 	}
 	if !ok {
 		return shared.Unit{}, fmt.Errorf("couldn't find unit after insert")
+	}
+
+	return unit, nil
+}
+
+func Update(ctx context.Context, data shared.Unit) (shared.Unit, error) {
+	db, err := postgres.GetDB(ctx)
+	if err != nil {
+		return shared.Unit{}, fmt.Errorf("error getting DB: %s", err.Error())
+	}
+
+	cd, err := shared.GetContextData(ctx)
+	if err != nil {
+		return shared.Unit{}, fmt.Errorf("can't get context data: %s", err.Error())
+	}
+
+	currentUser := cd.User
+	if currentUser == nil {
+		return shared.Unit{}, fmt.Errorf("no current user")
+	}
+	data.UpdatedBy = currentUser.Email
+
+	_, err = db.ExecContext(
+		ctx,
+		`UPDATE `+table+` SET name = $1, property_id = $2, updated_by = $3 WHERE id = $4`,
+		data.Name,
+		data.PropertyID,
+		data.UpdatedBy,
+		data.ID,
+	)
+	if err != nil {
+		return shared.Unit{}, fmt.Errorf("error inserting into DB: %s", err.Error())
+	}
+
+	unit, ok, err := GetByID(ctx, data.ID)
+	if err != nil {
+		return shared.Unit{}, err
+	}
+	if !ok {
+		return shared.Unit{}, fmt.Errorf("couldn't find unit after update")
 	}
 
 	return unit, nil

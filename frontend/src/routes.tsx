@@ -9,7 +9,7 @@ import { Properties } from './pages/Properties';
 import { PrivacyPolicy } from './pages/PrivacyPolicy';
 import { TermsOfService } from './pages/TermsOfService';
 import { SignIn } from './pages/SignIn';
-import { Units } from './pages/units/Units';
+import { UnitsRouter } from './pages/units/Router';
 import { Users } from './pages/Users';
 
 export const Routes = () => {
@@ -30,7 +30,7 @@ export const Routes = () => {
                     <TermsOfService/>
                 </Route>
                 <Route path="/units">
-                    <Units />
+                    <UnitsRouter />
                 </Route>
                 <Route path="/users">
                     <Users />

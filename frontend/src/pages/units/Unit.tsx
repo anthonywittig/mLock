@@ -1,9 +1,11 @@
 import React from 'react';
 import { Button } from 'react-bootstrap';
 import { StandardFetch } from '../utils/FetchHelper';
+import { Redirect } from "react-router-dom";
+
 
 type Adder = (id: string, name: string, property: string, updatedBy: string) => void;
-type Remover = (id: string) => void;
+type IdAction = (id: string) => void;
 
 type Property = {
     id: string,
@@ -17,15 +19,17 @@ type Props = {
     propertyId: string,
     updatedBy: string,
     properties: Property[],
-    addEntity: Adder,
-    removeEntity: Remover,
+    addEntity: Adder|null,
+    navToDetail: IdAction|null,
+    removeEntity: IdAction|null,
 };
 
 type State = {
+    entityFieldsDisabled: boolean,
     entityName: string,
     propertyId: string,
+    redirect: string,
     state: string,
-    entityFieldsDisabled: boolean,
 };
 
 const Endpoint = "units";
@@ -38,10 +42,11 @@ export class Unit extends React.Component<Props, State> {
 
     getResetState(): State {
         return {
+            entityFieldsDisabled: false,
             entityName: this.props.entityName,
             propertyId: this.props.propertyId,
+            redirect: "",
             state: this.props.id ? "exists" : "new",
-            entityFieldsDisabled: false,
         };
     }
 
@@ -49,13 +54,23 @@ export class Unit extends React.Component<Props, State> {
         StandardFetch(Endpoint + "/" + id, {method: "DELETE"})
         .then(response => {
             if (response.status === 200) {
-                this.props.removeEntity(id);
+                if (this.props.removeEntity) {
+                    this.props.removeEntity(id);
+                } else {
+                    throw new Error("removeEntry is null");
+                }
             }
         })
         .catch(err => {
             // TODO: need to indicate error.
             console.log("error: " + err);
         });
+    }
+
+    nameClick(id: string) {
+        if (this.props.navToDetail) {
+            this.props.navToDetail(id);
+        }
     }
 
     updateEntityName(evt: React.ChangeEvent<HTMLInputElement>) {
@@ -88,8 +103,12 @@ export class Unit extends React.Component<Props, State> {
         .then(response => {
             // add to parent
             let e = response.entity;
-            this.props.addEntity(e.id, e.name, e.propertyId, e.updatedBy);
-            this.setState(this.getResetState());
+            if (this.props.addEntity) {
+                this.props.addEntity(e.id, e.name, e.propertyId, e.updatedBy);
+                this.setState(this.getResetState());
+            } else {
+                throw new Error("addEntity is null");
+            }
         })
         .catch(err => {
             // TODO: indicate error.
@@ -100,6 +119,10 @@ export class Unit extends React.Component<Props, State> {
     }
 
     render() {
+        if (this.state.redirect) {
+            return <Redirect to={this.state.redirect} />;
+        }
+        
         if (this.state.state === "new") {
             return (
                 <tr key="newEntity">
@@ -137,7 +160,11 @@ export class Unit extends React.Component<Props, State> {
 
         return (
             <tr key={this.props.id}>
-                <th scope="row">{this.props.entityName}</th>
+                <th scope="row">
+                    <Button variant="link" onClick={evt => this.nameClick(this.props.id)}>
+                        {this.props.entityName}
+                    </Button>
+                </th>
                 <td>{ this.props.properties.find(e => e.id === this.props.propertyId)?.name }</td>
                 <td><Button variant="secondary" onClick={evt => this.removeClick(this.props.id)}>Delete</Button></td>
             </tr>
