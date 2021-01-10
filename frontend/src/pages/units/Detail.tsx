@@ -7,6 +7,7 @@ type Entity = {
     id: string,
     name: string,
     propertyId: string,
+    calendarUrl: string,
     updatedBy: string,
 }
 
@@ -30,7 +31,7 @@ const Endpoint = "units";
 
 export class Detail extends React.Component<Props, State> {
     state: Readonly<State> = {
-        entity: {id: "", name: "", propertyId: "", updatedBy: ""},
+        entity: {id: "", name: "", propertyId: "", calendarUrl: "", updatedBy: ""},
         loading: true,
         properties: [],
     }
@@ -54,29 +55,33 @@ export class Detail extends React.Component<Props, State> {
     detailFormNameChange(evt: React.ChangeEvent<HTMLInputElement>) {
         let entity = this.state.entity;
         entity.name = evt.target.value;
-        this.setState({
-            entity,
-        });
+        this.setState({entity});
     }
 
     detailFormPropertyIdChange(evt: React.ChangeEvent<HTMLSelectElement>) {
         let entity = this.state.entity;
         entity.propertyId = evt.target.value;
-        this.setState({
-            entity,
-        });
+        this.setState({entity});
+    }
+
+    detailFormCalendarUrlChange(evt: React.ChangeEvent<HTMLSelectElement>) {
+        let entity = this.state.entity;
+        entity.calendarUrl = evt.target.value;
+        this.setState({entity});
     }
 
     detailFormSubmit(evt: React.FormEvent<HTMLFormElement>) {
         evt.preventDefault();
 
-        this.setState({
-            loading: true,
-        });
+        this.setState({loading: true});
 
         StandardFetch(Endpoint + "/" + this.props.entityId, {
             method: "PUT",
-            body: JSON.stringify({ name: this.state.entity.name, propertyId: this.state.entity.propertyId })
+            body: JSON.stringify({
+                name: this.state.entity.name,
+                propertyId: this.state.entity.propertyId,
+                calendarUrl: this.state.entity.calendarUrl,
+            })
         })
         .then(response => response.json())
         .then(response => {
@@ -114,6 +119,7 @@ export class Detail extends React.Component<Props, State> {
                     <Form.Label>Name</Form.Label>
                     <Form.Control type="text" value={this.state.entity.name} onChange={evt => this.detailFormNameChange(evt as any)}/>
                 </Form.Group>
+
                 <Form.Group controlId="exampleForm.ControlSelect1">
                     <Form.Label>Property</Form.Label>
                     <Form.Control as="select" onChange={evt => this.detailFormPropertyIdChange(evt as any)}>
@@ -123,6 +129,11 @@ export class Detail extends React.Component<Props, State> {
                             </option>
                         )}
                     </Form.Control>
+                </Form.Group>
+
+                <Form.Group>
+                    <Form.Label>Calendar URL</Form.Label>
+                    <Form.Control type="text" value={this.state.entity.calendarUrl} onChange={evt => this.detailFormCalendarUrlChange(evt as any)}/>
                 </Form.Group>
 
                 <Button variant="secondary" type="submit">

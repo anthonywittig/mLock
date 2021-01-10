@@ -12,8 +12,13 @@ import (
 	"github.com/google/uuid"
 )
 
+type scanner interface {
+	Scan(dest ...interface{}) error
+}
+
 const (
-	table = "units"
+	table      = "units"
+	allColumns = "id, name, property_id, calendar_url, updated_by"
 )
 
 func GetByID(ctx context.Context, id string) (shared.Unit, bool, error) {
@@ -28,20 +33,8 @@ func GetByID(ctx context.Context, id string) (shared.Unit, bool, error) {
 		return shared.Unit{}, false, fmt.Errorf("error parsing ID (%s): %s", id, err.Error())
 	}
 
-	row := db.QueryRowContext(ctx, "SELECT id, name, property_id, updated_by FROM "+table+" WHERE id = $1", parsedID)
-	var idResult string
-	var nameResult string
-	var propertyIDResult uuid.UUID
-	var updatedByResult string
-	if err := row.Scan(&idResult, &nameResult, &propertyIDResult, &updatedByResult); err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return shared.Unit{}, false, nil // Not really an error.
-		}
-
-		return shared.Unit{}, false, fmt.Errorf("error scanning row: %s", err.Error())
-	}
-
-	return shared.Unit{ID: idResult, Name: nameResult, PropertyID: propertyIDResult, UpdatedBy: updatedByResult}, true, nil
+	row := db.QueryRowContext(ctx, "SELECT "+allColumns+" FROM "+table+" WHERE id = $1", parsedID)
+	return getEntity(row)
 }
 
 func GetByName(ctx context.Context, name string) (shared.Unit, bool, error) {
@@ -52,20 +45,8 @@ func GetByName(ctx context.Context, name string) (shared.Unit, bool, error) {
 		return shared.Unit{}, false, fmt.Errorf("error getting DB: %s", err.Error())
 	}
 
-	row := db.QueryRowContext(ctx, "SELECT id, name, property_id, updated_by FROM "+table+" WHERE name = $1", name)
-	var idResult string
-	var nameResult string
-	var propertyIDResult uuid.UUID
-	var updatedByResult string
-	if err := row.Scan(&idResult, &nameResult, &propertyIDResult, &updatedByResult); err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return shared.Unit{}, false, nil // Not really an error.
-		}
-
-		return shared.Unit{}, false, fmt.Errorf("error scanning row: %s", err.Error())
-	}
-
-	return shared.Unit{ID: idResult, Name: nameResult, PropertyID: propertyIDResult, UpdatedBy: updatedByResult}, true, nil
+	row := db.QueryRowContext(ctx, "SELECT "+allColumns+" FROM "+table+" WHERE name = $1", name)
+	return getEntity(row)
 }
 
 func GetAll(ctx context.Context) ([]shared.Unit, error) {
@@ -74,7 +55,7 @@ func GetAll(ctx context.Context) ([]shared.Unit, error) {
 		return []shared.Unit{}, fmt.Errorf("error getting DB: %s", err.Error())
 	}
 
-	rows, err := db.QueryContext(ctx, "SELECT id, name, property_id, updated_by FROM "+table+" ORDER BY name")
+	rows, err := db.QueryContext(ctx, "SELECT "+allColumns+" FROM "+table+" ORDER BY name")
 	if err != nil {
 		return []shared.Unit{}, fmt.Errorf("error doing query: %s", err.Error())
 	}
@@ -82,14 +63,15 @@ func GetAll(ctx context.Context) ([]shared.Unit, error) {
 
 	entities := []shared.Unit{}
 	for rows.Next() {
-		var id string
-		var name string
-		var propertyID uuid.UUID
-		var updatedBy string
-		if err := rows.Scan(&id, &name, &propertyID, &updatedBy); err != nil {
-			return []shared.Unit{}, fmt.Errorf("error scanning row: %s", err.Error())
+		entity, ok, err := getEntity(rows)
+		if err != nil {
+			return []shared.Unit{}, fmt.Errorf("error getting entity: %s", err.Error())
 		}
-		entities = append(entities, shared.Unit{ID: id, Name: name, PropertyID: propertyID, UpdatedBy: updatedBy})
+		if !ok {
+			return []shared.Unit{}, fmt.Errorf("error getting entity, not found")
+		}
+
+		entities = append(entities, entity)
 	}
 
 	return entities, nil
@@ -141,10 +123,11 @@ func Insert(ctx context.Context, name string, propertyID uuid.UUID) (shared.Unit
 
 	_, err = db.ExecContext(
 		ctx,
-		`INSERT INTO `+table+` (id, name, property_id, updated_by) VALUES ($1, $2, $3, $4)`,
+		`INSERT INTO `+table+` (`+allColumns+`) VALUES ($1, $2, $3, $4, $5)`,
 		uuid.New(),
 		name,
 		propertyID,
+		"", // Current usecases only insert with an empty calendar url.
 		currentUser.Email,
 	)
 	if err != nil {
@@ -181,9 +164,10 @@ func Update(ctx context.Context, data shared.Unit) (shared.Unit, error) {
 
 	_, err = db.ExecContext(
 		ctx,
-		`UPDATE `+table+` SET name = $1, property_id = $2, updated_by = $3 WHERE id = $4`,
+		`UPDATE `+table+` SET name = $1, property_id = $2, calendar_url = $3, updated_by = $4 WHERE id = $5`,
 		data.Name,
 		data.PropertyID,
+		data.CalendarURL,
 		data.UpdatedBy,
 		data.ID,
 	)
@@ -200,4 +184,27 @@ func Update(ctx context.Context, data shared.Unit) (shared.Unit, error) {
 	}
 
 	return unit, nil
+}
+
+func getEntity(s scanner) (shared.Unit, bool, error) {
+	var id string
+	var name string
+	var propertyID uuid.UUID
+	var calendarURL string
+	var updatedBy string
+	if err := s.Scan(&id, &name, &propertyID, &calendarURL, &updatedBy); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return shared.Unit{}, false, nil // Not really an error.
+		}
+
+		return shared.Unit{}, false, fmt.Errorf("error scanning row: %s", err.Error())
+	}
+
+	return shared.Unit{
+		ID:          id,
+		Name:        name,
+		PropertyID:  propertyID,
+		CalendarURL: calendarURL,
+		UpdatedBy:   updatedBy,
+	}, true, nil
 }

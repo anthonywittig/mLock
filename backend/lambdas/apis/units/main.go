@@ -31,9 +31,8 @@ type ListResponse struct {
 
 type CreateBody struct {
 	Name       string    `json:"name"`
-	PropertyID uuid.UUID `json:"PropertyId"`
+	PropertyID uuid.UUID `json:"propertyId"`
 }
-type UpdateBody = CreateBody
 
 type CreateResponse struct {
 	Entity shared.Unit `json:"entity"`
@@ -42,6 +41,12 @@ type CreateResponse struct {
 type UpdateResponse struct {
 	Entity shared.Unit `json:"entity"`
 	Error  string      `json:"error"`
+}
+
+type UpdateBody struct {
+	Name        string    `json:"name"`
+	PropertyID  uuid.UUID `json:"propertyId"`
+	CalendarURL string    `json:"calendarUrl"`
 }
 
 type ExtraEntities struct {
@@ -160,6 +165,7 @@ func update(ctx context.Context, req events.APIGatewayProxyRequest) (*shared.API
 
 	entity.Name = body.Name
 	entity.PropertyID = body.PropertyID
+	entity.CalendarURL = body.CalendarURL
 
 	entity, err = unit.Update(ctx, entity)
 	if err != nil {
