@@ -3,16 +3,18 @@ import {
     BrowserRouter as Router,
     Redirect,
     Route,
+    RouteComponentProps,
     Switch,
   } from 'react-router-dom';
 import { Properties } from './pages/Properties';
 import { PrivacyPolicy } from './pages/PrivacyPolicy';
 import { TermsOfService } from './pages/TermsOfService';
 import { SignIn } from './pages/SignIn';
-import { UnitsRouter } from './pages/units/Router';
+import { UnitRoutes } from './pages/units/Routes';
 import { Users } from './pages/Users';
 
-export const Routes = () => {
+export const Routes = (props: Props) => {
+
     return (
         <Router>
             <div>
@@ -30,7 +32,11 @@ export const Routes = () => {
                     <TermsOfService/>
                 </Route>
                 <Route path="/units">
-                    <UnitsRouter />
+                    <UnitRoutes
+                        history={props.history}
+                        location={props.location}
+                        match={props.match}
+                    />
                 </Route>
                 <Route path="/users">
                     <Users />

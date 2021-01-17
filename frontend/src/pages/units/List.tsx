@@ -1,4 +1,5 @@
 import React from 'react';
+import { RouteComponentProps } from "react-router-dom";
 import { Loading } from '../utils/Loading';
 import { StandardFetch } from '../utils/FetchHelper';
 import { Unit } from './Unit';
@@ -18,9 +19,7 @@ type Property = {
     createdBy: string,
 }
 
-type Props = {
-    updatePath: UpdatePath,
-};
+type Props = RouteComponentProps;
 
 type State = {
     entities: Entity[],
@@ -95,8 +94,10 @@ export class List extends React.Component<Props, State> {
                             updatedBy={entity.updatedBy}
                             properties={this.state.properties}
                             addEntity={null}
-                            navToDetail={id => this.props.updatePath(id)}
                             removeEntity={id => this.removeEntity(id)}
+                            history={this.props.history}
+                            location={this.props.location}
+                            match={this.props.match}
                         />
                     )}
                     <Unit
@@ -106,8 +107,10 @@ export class List extends React.Component<Props, State> {
                         updatedBy=""
                         properties={this.state.properties}
                         addEntity={(id, name, propertyId, updatedBy) => this.addEntity(id, name, propertyId, updatedBy)}
-                        navToDetail={null}
                         removeEntity={null}
+                        history={this.props.history}
+                        location={this.props.location}
+                        match={this.props.match}
                     />
                 </tbody>
             </table>

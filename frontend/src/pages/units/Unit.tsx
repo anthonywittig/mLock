@@ -1,7 +1,7 @@
 import React from 'react';
 import { Button } from 'react-bootstrap';
 import { StandardFetch } from '../utils/FetchHelper';
-import { Redirect } from "react-router-dom";
+import { Redirect, RouteComponentProps } from "react-router-dom";
 
 
 type Adder = (id: string, name: string, property: string, updatedBy: string) => void;
@@ -13,14 +13,13 @@ type Property = {
     createdBy: string,
 }
 
-type Props = {
+type Props = RouteComponentProps & {
     id: string,
     entityName: string,
     propertyId: string,
     updatedBy: string,
     properties: Property[],
     addEntity: Adder|null,
-    navToDetail: IdAction|null,
     removeEntity: IdAction|null,
 };
 
@@ -68,9 +67,12 @@ export class Unit extends React.Component<Props, State> {
     }
 
     nameClick(id: string) {
+        /*
         if (this.props.navToDetail) {
             this.props.navToDetail(id);
         }
+        */
+       console.log("nameClick - fix me!");
     }
 
     updateEntityName(evt: React.ChangeEvent<HTMLInputElement>) {

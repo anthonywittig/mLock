@@ -1,5 +1,6 @@
 import React from 'react';
 import { Button, Form} from 'react-bootstrap';
+import { Redirect, RouteComponentProps } from "react-router-dom";
 import { Loading } from '../utils/Loading';
 import { StandardFetch } from '../utils/FetchHelper';
 
@@ -17,9 +18,7 @@ type Property = {
     createdBy: string,
 }
 
-type Props = {
-    entityId: string,
-};
+type Props = RouteComponentProps;
 
 type State = {
     entity: Entity,
@@ -37,6 +36,10 @@ export class Detail extends React.Component<Props, State> {
     }
 
     componentDidMount() {
+        //RouteComponentProps &
+        console.log(this.props.match.params);
+
+        /*
         StandardFetch(Endpoint + "/" + this.props.entityId, {method: "GET"})
         .then(response => response.json())
         .then(response => {
@@ -50,6 +53,7 @@ export class Detail extends React.Component<Props, State> {
             // TODO: indicate error.
             console.log(err);
         });
+        */
     }
     
     detailFormNameChange(evt: React.ChangeEvent<HTMLInputElement>) {
@@ -73,6 +77,7 @@ export class Detail extends React.Component<Props, State> {
     detailFormSubmit(evt: React.FormEvent<HTMLFormElement>) {
         evt.preventDefault();
 
+        /*
         this.setState({loading: true});
 
         StandardFetch(Endpoint + "/" + this.props.entityId, {
@@ -94,6 +99,7 @@ export class Detail extends React.Component<Props, State> {
             // TODO: indicate error.
             console.log(err);
         });
+        */
     }
 
     render() {
