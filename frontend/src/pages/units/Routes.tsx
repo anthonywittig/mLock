@@ -2,32 +2,21 @@ import React from 'react';
 import {
     BrowserRouter as Router,
     Route,
-    RouteComponentProps,
     Switch,
   } from 'react-router-dom';
 import { Detail } from './Detail';
 import { List } from './List';
 
-type Props = RouteComponentProps; 
-
-export const UnitRoutes = (props: Props) => {
+export const UnitRoutes = () => {
     return (
         <Router>
             <div>
                 <Switch>
                 <Route path="/units/:id">
-                    <Detail
-                        history={props.history}
-                        location={props.location}
-                        match={props.match}
-                    />
+                    <Detail />
                 </Route>
                 <Route path="/units">
-                    <List
-                        history={props.history}
-                        location={props.location}
-                        match={props.match}
-                    />
+                    <List />
                 </Route>
                 </Switch>
             </div>

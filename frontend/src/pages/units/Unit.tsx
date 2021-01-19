@@ -1,7 +1,8 @@
 import React from 'react';
 import { Button } from 'react-bootstrap';
+import { useHistory } from 'react-router-dom';
 import { StandardFetch } from '../utils/FetchHelper';
-import { Redirect, RouteComponentProps } from "react-router-dom";
+import { History } from 'history';
 
 
 type Adder = (id: string, name: string, property: string, updatedBy: string) => void;
@@ -13,7 +14,7 @@ type Property = {
     createdBy: string,
 }
 
-type Props = RouteComponentProps & {
+type Props = {
     id: string,
     entityName: string,
     propertyId: string,
@@ -25,151 +26,155 @@ type Props = RouteComponentProps & {
 
 type State = {
     entityFieldsDisabled: boolean,
+    setEntityFieldsDisabled: React.Dispatch<React.SetStateAction<boolean>>,
     entityName: string,
+    setEntityName: React.Dispatch<React.SetStateAction<string>>,
     propertyId: string,
-    redirect: string,
-    state: string,
+    setPropertyId: React.Dispatch<React.SetStateAction<string>>,
+    entityState: string,
+    setEntityState: React.Dispatch<React.SetStateAction<string>>,
+    history: History,
 };
 
 const Endpoint = "units";
 
-export class Unit extends React.Component<Props, State> {
-    constructor(props: Props) {
-        super(props);
-        this.state = this.getResetState();
-    }
+export const Unit = (props: Props) => {
+    const state = GetState(props);
+    return render(props, state);
+};
 
-    getResetState(): State {
-        return {
-            entityFieldsDisabled: false,
-            entityName: this.props.entityName,
-            propertyId: this.props.propertyId,
-            redirect: "",
-            state: this.props.id ? "exists" : "new",
-        };
-    }
+function GetState(props: Props): State{
+    const [entityFieldsDisabled, setEntityFieldsDisabled] = React.useState<boolean>(false);
+    const [entityName, setEntityName] = React.useState<string>(props.entityName);
+    const [propertyId, setPropertyId] = React.useState<string>(props.propertyId);
+    const [entityState, setEntityState] = React.useState<string>(props.id ? "exists" : "new");
+    const history = useHistory();
+    return {
+        entityFieldsDisabled,
+        setEntityFieldsDisabled,
+        entityName,
+        setEntityName,
+        propertyId,
+        setPropertyId,
+        entityState,
+        setEntityState,
+        history,
+    };
+}
 
-    removeClick(id: string) {
-        StandardFetch(Endpoint + "/" + id, {method: "DELETE"})
-        .then(response => {
-            if (response.status === 200) {
-                if (this.props.removeEntity) {
-                    this.props.removeEntity(id);
-                } else {
-                    throw new Error("removeEntry is null");
-                }
-            }
-        })
-        .catch(err => {
-            // TODO: need to indicate error.
-            console.log("error: " + err);
-        });
-    }
+function resetState(props: Props, state: State) {
+    // Some dupliation from `getState`...
+    state.setEntityFieldsDisabled(false);
+    state.setEntityName(props.entityName);
+    state.setPropertyId(props.propertyId);
+    state.setEntityState(props.id ? "exists" : "new");
+}
 
-    nameClick(id: string) {
-        /*
-        if (this.props.navToDetail) {
-            this.props.navToDetail(id);
-        }
-        */
-       console.log("nameClick - fix me!");
-    }
-
-    updateEntityName(evt: React.ChangeEvent<HTMLInputElement>) {
-        this.setState({
-            entityName: evt.target.value,
-        });
-    }
-
-    updatePropertyId(evt: React.ChangeEvent<HTMLSelectElement>) {
-        this.setState({
-            propertyId: evt.target.value,
-        });
-    }
-
-    newEntitySubmit() {
-        if (!this.state.entityName || !this.state.propertyId) {
-            // TODO: indicate error.
-            return;
-        }
-
-        this.setState({
-            entityFieldsDisabled: true,
-        });
-
-        StandardFetch(Endpoint, {
-            method: "POST",
-            body: JSON.stringify({ name: this.state.entityName, propertyId: this.state.propertyId })
-        })
-        .then(response => response.json())
-        .then(response => {
-            // add to parent
-            let e = response.entity;
-            if (this.props.addEntity) {
-                this.props.addEntity(e.id, e.name, e.propertyId, e.updatedBy);
-                this.setState(this.getResetState());
+function removeClick(props: Props, id: string) {
+    StandardFetch(Endpoint + "/" + id, {method: "DELETE"})
+    .then(response => {
+        if (response.status === 200) {
+            if (props.removeEntity) {
+                props.removeEntity(id);
             } else {
-                throw new Error("addEntity is null");
+                throw new Error("removeEntry is null");
             }
-        })
-        .catch(err => {
-            // TODO: indicate error.
-            this.setState({
-                entityFieldsDisabled: false,
-            });
-        });
+        }
+    })
+    .catch(err => {
+        // TODO: need to indicate error.
+        console.log("error: " + err);
+    });
+}
+
+function nameClick(state: State, id: string) {
+   state.history.push('/units/' + id);
+}
+
+
+function updateEntityName(state: State, evt: React.ChangeEvent<HTMLInputElement>) {
+    state.setEntityName(evt.target.value);
+}
+
+
+function updatePropertyId(state: State, evt: React.ChangeEvent<HTMLSelectElement>) {
+    state.setPropertyId(evt.target.value);
+}
+
+function newEntitySubmit(props: Props, state: State) {
+    if (!state.entityName || !state.propertyId) {
+        // TODO: indicate error.
+        return;
     }
 
-    render() {
-        if (this.state.redirect) {
-            return <Redirect to={this.state.redirect} />;
-        }
-        
-        if (this.state.state === "new") {
-            return (
-                <tr key="newEntity">
-                    <th scope="row">
-                        <input
-                            type="text"
-                            className="form-control"
-                            id="newName"
-                            placeholder="Name"
-                            value={this.state.entityName}
-                            onChange={evt => this.updateEntityName(evt)}
-                            disabled={this.state.entityFieldsDisabled}
-                            onKeyUp={(evt) => evt.key === "Enter" ? this.newEntitySubmit() : ""}
-                        />
-                    </th>
-                    <td>
-                        <select
-                            id="newProperty"
-                            className="form-control"
-                            onChange={evt => this.updatePropertyId(evt)}
-                            disabled={this.state.entityFieldsDisabled}
-                        >
-                            <option></option>
-                            {this.props.properties.map(property =>
-                                <option value={property.id} selected={property.id === this.state.propertyId}>
-                                    {property.name}
-                                </option>
-                            )}
-                        </select>
-                    </td>
-                    <td><Button variant="secondary" onClick={() => this.newEntitySubmit()} disabled={this.state.entityFieldsDisabled}>Create</Button></td>
-                </tr>
-            );
-        }
+    state.setEntityFieldsDisabled(true);
 
+    StandardFetch(Endpoint, {
+        method: "POST",
+        body: JSON.stringify({ name: state.entityName, propertyId: state.propertyId })
+    })
+    .then(response => response.json())
+    .then(response => {
+        // add to parent
+        let e = response.entity;
+        if (props.addEntity) {
+            props.addEntity(e.id, e.name, e.propertyId, e.updatedBy);
+            resetState(props, state);
+        } else {
+            throw new Error("addEntity is null");
+        }
+    })
+    .catch(err => {
+        // TODO: indicate error.
+        state.setEntityFieldsDisabled(false);
+    });
+}
+
+function render(props: Props, state: State) {
+    if (state.entityState === "new") {
         return (
-            <tr key={this.props.id}>
+            <tr key="newEntity">
                 <th scope="row">
-                    <Button variant="link" onClick={evt => this.nameClick(this.props.id)}>
-                        {this.props.entityName}
-                    </Button>
+                    <input
+                        type="text"
+                        className="form-control"
+                        id="newName"
+                        placeholder="Name"
+                        value={state.entityName}
+                        onChange={evt => updateEntityName(state, evt)}
+                        disabled={state.entityFieldsDisabled}
+                        onKeyUp={(evt) => evt.key === "Enter" ? newEntitySubmit(props, state) : ""}
+                    />
                 </th>
-                <td>{ this.props.properties.find(e => e.id === this.props.propertyId)?.name }</td>
-                <td><Button variant="secondary" onClick={evt => this.removeClick(this.props.id)}>Delete</Button></td>
+                <td>
+                    <select
+                        id="newProperty"
+                        className="form-control"
+                        onChange={evt => updatePropertyId(state, evt)}
+                        disabled={state.entityFieldsDisabled}
+                    >
+                        <option></option>
+                        {props.properties.map(property =>
+                            <option value={property.id} selected={property.id === state.propertyId}>
+                                {property.name}
+                            </option>
+                        )}
+                    </select>
+                </td>
+                <td><Button variant="secondary" onClick={() => newEntitySubmit(props, state)} disabled={state.entityFieldsDisabled}>Create</Button></td>
             </tr>
         );
     }
+
+    return (
+        <tr key={props.id}>
+            <th scope="row">
+                <Button variant="link" onClick={evt => nameClick(state, props.id)}>
+                    {props.entityName}
+                </Button>
+            </th>
+            <td>{ props.properties.find(e => e.id === props.propertyId)?.name }</td>
+            <td><Button variant="secondary" onClick={evt => removeClick(props, props.id)}>Delete</Button></td>
+        </tr>
+    );
 }
