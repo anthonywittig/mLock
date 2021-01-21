@@ -1,6 +1,7 @@
 import React from 'react';
 import { Button, Form} from 'react-bootstrap';
 import { useRouteMatch } from 'react-router-dom';
+import { format, parseISO } from 'date-fns';
 import { Loading } from '../utils/Loading';
 import { StandardFetch } from '../utils/FetchHelper';
 
@@ -10,6 +11,16 @@ type Entity = {
     propertyId: string,
     calendarUrl: string,
     updatedBy: string,
+}
+
+type Reservation = {
+    id: string,
+    start: string,
+    startDate: Date,
+    end: string,
+    endDate: Date,
+    summary: string,
+    status: string,
 }
 
 type Property = {
@@ -25,6 +36,8 @@ type State = {
     setLoading: React.Dispatch<React.SetStateAction<boolean>>,
     properties: Property[],
     setProperties: React.Dispatch<React.SetStateAction<Property[]>>,
+    reservations: Reservation[],
+    setReservations: React.Dispatch<React.SetStateAction<Reservation[]>>,
 };
 
 type MatchParams = {id: string};
@@ -58,12 +71,12 @@ function GetState(): State{
     });
     const [loading, setLoading] = React.useState<boolean>(true);
     const [properties, setProperties] = React.useState<Property[]>([]);
-    console.log("Get state");
-    console.log(entity);
+    const [reservations, setReservations] = React.useState<Reservation[]>([]);
     return {
         entity, setEntity,
         loading, setLoading,
         properties, setProperties,
+        reservations, setReservations,
     };
 }
 
@@ -76,6 +89,14 @@ function xComponentDidMount(state: State, entityId: string) {
         state.setEntity(response.entity);
         state.setLoading(false);
         state.setProperties(response.extra.properties);
+
+        let reservations = response.extra.reservations as Reservation[];
+        reservations.forEach(r => {
+            // The dates are naive, so cut off the zone.
+            r.startDate = parseISO(r.start.slice(0, -1));
+            r.endDate = parseISO(r.end.slice(0, -1));
+        });
+        state.setReservations(reservations);
     })
     .catch(err => {
         // TODO: indicate error.
@@ -137,14 +158,47 @@ function detailFormSubmit(state: State, evt: React.FormEvent<HTMLFormElement>) {
 
 function render(state: State) {
     return (
-        <div>
+        <>
             <div className="card" style={{marginBottom: "1rem", marginTop: "1rem"}}>
                 <div className="card-body">
-                <h2 className="card-title">Details</h2>
-                {renderEntity(state)}
+                    <h2 className="card-title">Details</h2>
+                    {renderEntity(state)}
                 </div>
             </div>
-        </div>
+            <div className="card" style={{marginBottom: "1rem", marginTop: "1rem"}}>
+                <div className="card-body">
+                    <h2 className="card-title">Upcoming Reservations</h2>
+                    {renderCalendar(state)}
+                </div>
+            </div>
+        </>
+    );
+}
+
+function renderCalendar(state: State) {
+    if (state.loading) {
+        return <Loading />;
+    }
+    console.log(state.reservations);
+    return (
+        <table className="table table-responsive-sm">
+            <thead>
+                <tr>
+                    <th scope="col">Transaction #</th>
+                    <th scope="col">Start Date</th>
+                    <th scope="col">End Date</th>
+                </tr>
+            </thead>
+            <tbody>
+                {state.reservations.map(res =>
+                    <tr>
+                        <th scope="row">{res.summary}</th>
+                        <td>{format(res.startDate, "LL/dd/yyyy")}</td>
+                        <td>{format(res.endDate, "LL/dd/yyyy")}</td>
+                    </tr>
+                )}
+            </tbody>
+        </table>
     );
 }
 

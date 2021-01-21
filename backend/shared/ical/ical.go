@@ -7,6 +7,7 @@ import (
 	"mlock/shared"
 	"net/http"
 	"regexp"
+	"sort"
 	"strings"
 	"time"
 )
@@ -21,7 +22,27 @@ func Get(ctx context.Context, url string) ([]shared.Reservation, error) {
 		return []shared.Reservation{}, fmt.Errorf("error getting data: %s", err.Error())
 	}
 
-	return parseReservations(data)
+	ress, err := parseReservations(data)
+	if err != nil {
+		return []shared.Reservation{}, fmt.Errorf("error parsing reservations: %s", err.Error())
+	}
+
+	sort.Slice(ress, func(i, j int) bool {
+		r1 := ress[i]
+		r2 := ress[j]
+
+		if r1.Start.Before(r2.Start) {
+			return true
+		}
+
+		if r1.Start.Equal(r2.Start) {
+			return r1.End.Before(r2.End)
+		}
+
+		return false
+	})
+
+	return ress, nil
 }
 
 func getData(ctx context.Context, url string) (string, error) {
@@ -46,10 +67,7 @@ func getData(ctx context.Context, url string) (string, error) {
 
 func parseReservations(data string) ([]shared.Reservation, error) {
 	lines := strings.Split(data, "\r\n")
-	return parseVCalendar(lines)
-}
 
-func parseVCalendar(lines []string) ([]shared.Reservation, error) {
 	if len(lines) == 0 {
 		return []shared.Reservation{}, fmt.Errorf("no reservations to parse")
 	}
@@ -121,6 +139,7 @@ func parseVCalendar(lines []string) ([]shared.Reservation, error) {
 		}
 		i++
 		res.Summary = m
+		res.TransactionNumber = res.Summary // The summary is the transaction number.
 
 		if _, err := getMatch("^DESCRIPTION:(.*)$", lines[i]); err != nil {
 			return []shared.Reservation{}, fmt.Errorf("expected DESCRIPTION: %s", lines[i])

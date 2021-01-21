@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"mlock/lambdas/helpers"
 	"mlock/shared"
+	"mlock/shared/ical"
 	"mlock/shared/postgres/property"
 	"mlock/shared/postgres/unit"
 	"net/http"
@@ -50,7 +51,8 @@ type UpdateBody struct {
 }
 
 type ExtraEntities struct {
-	Properties []shared.Property `json:"properties"`
+	Properties   []shared.Property    `json:"properties"`
+	Reservations []shared.Reservation `json:"reservations"`
 }
 
 var unitsRegex = regexp.MustCompile(`/units/?`)
@@ -131,6 +133,16 @@ func detail(ctx context.Context, req events.APIGatewayProxyRequest, id string) (
 		return nil, fmt.Errorf("entity not found: %s", id)
 	}
 
+	var reservations []shared.Reservation
+	if entity.CalendarURL != "" {
+		var err error
+		// TODO: cache this.
+		reservations, err = ical.Get(context.Background(), entity.CalendarURL)
+		if err != nil {
+			return nil, fmt.Errorf("error getting calendar items: %s", err.Error())
+		}
+	}
+
 	properties, err := property.GetAll(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("error getting properties: %s", err.Error())
@@ -139,7 +151,8 @@ func detail(ctx context.Context, req events.APIGatewayProxyRequest, id string) (
 	return shared.NewAPIResponse(http.StatusOK, DetailResponse{
 		Entity: entity,
 		Extra: ExtraEntities{
-			Properties: properties,
+			Properties:   properties,
+			Reservations: reservations,
 		},
 	})
 }
