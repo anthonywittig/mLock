@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 	"mlock/shared"
+	"mlock/shared/dynamo/user"
 	"mlock/shared/postgres"
 
 	"github.com/aws/aws-lambda-go/lambda"
@@ -42,6 +43,36 @@ func HandleRequest(ctx context.Context, event MyEvent) (Response, error) {
 	if err := migrateUp(db); err != nil {
 		return Response{}, fmt.Errorf("error migrating DB: %s", err.Error())
 	}
+
+	if err := user.MigrateUsers(ctx); err != nil {
+		return Response{}, fmt.Errorf("error migrating dynamo users: %s", err.Error())
+	}
+	/*
+		//
+		// code for moving users from postgres to dynamo
+		//
+		users, err := pguser.GetAll(ctx)
+		if err != nil {
+			return Response{}, fmt.Errorf("error getting users: %s", err.Error())
+		}
+		errors := []error{}
+		for _, u := range users {
+			cd, err := shared.GetContextData(ctx)
+			if err != nil {
+				return Response{}, fmt.Errorf("error getting context data: %s", err.Error())
+			}
+			cd.User = &shared.User{Email: u.Email, CreatedBy: u.CreatedBy}
+			if err := user.Put(ctx, u.Email); err != nil {
+				errors = append(errors, err)
+			}
+		}
+		if len(errors) > 0 {
+			return Response{}, fmt.Errorf("error(s) inserting user(s): %+v", errors)
+		}
+		//
+		// end code for moving users from postgres to dynamo
+		//
+	*/
 
 	dbName := postgres.GetCurrentDatabase(ctx)
 

@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"mlock/lambdas/helpers"
 	"mlock/shared"
-	"mlock/shared/postgres/user"
+	"mlock/shared/dynamo/user"
 	"net/http"
 
 	"github.com/aws/aws-lambda-go/events"

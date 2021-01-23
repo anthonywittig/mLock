@@ -105,31 +105,24 @@ function xComponentDidMount(state: State, entityId: string) {
 }
 
 function detailFormNameChange(state: State, evt: React.ChangeEvent<HTMLInputElement>) {
-    let entity = copyEntity(state.entity);
-    entity.name = evt.target.value;
-    state.setEntity(entity);
+    state.setEntity({
+        ...state.entity,
+        name: evt.target.value,
+    });
 }
 
 function detailFormPropertyIdChange(state: State, evt: React.ChangeEvent<HTMLSelectElement>) {
-    let entity = copyEntity(state.entity);
-    entity.propertyId = evt.target.value;
-    state.setEntity(entity);
+    state.setEntity({
+        ...state.entity,
+        propertyId: evt.target.value,
+    });
 }
 
 function detailFormCalendarUrlChange(state: State, evt: React.ChangeEvent<HTMLSelectElement>) {
-    let entity = copyEntity(state.entity);
-    entity.calendarUrl = evt.target.value;
-    state.setEntity(entity);
-}
-
-function copyEntity(old: Entity): Entity{
-    return {
-        id: old.id,
-        name: old.name,
-        propertyId: old.propertyId,
-        calendarUrl: old.calendarUrl,
-        updatedBy: old.updatedBy,
-    };
+    state.setEntity({
+        ...state.entity,
+        calendarUrl: evt.target.value,
+    });
 }
 
 function detailFormSubmit(state: State, evt: React.FormEvent<HTMLFormElement>) {

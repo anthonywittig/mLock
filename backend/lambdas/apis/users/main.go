@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"mlock/lambdas/helpers"
 	"mlock/shared"
-	"mlock/shared/postgres/user"
+	"mlock/shared/dynamo/user"
 	"net/http"
 	"strings"
 
@@ -44,12 +44,12 @@ func HandleRequest(ctx context.Context, req events.APIGatewayProxyRequest) (*sha
 }
 
 func delete(ctx context.Context, req events.APIGatewayProxyRequest) (*shared.APIResponse, error) {
-	userID := strings.Replace(req.Path, "/users/", "", 1)
-	if userID == "" {
+	email := strings.Replace(req.Path, "/users/", "", 1)
+	if email == "" {
 		return shared.NewAPIResponse(http.StatusBadRequest, DeleteResponse{Error: "unable to parse user"})
 	}
 
-	u, ok, err := user.GetByID(ctx, userID)
+	u, ok, err := user.Get(ctx, email)
 	if err != nil {
 		return nil, fmt.Errorf("error getting user: %s", err.Error())
 	}
@@ -63,15 +63,15 @@ func delete(ctx context.Context, req events.APIGatewayProxyRequest) (*shared.API
 	}
 
 	// Can't delete yourself.
-	if u.ID == cd.User.ID {
+	if u.Email == cd.User.Email {
 		return shared.NewAPIResponse(http.StatusBadRequest, DeleteResponse{Error: "can't delete oneself"})
 	}
 
-	if err := user.Delete(ctx, u.ID); err != nil {
+	if err := user.Delete(ctx, u.Email); err != nil {
 		return nil, fmt.Errorf("error deleting user: %s", err.Error())
 	}
 
-	users, err := user.GetAll(ctx)
+	users, err := user.List(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("error getting users: %s", err.Error())
 	}
@@ -80,7 +80,7 @@ func delete(ctx context.Context, req events.APIGatewayProxyRequest) (*shared.API
 }
 
 func list(ctx context.Context, req events.APIGatewayProxyRequest) (*shared.APIResponse, error) {
-	users, err := user.GetAll(ctx)
+	users, err := user.List(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("error getting users: %s", err.Error())
 	}
@@ -94,11 +94,11 @@ func createUser(ctx context.Context, req events.APIGatewayProxyRequest) (*shared
 		return nil, fmt.Errorf("error unmarshalling body: %s", err.Error())
 	}
 
-	if err := user.Insert(ctx, body.Email); err != nil {
+	if err := user.Put(ctx, body.Email); err != nil {
 		return nil, fmt.Errorf("error inserting user: %s", err.Error())
 	}
 
-	users, err := user.GetAll(ctx)
+	users, err := user.List(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("error getting users: %s", err.Error())
 	}

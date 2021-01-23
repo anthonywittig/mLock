@@ -4,10 +4,13 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+
+	"github.com/aws/aws-sdk-go/service/dynamodb"
 )
 
 type ContextData struct {
 	DB   *sql.DB
+	DY   *dynamodb.DynamoDB
 	User *User
 }
 

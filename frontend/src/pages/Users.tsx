@@ -4,7 +4,6 @@ import { Loading } from './utils/Loading';
 import { StandardFetch } from './utils/FetchHelper';
 
 type User = {
-    ID: string;
     Email: string;
     CreatedBy: string;
 }
@@ -117,7 +116,7 @@ export class Users extends React.Component<Props, State> {
                         <tr key={user.Email}>
                             <th scope="row">{user.Email}</th>
                             <td>{user.CreatedBy}</td>
-                            <td><Button variant="secondary" onClick={evt => this.removeUserClick(user.ID)}>Delete</Button></td>
+                            <td><Button variant="secondary" onClick={evt => this.removeUserClick(user.Email)}>Delete</Button></td>
                         </tr>
                     )}
                     <tr key="newUser">

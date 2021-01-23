@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"log"
 	"mlock/shared"
-	"mlock/shared/postgres/user"
+	"mlock/shared/dynamo/user"
 	"net/http"
 	"time"
 
