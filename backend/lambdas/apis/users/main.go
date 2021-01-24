@@ -94,7 +94,7 @@ func createUser(ctx context.Context, req events.APIGatewayProxyRequest) (*shared
 		return nil, fmt.Errorf("error unmarshalling body: %s", err.Error())
 	}
 
-	if err := user.Put(ctx, body.Email); err != nil {
+	if _, err := user.Put(ctx, "", body.Email); err != nil {
 		return nil, fmt.Errorf("error inserting user: %s", err.Error())
 	}
 

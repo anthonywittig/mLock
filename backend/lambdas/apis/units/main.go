@@ -6,14 +6,14 @@ import (
 	"fmt"
 	"mlock/lambdas/helpers"
 	"mlock/shared"
+	"mlock/shared/dynamo/property"
+	"mlock/shared/dynamo/unit"
 	"mlock/shared/ical"
-	"mlock/shared/postgres/property"
-	"mlock/shared/postgres/unit"
 	"net/http"
+	"net/url"
 	"regexp"
 
 	"github.com/aws/aws-lambda-go/events"
-	"github.com/google/uuid"
 )
 
 type DeleteResponse struct {
@@ -21,37 +21,37 @@ type DeleteResponse struct {
 }
 
 type DetailResponse struct {
-	Entity shared.Unit   `json:"entity"`
+	Entity shared.Unit2  `json:"entity"`
 	Extra  ExtraEntities `json:"extra"`
 }
 
 type ListResponse struct {
-	Entities []shared.Unit `json:"entities"`
-	Extra    ExtraEntities `json:"extra"`
+	Entities []shared.Unit2 `json:"entities"`
+	Extra    ExtraEntities  `json:"extra"`
 }
 
 type CreateBody struct {
-	Name       string    `json:"name"`
-	PropertyID uuid.UUID `json:"propertyId"`
+	Name         string `json:"name"`
+	PropertyName string `json:"propertyName"`
 }
 
 type CreateResponse struct {
-	Entity shared.Unit `json:"entity"`
+	Entity shared.Unit2 `json:"entity"`
 }
 
 type UpdateResponse struct {
-	Entity shared.Unit `json:"entity"`
-	Error  string      `json:"error"`
+	Entity shared.Unit2 `json:"entity"`
+	Error  string       `json:"error"`
 }
 
 type UpdateBody struct {
-	Name        string    `json:"name"`
-	PropertyID  uuid.UUID `json:"propertyId"`
-	CalendarURL string    `json:"calendarUrl"`
+	Name         string `json:"name"`
+	PropertyName string `json:"propertyName"`
+	CalendarURL  string `json:"calendarUrl"`
 }
 
 type ExtraEntities struct {
-	Properties   []shared.Property    `json:"properties"`
+	Properties   []shared.Property2   `json:"properties"`
 	Reservations []shared.Reservation `json:"reservations"`
 }
 
@@ -77,12 +77,15 @@ func HandleRequest(ctx context.Context, req events.APIGatewayProxyRequest) (*sha
 }
 
 func delete(ctx context.Context, req events.APIGatewayProxyRequest) (*shared.APIResponse, error) {
-	id := unitsRegex.ReplaceAllString(req.Path, "")
-	if id == "" {
-		return shared.NewAPIResponse(http.StatusBadRequest, DeleteResponse{Error: "unable to parse id"})
+	name, err := url.QueryUnescape(unitsRegex.ReplaceAllString(req.Path, ""))
+	if err != nil {
+		return nil, fmt.Errorf("error unescaping name: %s", err.Error())
+	}
+	if name == "" {
+		return shared.NewAPIResponse(http.StatusBadRequest, DeleteResponse{Error: "unable to parse name"})
 	}
 
-	entity, ok, err := unit.GetByID(ctx, id)
+	entity, ok, err := unit.Get(ctx, name)
 	if err != nil {
 		return nil, fmt.Errorf("error getting entity: %s", err.Error())
 	}
@@ -90,7 +93,7 @@ func delete(ctx context.Context, req events.APIGatewayProxyRequest) (*shared.API
 		return nil, fmt.Errorf("unable to find entity")
 	}
 
-	if err := unit.Delete(ctx, entity.ID); err != nil {
+	if err := unit.Delete(ctx, entity.Name); err != nil {
 		return nil, fmt.Errorf("error deleting entity: %s", err.Error())
 	}
 
@@ -98,20 +101,23 @@ func delete(ctx context.Context, req events.APIGatewayProxyRequest) (*shared.API
 }
 
 func get(ctx context.Context, req events.APIGatewayProxyRequest) (*shared.APIResponse, error) {
-	id := unitsRegex.ReplaceAllString(req.Path, "")
-	if id != "" {
-		return detail(ctx, req, id)
+	name, err := url.QueryUnescape(unitsRegex.ReplaceAllString(req.Path, ""))
+	if err != nil {
+		return nil, fmt.Errorf("error unescaping name: %s", err.Error())
+	}
+	if name != "" {
+		return detail(ctx, req, name)
 	}
 	return list(ctx, req)
 }
 
 func list(ctx context.Context, req events.APIGatewayProxyRequest) (*shared.APIResponse, error) {
-	entities, err := unit.GetAll(ctx)
+	entities, err := unit.List(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("error getting entities: %s", err.Error())
 	}
 
-	properties, err := property.GetAll(ctx)
+	properties, err := property.List(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("error getting properties: %s", err.Error())
 	}
@@ -124,13 +130,13 @@ func list(ctx context.Context, req events.APIGatewayProxyRequest) (*shared.APIRe
 	})
 }
 
-func detail(ctx context.Context, req events.APIGatewayProxyRequest, id string) (*shared.APIResponse, error) {
-	entity, ok, err := unit.GetByID(ctx, id)
+func detail(ctx context.Context, req events.APIGatewayProxyRequest, name string) (*shared.APIResponse, error) {
+	entity, ok, err := unit.Get(ctx, name)
 	if err != nil {
 		return nil, fmt.Errorf("error getting entity: %s", err.Error())
 	}
 	if !ok {
-		return nil, fmt.Errorf("entity not found: %s", id)
+		return nil, fmt.Errorf("entity not found: %s", name)
 	}
 
 	var reservations []shared.Reservation
@@ -143,7 +149,7 @@ func detail(ctx context.Context, req events.APIGatewayProxyRequest, id string) (
 		}
 	}
 
-	properties, err := property.GetAll(ctx)
+	properties, err := property.List(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("error getting properties: %s", err.Error())
 	}
@@ -158,9 +164,12 @@ func detail(ctx context.Context, req events.APIGatewayProxyRequest, id string) (
 }
 
 func update(ctx context.Context, req events.APIGatewayProxyRequest) (*shared.APIResponse, error) {
-	id := unitsRegex.ReplaceAllString(req.Path, "")
-	if id == "" {
-		return shared.NewAPIResponse(http.StatusBadRequest, UpdateResponse{Error: "unable to parse id"})
+	name, err := url.QueryUnescape(unitsRegex.ReplaceAllString(req.Path, ""))
+	if err != nil {
+		return nil, fmt.Errorf("error unescaping name: %s", err.Error())
+	}
+	if name == "" {
+		return shared.NewAPIResponse(http.StatusBadRequest, UpdateResponse{Error: "unable to parse name"})
 	}
 
 	var body UpdateBody
@@ -168,19 +177,19 @@ func update(ctx context.Context, req events.APIGatewayProxyRequest) (*shared.API
 		return nil, fmt.Errorf("error unmarshalling body: %s", err.Error())
 	}
 
-	entity, ok, err := unit.GetByID(ctx, id)
+	entity, ok, err := unit.Get(ctx, name)
 	if err != nil {
 		return nil, fmt.Errorf("error getting entity: %s", err.Error())
 	}
 	if !ok {
-		return nil, fmt.Errorf("entity not found: %s", id)
+		return nil, fmt.Errorf("entity not found: _%s_", name)
 	}
 
 	entity.Name = body.Name
-	entity.PropertyID = body.PropertyID
+	entity.PropertyName = body.PropertyName
 	entity.CalendarURL = body.CalendarURL
 
-	entity, err = unit.Update(ctx, entity)
+	entity, err = unit.Put(ctx, name, entity)
 	if err != nil {
 		return nil, fmt.Errorf("error updating entity: %s", err.Error())
 	}
@@ -194,7 +203,10 @@ func create(ctx context.Context, req events.APIGatewayProxyRequest) (*shared.API
 		return nil, fmt.Errorf("error unmarshalling body: %s", err.Error())
 	}
 
-	entity, err := unit.Insert(ctx, body.Name, body.PropertyID)
+	entity, err := unit.Put(ctx, "", shared.Unit2{
+		Name:         body.Name,
+		PropertyName: body.PropertyName,
+	})
 	if err != nil {
 		return nil, fmt.Errorf("error inserting entity: %s", err.Error())
 	}

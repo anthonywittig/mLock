@@ -2,13 +2,14 @@ import React from 'react';
 import { Button, Form} from 'react-bootstrap';
 import { useRouteMatch } from 'react-router-dom';
 import { format, parseISO } from 'date-fns';
+import { History } from 'history';
+import { useHistory } from 'react-router-dom';
 import { Loading } from '../utils/Loading';
 import { StandardFetch } from '../utils/FetchHelper';
 
 type Entity = {
-    id: string,
     name: string,
-    propertyId: string,
+    propertyName: string,
     calendarUrl: string,
     updatedBy: string,
 }
@@ -24,7 +25,6 @@ type Reservation = {
 }
 
 type Property = {
-    id: string,
     name: string,
     createdBy: string,
 }
@@ -38,52 +38,53 @@ type State = {
     setProperties: React.Dispatch<React.SetStateAction<Property[]>>,
     reservations: Reservation[],
     setReservations: React.Dispatch<React.SetStateAction<Reservation[]>>,
+    history: History,
 };
 
-type MatchParams = {id: string};
+type MatchParams = {name: string};
 
 const Endpoint = "units";
 
 export const Detail = () => {
     const state = GetState();
-    const m = useRouteMatch('/units/:id');
+    const m = useRouteMatch('/units/:name');
     const mp = m?.params as MatchParams;
-    console.log(mp.id);
 
     const didMountRef = React.useRef(true);
     React.useEffect(() => {
         if (didMountRef.current) {
-            xComponentDidMount(state, mp.id);
+            xComponentDidMount(state, mp.name);
         }
         didMountRef.current = false;
-    }, [state, mp.id]);
+    }, [state, mp.name]);
 
-    return render(state);
+    return render(mp.name, state);
 };
 
 function GetState(): State{
     const [entity, setEntity] = React.useState<Entity>({
-        id: "",
         name: "",
-        propertyId: "",
+        propertyName: "",
         calendarUrl: "",
         updatedBy: "",
     });
     const [loading, setLoading] = React.useState<boolean>(true);
     const [properties, setProperties] = React.useState<Property[]>([]);
     const [reservations, setReservations] = React.useState<Reservation[]>([]);
+    const history = useHistory();
     return {
         entity, setEntity,
         loading, setLoading,
         properties, setProperties,
         reservations, setReservations,
+        history,
     };
 }
 
-function xComponentDidMount(state: State, entityId: string) {
+function xComponentDidMount(state: State, name: string) {
     state.setLoading(true);
 
-    StandardFetch(Endpoint + "/" + entityId, {method: "GET"})
+    StandardFetch(Endpoint + "/" + encodeURIComponent(name), {method: "GET"})
     .then(response => response.json())
     .then(response => {
         state.setEntity(response.entity);
@@ -111,10 +112,10 @@ function detailFormNameChange(state: State, evt: React.ChangeEvent<HTMLInputElem
     });
 }
 
-function detailFormPropertyIdChange(state: State, evt: React.ChangeEvent<HTMLSelectElement>) {
+function detailFormPropertyNameChange(state: State, evt: React.ChangeEvent<HTMLSelectElement>) {
     state.setEntity({
         ...state.entity,
-        propertyId: evt.target.value,
+        propertyName: evt.target.value,
     });
 }
 
@@ -125,16 +126,16 @@ function detailFormCalendarUrlChange(state: State, evt: React.ChangeEvent<HTMLSe
     });
 }
 
-function detailFormSubmit(state: State, evt: React.FormEvent<HTMLFormElement>) {
+function detailFormSubmit(name: string, state: State, evt: React.FormEvent<HTMLFormElement>) {
     evt.preventDefault();
 
     state.setLoading(true);
 
-    StandardFetch(Endpoint + "/" + state.entity.id, {
+    StandardFetch(Endpoint + "/" + encodeURIComponent(name), {
         method: "PUT",
         body: JSON.stringify({
             name: state.entity.name,
-            propertyId: state.entity.propertyId,
+            propertyName: state.entity.propertyName,
             calendarUrl: state.entity.calendarUrl,
         })
     })
@@ -142,6 +143,7 @@ function detailFormSubmit(state: State, evt: React.FormEvent<HTMLFormElement>) {
     .then(response => {
         state.setEntity(response.entity);
         state.setLoading(false);
+        state.history.push('/units/' + encodeURIComponent(response.entity.name));
     })
     .catch(err => {
         // TODO: indicate error.
@@ -149,13 +151,13 @@ function detailFormSubmit(state: State, evt: React.FormEvent<HTMLFormElement>) {
     });
 }
 
-function render(state: State) {
+function render(name: string, state: State) {
     return (
         <>
             <div className="card" style={{marginBottom: "1rem", marginTop: "1rem"}}>
                 <div className="card-body">
                     <h2 className="card-title">Details</h2>
-                    {renderEntity(state)}
+                    {renderEntity(name, state)}
                 </div>
             </div>
             <div className="card" style={{marginBottom: "1rem", marginTop: "1rem"}}>
@@ -195,12 +197,12 @@ function renderCalendar(state: State) {
     );
 }
 
-function renderEntity(state: State) {
+function renderEntity(name: string, state: State) {
     if (state.loading) {
         return <Loading />;
     }
     return (
-        <Form onSubmit={evt => detailFormSubmit(state, evt)}>
+        <Form onSubmit={evt => detailFormSubmit(name, state, evt)}>
             <Form.Group>
                 <Form.Label>Name</Form.Label>
                 <Form.Control type="text" value={state.entity.name} onChange={evt => detailFormNameChange(state, evt as any)}/>
@@ -208,9 +210,9 @@ function renderEntity(state: State) {
 
             <Form.Group controlId="exampleForm.ControlSelect1">
                 <Form.Label>Property</Form.Label>
-                <Form.Control as="select" onChange={evt => detailFormPropertyIdChange(state, evt as any)}>
+                <Form.Control as="select" onChange={evt => detailFormPropertyNameChange(state, evt as any)}>
                     {state.properties.map(property =>
-                        <option value={property.id} selected={property.id === state.entity.propertyId}>
+                        <option value={property.name} selected={property.name === state.entity.propertyName}>
                             {property.name}
                         </option>
                     )}

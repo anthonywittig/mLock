@@ -1,4 +1,4 @@
-package user
+package property
 
 import (
 	"context"
@@ -6,41 +6,35 @@ import (
 	"log"
 	"mlock/shared"
 	"mlock/shared/dynamo"
-	"regexp"
 	"strings"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbattribute"
+	"github.com/google/uuid"
 )
-
-type UserServiceImpl struct{}
 
 const (
-	tableName = "Users"
-	userType  = "1" // Not really using ATM.
+	tableName = "Property"
+	itemType  = "1" // Not really using ATM.
 )
 
-var emailRegex = regexp.MustCompile("^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$")
-
-func NewUserService() *UserServiceImpl {
-	return &UserServiceImpl{}
-}
-
-func Delete(ctx context.Context, email string) error {
+func Delete(ctx context.Context, name string) error {
 	dy, err := dynamo.GetClient(ctx)
 	if err != nil {
 		return fmt.Errorf("error getting client: %s", err.Error())
 	}
 
-	email = strings.ToLower(email)
+	name = strings.TrimSpace(name)
+
+	// TODO: don't delete if in use?
 
 	// No audit trail for deletes. :(
 
 	if _, err = dy.DeleteItemWithContext(ctx, &dynamodb.DeleteItemInput{
 		Key: map[string]*dynamodb.AttributeValue{
-			"Type":  {S: aws.String(userType)},
-			"Email": {S: aws.String(email)},
+			"type": {S: aws.String(itemType)},
+			"name": {S: aws.String(name)},
 		},
 		TableName: aws.String(tableName),
 	}); err != nil {
@@ -50,79 +44,67 @@ func Delete(ctx context.Context, email string) error {
 	return nil
 }
 
-func Get(ctx context.Context, email string) (shared.User, bool, error) {
-	return (&UserServiceImpl{}).Get(ctx, email)
-}
-
-func (u *UserServiceImpl) Get(ctx context.Context, email string) (shared.User, bool, error) {
+func Get(ctx context.Context, name string) (shared.Property2, bool, error) {
 	dy, err := dynamo.GetClient(ctx)
 	if err != nil {
-		return shared.User{}, false, fmt.Errorf("error getting client: %s", err.Error())
+		return shared.Property2{}, false, fmt.Errorf("error getting client: %s", err.Error())
 	}
 
-	email = strings.ToLower(email)
+	name = strings.TrimSpace(name)
 
 	result, err := dy.GetItemWithContext(ctx, &dynamodb.GetItemInput{
 		TableName: aws.String(tableName),
 		Key: map[string]*dynamodb.AttributeValue{
-			"Type":  {S: aws.String(userType)},
-			"Email": {S: aws.String(email)},
+			"type": {S: aws.String(itemType)},
+			"name": {S: aws.String(name)},
 		},
 	})
 	if err != nil {
-		return shared.User{}, false, fmt.Errorf("error getting item: %s", err.Error())
+		return shared.Property2{}, false, fmt.Errorf("error getting item: %s", err.Error())
 	}
 	if result.Item == nil {
-		return shared.User{}, false, nil
+		return shared.Property2{}, false, nil
 	}
 
-	item := shared.User{}
+	item := shared.Property2{}
 	err = dynamodbattribute.UnmarshalMap(result.Item, &item)
 	if err != nil {
-		return shared.User{}, false, fmt.Errorf("error unmarshalling: %s", err.Error())
+		return shared.Property2{}, false, fmt.Errorf("error unmarshalling: %s", err.Error())
 	}
 
 	return item, true, nil
 }
 
-func List(ctx context.Context) ([]shared.User, error) {
+func List(ctx context.Context) ([]shared.Property2, error) {
 	dy, err := dynamo.GetClient(ctx)
 	if err != nil {
-		return []shared.User{}, fmt.Errorf("error getting client: %s", err.Error())
+		return []shared.Property2{}, fmt.Errorf("error getting client: %s", err.Error())
 	}
-
-	/*
-		filt := expression.Name("Type").Equal(expression.Value(userType))
-		expr, err := expression.NewBuilder().WithFilter(filt).Build()
-		if err != nil {
-			return []shared.User{}, fmt.Errorf("error building expression: %s", err.Error())
-		}
-	*/
 
 	input := &dynamodb.QueryInput{
 		TableName: aws.String(tableName),
 		KeyConditions: map[string]*dynamodb.Condition{
-			"Type": {
+			"type": {
 				ComparisonOperator: aws.String("EQ"),
 				AttributeValueList: []*dynamodb.AttributeValue{
-					{S: aws.String(userType)},
+					{S: aws.String(itemType)},
 				},
 			},
 		},
 	}
 
-	items := []shared.User{}
+	items := []shared.Property2{}
 	for {
 		// Get the list of tables
 		result, err := dy.QueryWithContext(ctx, input)
 		if err != nil {
-			return []shared.User{}, fmt.Errorf("error calling dynamo: %s", err.Error())
+			return []shared.Property2{}, fmt.Errorf("error calling dynamo: %s", err.Error())
 		}
 
 		for _, i := range result.Items {
-			item := shared.User{}
+			item := shared.Property2{}
 			if err = dynamodbattribute.UnmarshalMap(i, &item); err != nil {
-				return []shared.User{}, fmt.Errorf("error unmarshaling: %s", err.Error())
+				return []shared.Property2{}, fmt.Errorf("error unmarshaling: %s", err.Error())
 			}
 			items = append(items, item)
 		}
@@ -136,38 +118,38 @@ func List(ctx context.Context) ([]shared.User, error) {
 	return items, nil
 }
 
-func Put(ctx context.Context, oldKey string, email string) (shared.User, error) {
+func Put(ctx context.Context, oldKey string, name string) (shared.Property2, error) {
+	return PutID(ctx, oldKey, name, uuid.New().String())
+}
+
+func PutID(ctx context.Context, oldKey string, name string, id string) (shared.Property2, error) {
 	dy, err := dynamo.GetClient(ctx)
 	if err != nil {
-		return shared.User{}, fmt.Errorf("error getting client: %s", err.Error())
+		return shared.Property2{}, fmt.Errorf("error getting client: %s", err.Error())
 	}
 
-	email = strings.ToLower(email)
-
-	if !isEmailValid(email) {
-		// Should indicate it's a 4xx; we should probably do some validation on the frontend too.
-		return shared.User{}, fmt.Errorf("email isn't formatted correctly")
-	}
+	name = strings.TrimSpace(name)
 
 	cd, err := shared.GetContextData(ctx)
 	if err != nil {
-		return shared.User{}, fmt.Errorf("can't get context data: %s", err.Error())
+		return shared.Property2{}, fmt.Errorf("can't get context data: %s", err.Error())
 	}
 
 	currentUser := cd.User
 	if currentUser == nil {
-		return shared.User{}, fmt.Errorf("no current user")
+		return shared.Property2{}, fmt.Errorf("no current user")
 	}
 
-	item := shared.User{
-		Type:      userType,
-		Email:     email,
+	item := shared.Property2{
+		Type:      itemType,
+		Name:      name,
+		ID:        id,
 		CreatedBy: currentUser.Email,
 	}
 
 	av, err := dynamodbattribute.MarshalMap(item)
 	if err != nil {
-		return shared.User{}, fmt.Errorf("error marshalling map: %s", err.Error())
+		return shared.Property2{}, fmt.Errorf("error marshalling map: %s", err.Error())
 	}
 
 	input := &dynamodb.PutItemInput{
@@ -177,20 +159,20 @@ func Put(ctx context.Context, oldKey string, email string) (shared.User, error) 
 
 	_, err = dy.PutItemWithContext(ctx, input)
 	if err != nil {
-		return shared.User{}, fmt.Errorf("error putting item: %s", err.Error())
+		return shared.Property2{}, fmt.Errorf("error putting item: %s", err.Error())
 	}
 
-	entity, ok, err := Get(ctx, email)
+	entity, ok, err := Get(ctx, name)
 	if err != nil {
-		return shared.User{}, err
+		return shared.Property2{}, err
 	}
 	if !ok {
-		return shared.User{}, fmt.Errorf("couldn't find entity after insert")
+		return shared.Property2{}, fmt.Errorf("couldn't find entity after insert")
 	}
 
-	if oldKey != "" && oldKey != entity.Email {
+	if oldKey != "" && oldKey != entity.Name {
 		if err := Delete(ctx, oldKey); err != nil {
-			return shared.User{}, fmt.Errorf("error deleting old item: %s", err.Error())
+			return shared.Property2{}, fmt.Errorf("error deleting old item: %s", err.Error())
 		}
 	}
 
@@ -214,22 +196,22 @@ func Migrate(ctx context.Context) error {
 	input := &dynamodb.CreateTableInput{
 		AttributeDefinitions: []*dynamodb.AttributeDefinition{
 			{
-				AttributeName: aws.String("Type"),
+				AttributeName: aws.String("type"),
 				AttributeType: aws.String("S"),
 			},
 			{
-				AttributeName: aws.String("Email"),
+				AttributeName: aws.String("name"),
 				AttributeType: aws.String("S"),
 			},
 		},
 		BillingMode: aws.String("PAY_PER_REQUEST"),
 		KeySchema: []*dynamodb.KeySchemaElement{
 			{
-				AttributeName: aws.String("Type"),
+				AttributeName: aws.String("type"),
 				KeyType:       aws.String("HASH"),
 			},
 			{
-				AttributeName: aws.String("Email"),
+				AttributeName: aws.String("name"),
 				KeyType:       aws.String("RANGE"),
 			},
 		},
@@ -244,11 +226,4 @@ func Migrate(ctx context.Context) error {
 	log.Printf("created table: %s - %+v", tableName, result)
 
 	return nil
-}
-
-func isEmailValid(e string) bool {
-	if len(e) < 3 && len(e) > 254 {
-		return false
-	}
-	return emailRegex.MatchString(e)
 }

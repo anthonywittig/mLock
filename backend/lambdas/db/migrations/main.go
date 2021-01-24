@@ -5,8 +5,11 @@ import (
 	"database/sql"
 	"fmt"
 	"mlock/shared"
+	"mlock/shared/dynamo/property"
+	"mlock/shared/dynamo/unit"
 	"mlock/shared/dynamo/user"
 	"mlock/shared/postgres"
+	pgUnit "mlock/shared/postgres/unit"
 
 	"github.com/aws/aws-lambda-go/lambda"
 	"github.com/pressly/goose"
@@ -44,7 +47,7 @@ func HandleRequest(ctx context.Context, event MyEvent) (Response, error) {
 		return Response{}, fmt.Errorf("error migrating DB: %s", err.Error())
 	}
 
-	if err := user.MigrateUsers(ctx); err != nil {
+	if err := user.Migrate(ctx); err != nil {
 		return Response{}, fmt.Errorf("error migrating dynamo users: %s", err.Error())
 	}
 	/*
@@ -73,6 +76,83 @@ func HandleRequest(ctx context.Context, event MyEvent) (Response, error) {
 		// end code for moving users from postgres to dynamo
 		//
 	*/
+
+	if err := property.Migrate(ctx); err != nil {
+		return Response{}, fmt.Errorf("error migrating dynamo properties: %s", err.Error())
+	}
+	/*
+		//
+		// code for moving properties from postgres to dynamo
+		//
+		items, err := pgProperty.GetAll(ctx)
+		if err != nil {
+			return Response{}, fmt.Errorf("error getting items: %s", err.Error())
+		}
+		errors := []error{}
+		for _, i := range items {
+			cd, err := shared.GetContextData(ctx)
+			if err != nil {
+				return Response{}, fmt.Errorf("error getting context data: %s", err.Error())
+			}
+			cd.User = &shared.User{Email: i.CreatedBy}
+			if _, err := property.PutID(ctx, i.Name, i.ID); err != nil {
+				errors = append(errors, err)
+			}
+		}
+		if len(errors) > 0 {
+			return Response{}, fmt.Errorf("error(s) inserting items(s): %+v", errors)
+		}
+		//
+		// end code for moving properties from postgres to dynamo
+		//
+	*/
+
+	if err := unit.Migrate(ctx); err != nil {
+		return Response{}, fmt.Errorf("error migrating dynamo properties: %s", err.Error())
+	}
+	//
+	// code for moving properties from postgres to dynamo
+	//
+	properties, err := property.List(ctx)
+	if err != nil {
+		return Response{}, fmt.Errorf("error getting properties: %s", err.Error())
+	}
+
+	items, err := pgUnit.GetAll(ctx)
+	if err != nil {
+		return Response{}, fmt.Errorf("error getting items: %s", err.Error())
+	}
+	errors := []error{}
+	for _, i := range items {
+		cd, err := shared.GetContextData(ctx)
+		if err != nil {
+			return Response{}, fmt.Errorf("error getting context data: %s", err.Error())
+		}
+		cd.User = &shared.User{Email: i.UpdatedBy}
+		found := false
+		for _, p := range properties {
+			if p.ID == i.PropertyID.String() {
+				found = true
+				//if _, err := unit.PutCal(ctx, i.Name, p.Name, i.CalendarURL); err != nil {
+				if _, err := unit.Put(ctx, "", shared.Unit2{
+					Name:         i.Name,
+					PropertyName: p.Name,
+					CalendarURL:  i.CalendarURL,
+				}); err != nil {
+					errors = append(errors, err)
+				}
+			}
+		}
+		if !found {
+			errors = append(errors, fmt.Errorf("can't find property for id: %s", i.PropertyID))
+		}
+	}
+	if len(errors) > 0 {
+		return Response{}, fmt.Errorf("error(s) inserting items(s): %+v", errors)
+	}
+	//
+	// end code for moving properties from postgres to dynamo
+	//
 
 	dbName := postgres.GetCurrentDatabase(ctx)
 

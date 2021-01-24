@@ -2,11 +2,10 @@ import React from 'react';
 import { Button } from 'react-bootstrap';
 import { StandardFetch } from '../utils/FetchHelper';
 
-type Adder = (id: string, name: string, createdBy: string) => void;
-type Remover = (id: string) => void;
+type Adder = (name: string, createdBy: string) => void;
+type Remover = (name: string) => void;
 
 type Props = {
-    id: string,
     entityName: string,
     createdBy: string,
     addEntity: Adder,
@@ -30,16 +29,16 @@ export class Property extends React.Component<Props, State> {
     getResetState() {
         return {
             entityName: this.props.entityName,
-            state: this.props.id ? "exists" : "new",
+            state: this.props.entityName ? "exists" : "new",
             entityFieldsDisabled: false,
         };
     }
 
-    removeClick(id: string) {
-        StandardFetch(Endpoint + "/" + id, {method: "DELETE"})
+    removeClick(name: string) {
+        StandardFetch(Endpoint + "/" + encodeURIComponent(name), {method: "DELETE"})
         .then(response => {
             if (response.status === 200) {
-                this.props.removeEntity(id);
+                this.props.removeEntity(name);
             }
         })
         .catch(err => {
@@ -72,7 +71,7 @@ export class Property extends React.Component<Props, State> {
         .then(response => {
             // add to parent
             const e = response.entity;
-            this.props.addEntity(e.id, e.name, e.createdBy);
+            this.props.addEntity(e.name, e.createdBy);
             this.setState(this.getResetState());
         })
         .catch(err => {
@@ -97,10 +96,10 @@ export class Property extends React.Component<Props, State> {
         }
 
         return (
-            <tr key={this.props.id}>
+            <tr key={this.props.entityName}>
                 <th scope="row">{this.props.entityName}</th>
                 <td>{this.props.createdBy}</td>
-                <td><Button variant="secondary" onClick={evt => this.removeClick(this.props.id)}>Delete</Button></td>
+                <td><Button variant="secondary" onClick={evt => this.removeClick(this.props.entityName)}>Delete</Button></td>
             </tr>
         );
     }

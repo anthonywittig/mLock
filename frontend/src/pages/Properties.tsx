@@ -4,7 +4,6 @@ import { StandardFetch } from './utils/FetchHelper';
 import { Property } from './components/Property';
 
 type Entity = {
-    id: string;
     name: string;
     createdBy: string;
 }
@@ -37,18 +36,18 @@ export class Properties extends React.Component<Props, State> {
         });
     }
 
-    removeEntity(id: string) {
+    removeEntity(name: string) {
         this.setState({
             entities: this.state.entities.filter(value => {
-                return value.id !== id;
+                return value.name !== name;
             }),
         });
     }
 
-    addEntity(id: string, name: string, createdBy: string) {
+    addEntity(name: string, createdBy: string) {
+        // TODO: make sure the name is unique.
         this.setState({
             entities: this.state.entities.concat([{
-                id,
                 name,
                 createdBy,
             }]),
@@ -70,9 +69,9 @@ export class Properties extends React.Component<Props, State> {
                 </thead>
                 <tbody>
                     {this.state.entities.map(entity =>
-                        <Property id={entity.id} entityName={entity.name} createdBy={entity.createdBy} removeEntity={id => this.removeEntity(id)} addEntity={props => console.log("should never happen")}/>
+                        <Property entityName={entity.name} createdBy={entity.createdBy} removeEntity={id => this.removeEntity(id)} addEntity={props => console.log("should never happen")}/>
                     )}
-                    <Property id="" entityName="" createdBy="" removeEntity={id => console.log("should never happen")} addEntity={(id, name, createdBy) => this.addEntity(id, name, createdBy)}/>
+                    <Property entityName="" createdBy="" removeEntity={id => console.log("should never happen")} addEntity={(name, createdBy) => this.addEntity(name, createdBy)}/>
                 </tbody>
             </table>
         );

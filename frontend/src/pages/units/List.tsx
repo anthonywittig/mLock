@@ -4,14 +4,12 @@ import { StandardFetch } from '../utils/FetchHelper';
 import { Unit } from './Unit';
 
 type Entity = {
-    id: string,
     name: string,
-    propertyId: string,
+    propertyName: string,
     updatedBy: string,
 }
 
 type Property = {
-    id: string,
     name: string,
     createdBy: string,
 }
@@ -49,21 +47,19 @@ export class List extends React.Component<Props, State> {
         });
     }
 
-    removeEntity(id: string) {
-        console.log("removeEntity");
+    removeEntity(name: string) {
         this.setState({
             entities: this.state.entities.filter(value => {
-                return value.id !== id;
+                return value.name !== name;
             }),
         });
     }
 
-    addEntity(id: string, name: string, propertyId: string, updatedBy: string) {
+    addEntity(name: string, propertyName: string, updatedBy: string) {
         this.setState({
             entities: this.state.entities.concat([{
-                id,
                 name,
-                propertyId,
+                propertyName,
                 updatedBy,
             }]),
         });
@@ -85,22 +81,20 @@ export class List extends React.Component<Props, State> {
                 <tbody>
                     {this.state.entities.map(entity =>
                         <Unit
-                            id={entity.id}
                             entityName={entity.name}
-                            propertyId={entity.propertyId}
+                            propertyName={entity.propertyName}
                             updatedBy={entity.updatedBy}
                             properties={this.state.properties}
                             addEntity={null}
-                            removeEntity={id => this.removeEntity(id)}
+                            removeEntity={name => this.removeEntity(name)}
                         />
                     )}
                     <Unit
-                        id=""
                         entityName=""
-                        propertyId=""
+                        propertyName=""
                         updatedBy=""
                         properties={this.state.properties}
-                        addEntity={(id, name, propertyId, updatedBy) => this.addEntity(id, name, propertyId, updatedBy)}
+                        addEntity={(name, propertyName, updatedBy) => this.addEntity(name, propertyName, updatedBy)}
                         removeEntity={null}
                     />
                 </tbody>
