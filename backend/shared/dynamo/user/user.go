@@ -7,6 +7,7 @@ import (
 	"mlock/shared"
 	"mlock/shared/dynamo"
 	"regexp"
+	"sort"
 	"strings"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -142,6 +143,10 @@ func (u *UserService) List(ctx context.Context) ([]shared.User, error) {
 			break
 		}
 	}
+
+	sort.Slice(items, func(i, j int) bool {
+		return items[i].Email < items[j].Email
+	})
 
 	return items, nil
 }
