@@ -4,8 +4,9 @@ import { Loading } from './utils/Loading';
 import { StandardFetch } from './utils/FetchHelper';
 
 type User = {
-    Email: string;
-    CreatedBy: string;
+    id: string;
+    email: string;
+    updatedBy: string;
 }
 
 type Props = {};
@@ -31,7 +32,6 @@ export class Users extends React.Component<Props, State> {
         StandardFetch("users", {method: "GET"})
         .then(response => response.json())
         .then(response => {
-            console.log(response);
             this.setState({
                 loadingUsers: false,
                 users: response.Users
@@ -43,20 +43,16 @@ export class Users extends React.Component<Props, State> {
         });
     }
 
-    removeUserClick(email: string) {
+    removeUserClick(id: string) {
         this.setState({loadingUsers: true});
 
-        StandardFetch("users/" + encodeURIComponent(email), {method: "DELETE"})
+        StandardFetch("users/" + id, {method: "DELETE"})
         .then(response => response.json())
         .then(response => {
             if (response.Users) {
-                this.setState({
-                    users: response.Users,
-                });
+                this.setState({users: response.Users});
             }
-            this.setState({
-                loadingUsers: false,
-            });
+            this.setState({loadingUsers: false});
         })
         .catch(err => {
             // Need to indicate error...
@@ -113,10 +109,10 @@ export class Users extends React.Component<Props, State> {
                 </thead>
                 <tbody>
                     {this.state.users.map(user =>
-                        <tr key={user.Email}>
-                            <th scope="row">{user.Email}</th>
-                            <td>{user.CreatedBy}</td>
-                            <td><Button variant="secondary" onClick={evt => this.removeUserClick(user.Email)}>Delete</Button></td>
+                        <tr key={user.id}>
+                            <th scope="row">{user.email}</th>
+                            <td>{user.updatedBy}</td>
+                            <td><Button variant="secondary" onClick={evt => this.removeUserClick(user.id)}>Delete</Button></td>
                         </tr>
                     )}
                     <tr key="newUser">

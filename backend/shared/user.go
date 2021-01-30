@@ -7,11 +7,11 @@ import (
 )
 
 type User struct {
-	ID        uuid.UUID
-	Type      string // deprecated
-	Email     string
-	CreatedBy string // deprecated in favor of UpdatedBy
-	UpdatedBy string
+	ID        uuid.UUID `json:"id"`
+	Type      string    `json:"-"` // deprecated
+	Email     string    `json:"email"`
+	CreatedBy string    `json:"-"` // deprecated in favor of UpdatedBy
+	UpdatedBy string    `json:"updatedBy"`
 }
 
 type UserService interface {

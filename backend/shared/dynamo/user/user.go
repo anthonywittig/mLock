@@ -41,7 +41,7 @@ func (u *UserService) Delete(ctx context.Context, id uuid.UUID) error {
 
 	if _, err = dy.DeleteItemWithContext(ctx, &dynamodb.DeleteItemInput{
 		Key: map[string]*dynamodb.AttributeValue{
-			"ID": {B: id[:]},
+			"id": {B: id[:]},
 		},
 		TableName: aws.String(u.tableName),
 	}); err != nil {
@@ -60,7 +60,7 @@ func (u *UserService) Get(ctx context.Context, id uuid.UUID) (shared.User, bool,
 	result, err := dy.GetItemWithContext(ctx, &dynamodb.GetItemInput{
 		TableName: aws.String(u.tableName),
 		Key: map[string]*dynamodb.AttributeValue{
-			"ID": {B: id[:]},
+			"id": {B: id[:]},
 		},
 	})
 	if err != nil {
@@ -135,6 +135,55 @@ func (u *UserService) List(ctx context.Context) ([]shared.User, error) {
 				return []shared.User{}, fmt.Errorf("error unmarshaling: %s", err.Error())
 			}
 			items = append(items, item)
+		}
+
+		input.ExclusiveStartKey = result.LastEvaluatedKey
+		if result.LastEvaluatedKey == nil {
+			break
+		}
+	}
+
+	return items, nil
+}
+
+func (u *UserService) ListOld(ctx context.Context) ([]shared.User, error) {
+	type User2 struct {
+		Type      string
+		Email     string
+		CreatedBy string
+		UpdatedBy string
+	}
+
+	dy, err := dynamo.GetClient(ctx)
+	if err != nil {
+		return []shared.User{}, fmt.Errorf("error getting client: %s", err.Error())
+	}
+
+	input := &dynamodb.ScanInput{
+		TableName: aws.String(u.tableName),
+	}
+
+	items := []shared.User{}
+	for {
+		// Get the list of tables
+		//result, err := dy.QueryWithContext(ctx, input)
+		result, err := dy.ScanWithContext(ctx, input)
+		if err != nil {
+			return []shared.User{}, fmt.Errorf("error calling dynamo: %s", err.Error())
+		}
+
+		for _, i := range result.Items {
+			item := User2{}
+			if err = dynamodbattribute.UnmarshalMap(i, &item); err != nil {
+				return []shared.User{}, fmt.Errorf("error unmarshaling: %s", err.Error())
+			}
+			items = append(items, shared.User{
+				ID:        uuid.New(),
+				Type:      item.Type,
+				Email:     item.Email,
+				CreatedBy: item.CreatedBy,
+				UpdatedBy: item.CreatedBy,
+			})
 		}
 
 		input.ExclusiveStartKey = result.LastEvaluatedKey
@@ -234,14 +283,14 @@ func migrateCreateTable(ctx context.Context) error {
 	input := &dynamodb.CreateTableInput{
 		AttributeDefinitions: []*dynamodb.AttributeDefinition{
 			{
-				AttributeName: aws.String("ID"),
+				AttributeName: aws.String("id"),
 				AttributeType: aws.String("B"),
 			},
 		},
 		BillingMode: aws.String("PAY_PER_REQUEST"),
 		KeySchema: []*dynamodb.KeySchemaElement{
 			{
-				AttributeName: aws.String("ID"),
+				AttributeName: aws.String("id"),
 				KeyType:       aws.String("HASH"),
 			},
 		},
@@ -262,7 +311,7 @@ func migrateData(ctx context.Context) error {
 	oService := NewUserService()
 	oService.tableName = lastTableName
 
-	users, err := oService.List(ctx)
+	users, err := oService.ListOld(ctx)
 	if err != nil {
 		return fmt.Errorf("error getting users: %s", err.Error())
 	}
