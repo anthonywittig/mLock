@@ -86,7 +86,7 @@ function removeClick(props: Props, name: string) {
 }
 
 function nameClick(state: State, name: string) {
-   state.history.push('/units/' + encodeURIComponent(name));
+    state.history.push('/units/' + encodeURIComponent(name));
 }
 
 

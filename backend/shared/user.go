@@ -1,13 +1,19 @@
 package shared
 
-import "context"
+import (
+	"context"
+
+	"github.com/google/uuid"
+)
 
 type User struct {
-	Type      string
+	ID        uuid.UUID
+	Type      string // deprecated
 	Email     string
-	CreatedBy string
+	CreatedBy string // deprecated in favor of UpdatedBy
+	UpdatedBy string
 }
 
 type UserService interface {
-	Get(ctx context.Context, email string) (User, bool, error)
+	GetByEmail(ctx context.Context, email string) (User, bool, error)
 }

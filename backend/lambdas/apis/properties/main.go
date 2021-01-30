@@ -19,7 +19,7 @@ type DeleteResponse struct {
 }
 
 type ListResponse struct {
-	Entities []shared.Property2 `json:"entities"`
+	Entities []shared.Property `json:"entities"`
 }
 
 type CreateRequest struct {
@@ -27,7 +27,7 @@ type CreateRequest struct {
 }
 
 type CreateResponse struct {
-	Entity shared.Property2 `json:"entity"`
+	Entity shared.Property `json:"entity"`
 }
 
 func main() {

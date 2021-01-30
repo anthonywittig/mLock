@@ -12,37 +12,38 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbattribute"
+	"github.com/google/uuid"
 )
 
-type UserServiceImpl struct{}
+type UserService struct {
+	tableName string
+}
 
 const (
-	tableName = "Users"
-	userType  = "1" // Not really using ATM.
+	currentTableName = "Users_v2"
+	lastTableName    = "Users"
+	userType         = "1" // kill soon
 )
 
 var emailRegex = regexp.MustCompile("^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$")
 
-func NewUserService() *UserServiceImpl {
-	return &UserServiceImpl{}
+func NewUserService() *UserService {
+	return &UserService{tableName: currentTableName}
 }
 
-func Delete(ctx context.Context, email string) error {
+func (u *UserService) Delete(ctx context.Context, id uuid.UUID) error {
 	dy, err := dynamo.GetClient(ctx)
 	if err != nil {
 		return fmt.Errorf("error getting client: %s", err.Error())
 	}
 
-	email = strings.ToLower(email)
-
 	// No audit trail for deletes. :(
 
 	if _, err = dy.DeleteItemWithContext(ctx, &dynamodb.DeleteItemInput{
 		Key: map[string]*dynamodb.AttributeValue{
-			"Type":  {S: aws.String(userType)},
-			"Email": {S: aws.String(email)},
+			"ID": {B: id[:]},
 		},
-		TableName: aws.String(tableName),
+		TableName: aws.String(u.tableName),
 	}); err != nil {
 		return fmt.Errorf("error deleting item: %s", err.Error())
 	}
@@ -50,23 +51,16 @@ func Delete(ctx context.Context, email string) error {
 	return nil
 }
 
-func Get(ctx context.Context, email string) (shared.User, bool, error) {
-	return (&UserServiceImpl{}).Get(ctx, email)
-}
-
-func (u *UserServiceImpl) Get(ctx context.Context, email string) (shared.User, bool, error) {
+func (u *UserService) Get(ctx context.Context, id uuid.UUID) (shared.User, bool, error) {
 	dy, err := dynamo.GetClient(ctx)
 	if err != nil {
 		return shared.User{}, false, fmt.Errorf("error getting client: %s", err.Error())
 	}
 
-	email = strings.ToLower(email)
-
 	result, err := dy.GetItemWithContext(ctx, &dynamodb.GetItemInput{
-		TableName: aws.String(tableName),
+		TableName: aws.String(u.tableName),
 		Key: map[string]*dynamodb.AttributeValue{
-			"Type":  {S: aws.String(userType)},
-			"Email": {S: aws.String(email)},
+			"ID": {B: id[:]},
 		},
 	})
 	if err != nil {
@@ -85,36 +79,52 @@ func (u *UserServiceImpl) Get(ctx context.Context, email string) (shared.User, b
 	return item, true, nil
 }
 
-func List(ctx context.Context) ([]shared.User, error) {
+func (u *UserService) GetByEmail(ctx context.Context, email string) (shared.User, bool, error) {
+	email = strings.ToLower(email)
+
+	users, err := u.List(ctx)
+	if err != nil {
+		return shared.User{}, false, fmt.Errorf("error getting users: %s", err.Error())
+	}
+
+	for _, u := range users {
+		if u.Email == email {
+			return u, true, nil
+		}
+	}
+
+	return shared.User{}, false, nil
+}
+
+func (u *UserService) List(ctx context.Context) ([]shared.User, error) {
 	dy, err := dynamo.GetClient(ctx)
 	if err != nil {
 		return []shared.User{}, fmt.Errorf("error getting client: %s", err.Error())
 	}
 
 	/*
-		filt := expression.Name("Type").Equal(expression.Value(userType))
-		expr, err := expression.NewBuilder().WithFilter(filt).Build()
-		if err != nil {
-			return []shared.User{}, fmt.Errorf("error building expression: %s", err.Error())
+		input := &dynamodb.QueryInput{
+			TableName: aws.String(u.tableName),
+			KeyConditions: map[string]*dynamodb.Condition{
+				"Type": {
+					ComparisonOperator: aws.String("EQ"),
+					AttributeValueList: []*dynamodb.AttributeValue{
+						{S: aws.String(userType)},
+					},
+				},
+			},
 		}
 	*/
 
-	input := &dynamodb.QueryInput{
-		TableName: aws.String(tableName),
-		KeyConditions: map[string]*dynamodb.Condition{
-			"Type": {
-				ComparisonOperator: aws.String("EQ"),
-				AttributeValueList: []*dynamodb.AttributeValue{
-					{S: aws.String(userType)},
-				},
-			},
-		},
+	input := &dynamodb.ScanInput{
+		TableName: aws.String(u.tableName),
 	}
 
 	items := []shared.User{}
 	for {
 		// Get the list of tables
-		result, err := dy.QueryWithContext(ctx, input)
+		//result, err := dy.QueryWithContext(ctx, input)
+		result, err := dy.ScanWithContext(ctx, input)
 		if err != nil {
 			return []shared.User{}, fmt.Errorf("error calling dynamo: %s", err.Error())
 		}
@@ -136,15 +146,20 @@ func List(ctx context.Context) ([]shared.User, error) {
 	return items, nil
 }
 
-func Put(ctx context.Context, oldKey string, email string) (shared.User, error) {
+func (u *UserService) Put(ctx context.Context, user shared.User) (shared.User, error) {
 	dy, err := dynamo.GetClient(ctx)
 	if err != nil {
 		return shared.User{}, fmt.Errorf("error getting client: %s", err.Error())
 	}
 
-	email = strings.ToLower(email)
+	if user.ID == uuid.Nil {
+		// Since an ID can easily be forgotten, let's never assume we need to create one.
+		return shared.User{}, fmt.Errorf("an ID is required")
+	}
 
-	if !isEmailValid(email) {
+	user.Email = strings.ToLower(user.Email)
+
+	if !isEmailValid(user.Email) {
 		// Should indicate it's a 4xx; we should probably do some validation on the frontend too.
 		return shared.User{}, fmt.Errorf("email isn't formatted correctly")
 	}
@@ -159,20 +174,18 @@ func Put(ctx context.Context, oldKey string, email string) (shared.User, error) 
 		return shared.User{}, fmt.Errorf("no current user")
 	}
 
-	item := shared.User{
-		Type:      userType,
-		Email:     email,
-		CreatedBy: currentUser.Email,
-	}
+	user.UpdatedBy = currentUser.Email
+	// CreatedBy is deprecated, but treat it as UpdatedBy.
+	user.CreatedBy = user.UpdatedBy
 
-	av, err := dynamodbattribute.MarshalMap(item)
+	av, err := dynamodbattribute.MarshalMap(user)
 	if err != nil {
 		return shared.User{}, fmt.Errorf("error marshalling map: %s", err.Error())
 	}
 
 	input := &dynamodb.PutItemInput{
 		Item:      av,
-		TableName: aws.String(tableName),
+		TableName: aws.String(u.tableName),
 	}
 
 	_, err = dy.PutItemWithContext(ctx, input)
@@ -180,7 +193,7 @@ func Put(ctx context.Context, oldKey string, email string) (shared.User, error) 
 		return shared.User{}, fmt.Errorf("error putting item: %s", err.Error())
 	}
 
-	entity, ok, err := Get(ctx, email)
+	entity, ok, err := u.Get(ctx, user.ID)
 	if err != nil {
 		return shared.User{}, err
 	}
@@ -188,17 +201,24 @@ func Put(ctx context.Context, oldKey string, email string) (shared.User, error) 
 		return shared.User{}, fmt.Errorf("couldn't find entity after insert")
 	}
 
-	if oldKey != "" && oldKey != entity.Email {
-		if err := Delete(ctx, oldKey); err != nil {
-			return shared.User{}, fmt.Errorf("error deleting old item: %s", err.Error())
-		}
-	}
-
 	return entity, nil
 }
 
 func Migrate(ctx context.Context) error {
-	exists, err := dynamo.TableExists(ctx, tableName)
+	if err := migrateCreateTable(ctx); err != nil {
+		return fmt.Errorf("error creating table: %s", err.Error())
+	}
+
+	if err := migrateData(ctx); err != nil {
+		return fmt.Errorf("error migrating data: %s", err.Error())
+	}
+
+	return nil
+}
+
+func migrateCreateTable(ctx context.Context) error {
+	u := NewUserService()
+	exists, err := dynamo.TableExists(ctx, u.tableName)
 	if err != nil {
 		return fmt.Errorf("error checking for table: %s", err.Error())
 	}
@@ -214,34 +234,53 @@ func Migrate(ctx context.Context) error {
 	input := &dynamodb.CreateTableInput{
 		AttributeDefinitions: []*dynamodb.AttributeDefinition{
 			{
-				AttributeName: aws.String("Type"),
-				AttributeType: aws.String("S"),
-			},
-			{
-				AttributeName: aws.String("Email"),
-				AttributeType: aws.String("S"),
+				AttributeName: aws.String("ID"),
+				AttributeType: aws.String("B"),
 			},
 		},
 		BillingMode: aws.String("PAY_PER_REQUEST"),
 		KeySchema: []*dynamodb.KeySchemaElement{
 			{
-				AttributeName: aws.String("Type"),
+				AttributeName: aws.String("ID"),
 				KeyType:       aws.String("HASH"),
 			},
-			{
-				AttributeName: aws.String("Email"),
-				KeyType:       aws.String("RANGE"),
-			},
 		},
-		TableName: aws.String(tableName),
+		TableName: aws.String(u.tableName),
 	}
 
 	result, err := dy.CreateTableWithContext(ctx, input)
 	if err != nil {
-		return fmt.Errorf("error getting client: %s", err.Error())
+		return fmt.Errorf("error creating table: %s", err.Error())
 	}
 
-	log.Printf("created table: %s - %+v", tableName, result)
+	log.Printf("created table: %s - %+v", u.tableName, result)
+
+	return nil
+}
+
+func migrateData(ctx context.Context) error {
+	oService := NewUserService()
+	oService.tableName = lastTableName
+
+	users, err := oService.List(ctx)
+	if err != nil {
+		return fmt.Errorf("error getting users: %s", err.Error())
+	}
+
+	nService := NewUserService()
+	for _, u := range users {
+		cd, err := shared.GetContextData(ctx)
+		if err != nil {
+			return fmt.Errorf("error getting context data: %s", err.Error())
+		}
+		cd.User = &shared.User{Email: u.Email, CreatedBy: u.CreatedBy}
+		if _, err := nService.Put(ctx, shared.User{
+			ID:    uuid.New(),
+			Email: u.Email,
+		}); err != nil {
+			return fmt.Errorf("error getting context data: %s", err.Error())
+		}
+	}
 
 	return nil
 }

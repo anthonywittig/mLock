@@ -43,10 +43,10 @@ func Delete(ctx context.Context, name string) error {
 	return nil
 }
 
-func Get(ctx context.Context, name string) (shared.Unit2, bool, error) {
+func Get(ctx context.Context, name string) (shared.Unit, bool, error) {
 	dy, err := dynamo.GetClient(ctx)
 	if err != nil {
-		return shared.Unit2{}, false, fmt.Errorf("error getting client: %s", err.Error())
+		return shared.Unit{}, false, fmt.Errorf("error getting client: %s", err.Error())
 	}
 
 	name = strings.TrimSpace(name)
@@ -59,25 +59,25 @@ func Get(ctx context.Context, name string) (shared.Unit2, bool, error) {
 		},
 	})
 	if err != nil {
-		return shared.Unit2{}, false, fmt.Errorf("error getting item: %s", err.Error())
+		return shared.Unit{}, false, fmt.Errorf("error getting item: %s", err.Error())
 	}
 	if result.Item == nil {
-		return shared.Unit2{}, false, nil
+		return shared.Unit{}, false, nil
 	}
 
-	item := shared.Unit2{}
+	item := shared.Unit{}
 	err = dynamodbattribute.UnmarshalMap(result.Item, &item)
 	if err != nil {
-		return shared.Unit2{}, false, fmt.Errorf("error unmarshalling: %s", err.Error())
+		return shared.Unit{}, false, fmt.Errorf("error unmarshalling: %s", err.Error())
 	}
 
 	return item, true, nil
 }
 
-func List(ctx context.Context) ([]shared.Unit2, error) {
+func List(ctx context.Context) ([]shared.Unit, error) {
 	dy, err := dynamo.GetClient(ctx)
 	if err != nil {
-		return []shared.Unit2{}, fmt.Errorf("error getting client: %s", err.Error())
+		return []shared.Unit{}, fmt.Errorf("error getting client: %s", err.Error())
 	}
 
 	input := &dynamodb.QueryInput{
@@ -92,18 +92,18 @@ func List(ctx context.Context) ([]shared.Unit2, error) {
 		},
 	}
 
-	items := []shared.Unit2{}
+	items := []shared.Unit{}
 	for {
 		// Get the list of tables
 		result, err := dy.QueryWithContext(ctx, input)
 		if err != nil {
-			return []shared.Unit2{}, fmt.Errorf("error calling dynamo: %s", err.Error())
+			return []shared.Unit{}, fmt.Errorf("error calling dynamo: %s", err.Error())
 		}
 
 		for _, i := range result.Items {
-			item := shared.Unit2{}
+			item := shared.Unit{}
 			if err = dynamodbattribute.UnmarshalMap(i, &item); err != nil {
-				return []shared.Unit2{}, fmt.Errorf("error unmarshaling: %s", err.Error())
+				return []shared.Unit{}, fmt.Errorf("error unmarshaling: %s", err.Error())
 			}
 			items = append(items, item)
 		}
@@ -117,10 +117,10 @@ func List(ctx context.Context) ([]shared.Unit2, error) {
 	return items, nil
 }
 
-func Put(ctx context.Context, oldKey string, item shared.Unit2) (shared.Unit2, error) {
+func Put(ctx context.Context, oldKey string, item shared.Unit) (shared.Unit, error) {
 	dy, err := dynamo.GetClient(ctx)
 	if err != nil {
-		return shared.Unit2{}, fmt.Errorf("error getting client: %s", err.Error())
+		return shared.Unit{}, fmt.Errorf("error getting client: %s", err.Error())
 	}
 
 	item.Name = strings.TrimSpace(item.Name)
@@ -129,12 +129,12 @@ func Put(ctx context.Context, oldKey string, item shared.Unit2) (shared.Unit2, e
 
 	cd, err := shared.GetContextData(ctx)
 	if err != nil {
-		return shared.Unit2{}, fmt.Errorf("can't get context data: %s", err.Error())
+		return shared.Unit{}, fmt.Errorf("can't get context data: %s", err.Error())
 	}
 
 	currentUser := cd.User
 	if currentUser == nil {
-		return shared.Unit2{}, fmt.Errorf("no current user")
+		return shared.Unit{}, fmt.Errorf("no current user")
 	}
 
 	item.Type = itemType
@@ -142,7 +142,7 @@ func Put(ctx context.Context, oldKey string, item shared.Unit2) (shared.Unit2, e
 
 	av, err := dynamodbattribute.MarshalMap(item)
 	if err != nil {
-		return shared.Unit2{}, fmt.Errorf("error marshalling map: %s", err.Error())
+		return shared.Unit{}, fmt.Errorf("error marshalling map: %s", err.Error())
 	}
 
 	input := &dynamodb.PutItemInput{
@@ -152,20 +152,20 @@ func Put(ctx context.Context, oldKey string, item shared.Unit2) (shared.Unit2, e
 
 	_, err = dy.PutItemWithContext(ctx, input)
 	if err != nil {
-		return shared.Unit2{}, fmt.Errorf("error putting item: %s", err.Error())
+		return shared.Unit{}, fmt.Errorf("error putting item: %s", err.Error())
 	}
 
 	entity, ok, err := Get(ctx, item.Name)
 	if err != nil {
-		return shared.Unit2{}, err
+		return shared.Unit{}, err
 	}
 	if !ok {
-		return shared.Unit2{}, fmt.Errorf("couldn't find entity after insert")
+		return shared.Unit{}, fmt.Errorf("couldn't find entity after insert")
 	}
 
 	if oldKey != "" && oldKey != entity.Name {
 		if err := Delete(ctx, oldKey); err != nil {
-			return shared.Unit2{}, fmt.Errorf("error deleting old item: %s", err.Error())
+			return shared.Unit{}, fmt.Errorf("error deleting old item: %s", err.Error())
 		}
 	}
 

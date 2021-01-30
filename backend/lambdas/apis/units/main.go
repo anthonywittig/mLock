@@ -21,13 +21,13 @@ type DeleteResponse struct {
 }
 
 type DetailResponse struct {
-	Entity shared.Unit2  `json:"entity"`
+	Entity shared.Unit   `json:"entity"`
 	Extra  ExtraEntities `json:"extra"`
 }
 
 type ListResponse struct {
-	Entities []shared.Unit2 `json:"entities"`
-	Extra    ExtraEntities  `json:"extra"`
+	Entities []shared.Unit `json:"entities"`
+	Extra    ExtraEntities `json:"extra"`
 }
 
 type CreateBody struct {
@@ -36,12 +36,12 @@ type CreateBody struct {
 }
 
 type CreateResponse struct {
-	Entity shared.Unit2 `json:"entity"`
+	Entity shared.Unit `json:"entity"`
 }
 
 type UpdateResponse struct {
-	Entity shared.Unit2 `json:"entity"`
-	Error  string       `json:"error"`
+	Entity shared.Unit `json:"entity"`
+	Error  string      `json:"error"`
 }
 
 type UpdateBody struct {
@@ -51,7 +51,7 @@ type UpdateBody struct {
 }
 
 type ExtraEntities struct {
-	Properties   []shared.Property2   `json:"properties"`
+	Properties   []shared.Property    `json:"properties"`
 	Reservations []shared.Reservation `json:"reservations"`
 }
 
@@ -203,7 +203,7 @@ func create(ctx context.Context, req events.APIGatewayProxyRequest) (*shared.API
 		return nil, fmt.Errorf("error unmarshalling body: %s", err.Error())
 	}
 
-	entity, err := unit.Put(ctx, "", shared.Unit2{
+	entity, err := unit.Put(ctx, "", shared.Unit{
 		Name:         body.Name,
 		PropertyName: body.PropertyName,
 	})

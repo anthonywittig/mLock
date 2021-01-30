@@ -31,7 +31,7 @@ func GetUserFromToken(ctx context.Context, token string, userService UserService
 	}
 
 	// Grab the user.
-	user, ok, err := userService.Get(ctx, claimSet.Email)
+	user, ok, err := userService.GetByEmail(ctx, claimSet.Email)
 	if err != nil {
 		return TokenData{}, err
 	}

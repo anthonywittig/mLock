@@ -24,8 +24,8 @@ handleDb () {
     rm -rf build
     mkdir build
 
-    mkdir -p build/migrations/goosemigrations
-    cp -r migrations/goosemigrations/ build/migrations/goosemigrations
+    #mkdir -p build/migrations/goosemigrations
+    #cp -r migrations/goosemigrations/ build/migrations/goosemigrations
 
     handleLambda migrations
     # TODO: execute lambda with "forward" option to run the migrations forward.
@@ -38,7 +38,7 @@ handleApis () {
     rm -rf build
     mkdir build
 
-    lambdas=('properties' 'units' 'signin' 'users')
+    lambdas=('signin' 'users' 'properties' 'units')
     for lambda in "${lambdas[@]}" ; do
         handleLambda $lambda
     done

@@ -44,10 +44,10 @@ func Delete(ctx context.Context, name string) error {
 	return nil
 }
 
-func Get(ctx context.Context, name string) (shared.Property2, bool, error) {
+func Get(ctx context.Context, name string) (shared.Property, bool, error) {
 	dy, err := dynamo.GetClient(ctx)
 	if err != nil {
-		return shared.Property2{}, false, fmt.Errorf("error getting client: %s", err.Error())
+		return shared.Property{}, false, fmt.Errorf("error getting client: %s", err.Error())
 	}
 
 	name = strings.TrimSpace(name)
@@ -60,25 +60,25 @@ func Get(ctx context.Context, name string) (shared.Property2, bool, error) {
 		},
 	})
 	if err != nil {
-		return shared.Property2{}, false, fmt.Errorf("error getting item: %s", err.Error())
+		return shared.Property{}, false, fmt.Errorf("error getting item: %s", err.Error())
 	}
 	if result.Item == nil {
-		return shared.Property2{}, false, nil
+		return shared.Property{}, false, nil
 	}
 
-	item := shared.Property2{}
+	item := shared.Property{}
 	err = dynamodbattribute.UnmarshalMap(result.Item, &item)
 	if err != nil {
-		return shared.Property2{}, false, fmt.Errorf("error unmarshalling: %s", err.Error())
+		return shared.Property{}, false, fmt.Errorf("error unmarshalling: %s", err.Error())
 	}
 
 	return item, true, nil
 }
 
-func List(ctx context.Context) ([]shared.Property2, error) {
+func List(ctx context.Context) ([]shared.Property, error) {
 	dy, err := dynamo.GetClient(ctx)
 	if err != nil {
-		return []shared.Property2{}, fmt.Errorf("error getting client: %s", err.Error())
+		return []shared.Property{}, fmt.Errorf("error getting client: %s", err.Error())
 	}
 
 	input := &dynamodb.QueryInput{
@@ -93,18 +93,18 @@ func List(ctx context.Context) ([]shared.Property2, error) {
 		},
 	}
 
-	items := []shared.Property2{}
+	items := []shared.Property{}
 	for {
 		// Get the list of tables
 		result, err := dy.QueryWithContext(ctx, input)
 		if err != nil {
-			return []shared.Property2{}, fmt.Errorf("error calling dynamo: %s", err.Error())
+			return []shared.Property{}, fmt.Errorf("error calling dynamo: %s", err.Error())
 		}
 
 		for _, i := range result.Items {
-			item := shared.Property2{}
+			item := shared.Property{}
 			if err = dynamodbattribute.UnmarshalMap(i, &item); err != nil {
-				return []shared.Property2{}, fmt.Errorf("error unmarshaling: %s", err.Error())
+				return []shared.Property{}, fmt.Errorf("error unmarshaling: %s", err.Error())
 			}
 			items = append(items, item)
 		}
@@ -118,29 +118,29 @@ func List(ctx context.Context) ([]shared.Property2, error) {
 	return items, nil
 }
 
-func Put(ctx context.Context, oldKey string, name string) (shared.Property2, error) {
+func Put(ctx context.Context, oldKey string, name string) (shared.Property, error) {
 	return PutID(ctx, oldKey, name, uuid.New().String())
 }
 
-func PutID(ctx context.Context, oldKey string, name string, id string) (shared.Property2, error) {
+func PutID(ctx context.Context, oldKey string, name string, id string) (shared.Property, error) {
 	dy, err := dynamo.GetClient(ctx)
 	if err != nil {
-		return shared.Property2{}, fmt.Errorf("error getting client: %s", err.Error())
+		return shared.Property{}, fmt.Errorf("error getting client: %s", err.Error())
 	}
 
 	name = strings.TrimSpace(name)
 
 	cd, err := shared.GetContextData(ctx)
 	if err != nil {
-		return shared.Property2{}, fmt.Errorf("can't get context data: %s", err.Error())
+		return shared.Property{}, fmt.Errorf("can't get context data: %s", err.Error())
 	}
 
 	currentUser := cd.User
 	if currentUser == nil {
-		return shared.Property2{}, fmt.Errorf("no current user")
+		return shared.Property{}, fmt.Errorf("no current user")
 	}
 
-	item := shared.Property2{
+	item := shared.Property{
 		Type:      itemType,
 		Name:      name,
 		ID:        id,
@@ -149,7 +149,7 @@ func PutID(ctx context.Context, oldKey string, name string, id string) (shared.P
 
 	av, err := dynamodbattribute.MarshalMap(item)
 	if err != nil {
-		return shared.Property2{}, fmt.Errorf("error marshalling map: %s", err.Error())
+		return shared.Property{}, fmt.Errorf("error marshalling map: %s", err.Error())
 	}
 
 	input := &dynamodb.PutItemInput{
@@ -159,20 +159,20 @@ func PutID(ctx context.Context, oldKey string, name string, id string) (shared.P
 
 	_, err = dy.PutItemWithContext(ctx, input)
 	if err != nil {
-		return shared.Property2{}, fmt.Errorf("error putting item: %s", err.Error())
+		return shared.Property{}, fmt.Errorf("error putting item: %s", err.Error())
 	}
 
 	entity, ok, err := Get(ctx, name)
 	if err != nil {
-		return shared.Property2{}, err
+		return shared.Property{}, err
 	}
 	if !ok {
-		return shared.Property2{}, fmt.Errorf("couldn't find entity after insert")
+		return shared.Property{}, fmt.Errorf("couldn't find entity after insert")
 	}
 
 	if oldKey != "" && oldKey != entity.Name {
 		if err := Delete(ctx, oldKey); err != nil {
-			return shared.Property2{}, fmt.Errorf("error deleting old item: %s", err.Error())
+			return shared.Property{}, fmt.Errorf("error deleting old item: %s", err.Error())
 		}
 	}
 
