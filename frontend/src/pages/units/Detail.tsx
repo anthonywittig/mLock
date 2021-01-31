@@ -7,8 +7,9 @@ import { Loading } from '../utils/Loading';
 import { StandardFetch } from '../utils/FetchHelper';
 
 type Entity = {
+    id: string,
     name: string,
-    propertyName: string,
+    propertyId: string,
     calendarUrl: string,
     updatedBy: string,
 }
@@ -24,18 +25,20 @@ type Reservation = {
 }
 
 type Property = {
+    id: string,
     name: string,
-    createdBy: string,
+    updatedBy: string,
 }
 
-type MatchParams = {name: string};
+type MatchParams = {id: string};
 
 const Endpoint = "units";
 
 export const Detail = () => {
     const [entity, setEntity] = React.useState<Entity>({
+        id: "",
         name: "",
-        propertyName: "",
+        propertyId: "",
         calendarUrl: "",
         updatedBy: "",
     });
@@ -44,14 +47,14 @@ export const Detail = () => {
     const [reservations, setReservations] = React.useState<Reservation[]>([]);
     const history = useHistory();
 
-    const m = useRouteMatch('/units/:name');
+    const m = useRouteMatch('/units/:id');
     const mp = m?.params as MatchParams;
-    const name = mp.name;
+    const id = mp.id;
 
     React.useEffect(() => {
         setLoading(true);
 
-        StandardFetch(Endpoint + "/" + encodeURIComponent(name), {method: "GET"})
+        StandardFetch(Endpoint + "/" + id, {method: "GET"})
         .then(response => response.json())
         .then(response => {
             setEntity(response.entity);
@@ -70,7 +73,7 @@ export const Detail = () => {
             // TODO: indicate error.
             console.log(err);
         });
-    }, [name]);
+    }, [id]);
 
     const detailFormNameChange = (evt: React.ChangeEvent<HTMLInputElement>) => {
         setEntity({
@@ -79,10 +82,10 @@ export const Detail = () => {
         });
     };
 
-    const detailFormPropertyNameChange = (evt: React.ChangeEvent<HTMLSelectElement>) => {
+    const detailFormPropertyChange = (evt: React.ChangeEvent<HTMLSelectElement>) => {
         setEntity({
             ...entity,
-            propertyName: evt.target.value,
+            propertyId: evt.target.value,
         });
     };
 
@@ -98,20 +101,15 @@ export const Detail = () => {
 
         setLoading(true);
 
-        StandardFetch(Endpoint + "/" + encodeURIComponent(name), {
+        StandardFetch(Endpoint + "/" + id, {
             method: "PUT",
-            /*body: JSON.stringify({
-                name: entity.name,
-                propertyName: entity.propertyName,
-                calendarUrl: entity.calendarUrl,
-            })*/
             body: JSON.stringify(entity)
         })
         .then(response => response.json())
         .then(response => {
             setEntity(response.entity);
             setLoading(false);
-            history.push('/units/' + encodeURIComponent(response.entity.name));
+            history.push('/units/' + response.entity.id);
         })
         .catch(err => {
             // TODO: indicate error.
@@ -177,9 +175,9 @@ export const Detail = () => {
 
                 <Form.Group controlId="exampleForm.ControlSelect1">
                     <Form.Label>Property</Form.Label>
-                    <Form.Control as="select" onChange={evt => detailFormPropertyNameChange(evt as any)}>
+                    <Form.Control as="select" onChange={evt => detailFormPropertyChange(evt as any)}>
                         {properties.map(property =>
-                            <option value={property.name} selected={property.name === entity.propertyName}>
+                            <option value={property.id} selected={property.id === entity.propertyId}>
                                 {property.name}
                             </option>
                         )}

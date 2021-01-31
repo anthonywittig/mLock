@@ -1,8 +1,9 @@
 package shared
 
+import "github.com/google/uuid"
+
 type Property struct {
-	Type      string `json:"type"`
-	Name      string `json:"name"`
-	ID        string `json:"id"`
-	CreatedBy string `json:"createdBy"`
+	ID        uuid.UUID `json:"id"`
+	Name      string    `json:"name"`
+	UpdatedBy string    `json:"updatedBy"`
 }

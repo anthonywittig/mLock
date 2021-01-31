@@ -8,10 +8,10 @@ import (
 	"mlock/shared"
 	"mlock/shared/dynamo/property"
 	"net/http"
-	"net/url"
 	"strings"
 
 	"github.com/aws/aws-lambda-go/events"
+	"github.com/google/uuid"
 )
 
 type DeleteResponse struct {
@@ -48,25 +48,23 @@ func HandleRequest(ctx context.Context, req events.APIGatewayProxyRequest) (*sha
 }
 
 func delete(ctx context.Context, req events.APIGatewayProxyRequest) (*shared.APIResponse, error) {
-	name, err := url.QueryUnescape(strings.Replace(req.Path, "/properties/", "", 1))
+	id := strings.Replace(req.Path, "/properties/", "", 1)
+	parsedID, err := uuid.Parse(id)
 	if err != nil {
-		return nil, fmt.Errorf("error unescaping name: %s", err.Error())
-	}
-	if name == "" {
-		return shared.NewAPIResponse(http.StatusBadRequest, DeleteResponse{Error: "unable to parse name"})
+		return shared.NewAPIResponse(http.StatusBadRequest, DeleteResponse{Error: "unable to parse id"})
 	}
 
-	entity, ok, err := property.Get(ctx, name)
+	entity, ok, err := property.Get(ctx, parsedID)
 	if err != nil {
 		return nil, fmt.Errorf("error getting entity: %s", err.Error())
 	}
 	if !ok {
-		return nil, fmt.Errorf("unable to find entity: _%s_", name)
+		return nil, fmt.Errorf("unable to find entity: %s", parsedID)
 	}
 
 	// TODO: Can't delete a property with existing units.
 
-	if err := property.Delete(ctx, entity.Name); err != nil {
+	if err := property.Delete(ctx, entity.ID); err != nil {
 		return nil, fmt.Errorf("error deleting entity: %s", err.Error())
 	}
 
@@ -88,7 +86,10 @@ func create(ctx context.Context, req events.APIGatewayProxyRequest) (*shared.API
 		return nil, fmt.Errorf("error unmarshalling body: %s", err.Error())
 	}
 
-	entity, err := property.Put(ctx, "", body.Name)
+	entity, err := property.Put(ctx, shared.Property{
+		ID:   uuid.New(),
+		Name: body.Name,
+	})
 	if err != nil {
 		return nil, fmt.Errorf("error inserting entity: %s", err.Error())
 	}

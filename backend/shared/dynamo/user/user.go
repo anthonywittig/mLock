@@ -123,8 +123,6 @@ func (u *UserService) List(ctx context.Context) ([]shared.User, error) {
 
 	items := []shared.User{}
 	for {
-		// Get the list of tables
-		//result, err := dy.QueryWithContext(ctx, input)
 		result, err := dy.ScanWithContext(ctx, input)
 		if err != nil {
 			return []shared.User{}, fmt.Errorf("error calling dynamo: %s", err.Error())
@@ -227,7 +225,6 @@ func (u *UserService) Put(ctx context.Context, user shared.User) (shared.User, e
 	if currentUser == nil {
 		return shared.User{}, fmt.Errorf("no current user")
 	}
-
 	user.UpdatedBy = currentUser.Email
 	// CreatedBy is deprecated, but treat it as UpdatedBy.
 	user.CreatedBy = user.UpdatedBy
@@ -307,12 +304,22 @@ func migrateCreateTable(ctx context.Context) error {
 		return fmt.Errorf("error creating table: %s", err.Error())
 	}
 
-	log.Printf("created table: %s - %+v", u.tableName, result)
+	log.Printf("created table: %s - %+v\n", u.tableName, result)
 
 	return nil
 }
 
 func migrateData(ctx context.Context) error {
+	nService := NewUserService()
+	existingUsers, err := nService.List(ctx)
+	if err != nil {
+		return fmt.Errorf("error getting existing items: %s", err.Error())
+	}
+	if len(existingUsers) > 0 {
+		log.Println("already migrated user data")
+		return nil
+	}
+
 	oService := NewUserService()
 	oService.tableName = lastTableName
 
@@ -321,13 +328,12 @@ func migrateData(ctx context.Context) error {
 		return fmt.Errorf("error getting users: %s", err.Error())
 	}
 
-	nService := NewUserService()
 	for _, u := range users {
 		cd, err := shared.GetContextData(ctx)
 		if err != nil {
 			return fmt.Errorf("error getting context data: %s", err.Error())
 		}
-		cd.User = &shared.User{Email: u.Email, CreatedBy: u.CreatedBy}
+		cd.User = &shared.User{Email: u.CreatedBy}
 		if _, err := nService.Put(ctx, shared.User{
 			ID:    uuid.New(),
 			Email: u.Email,

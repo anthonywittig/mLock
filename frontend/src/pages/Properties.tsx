@@ -4,8 +4,9 @@ import { StandardFetch } from './utils/FetchHelper';
 import { Property } from './components/Property';
 
 type Entity = {
+    id: string;
     name: string;
-    createdBy: string;
+    updatedBy: string;
 }
 
 type Props = {};
@@ -36,20 +37,20 @@ export class Properties extends React.Component<Props, State> {
         });
     }
 
-    removeEntity(name: string) {
+    removeEntity(id: string) {
         this.setState({
             entities: this.state.entities.filter(value => {
-                return value.name !== name;
+                return value.id !== id;
             }),
         });
     }
 
-    addEntity(name: string, createdBy: string) {
-        // TODO: make sure the name is unique.
+    addEntity(id: string, name: string, updatedBy: string) {
         this.setState({
             entities: this.state.entities.concat([{
+                id,
                 name,
-                createdBy,
+                updatedBy,
             }]),
         });
     }
@@ -69,9 +70,9 @@ export class Properties extends React.Component<Props, State> {
                 </thead>
                 <tbody>
                     {this.state.entities.map(entity =>
-                        <Property entityName={entity.name} createdBy={entity.createdBy} removeEntity={id => this.removeEntity(id)} addEntity={props => console.log("should never happen")}/>
+                        <Property entityId={entity.id} entityName={entity.name} updatedBy={entity.updatedBy} removeEntity={id => this.removeEntity(id)} addEntity={props => console.log("should never happen")}/>
                     )}
-                    <Property entityName="" createdBy="" removeEntity={id => console.log("should never happen")} addEntity={(name, createdBy) => this.addEntity(name, createdBy)}/>
+                    <Property entityId="" entityName="" updatedBy="" removeEntity={id => console.log("should never happen")} addEntity={(id, name, updatedBy) => this.addEntity(id, name, updatedBy)}/>
                 </tbody>
             </table>
         );

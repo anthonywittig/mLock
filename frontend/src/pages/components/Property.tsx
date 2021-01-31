@@ -2,17 +2,19 @@ import React from 'react';
 import { Button } from 'react-bootstrap';
 import { StandardFetch } from '../utils/FetchHelper';
 
-type Adder = (name: string, createdBy: string) => void;
-type Remover = (name: string) => void;
+type Adder = (id: string, name: string, updatedBy: string) => void;
+type Remover = (id: string) => void;
 
 type Props = {
+    entityId: string
     entityName: string,
-    createdBy: string,
+    updatedBy: string,
     addEntity: Adder,
     removeEntity: Remover,
 };
 
 type State = {
+    entityId: string,
     entityName: string,
     state: string,
     entityFieldsDisabled: boolean,
@@ -28,17 +30,18 @@ export class Property extends React.Component<Props, State> {
 
     getResetState() {
         return {
+            entityId: this.props.entityId,
             entityName: this.props.entityName,
-            state: this.props.entityName ? "exists" : "new",
+            state: this.props.entityId ? "exists" : "new",
             entityFieldsDisabled: false,
         };
     }
 
-    removeClick(name: string) {
-        StandardFetch(Endpoint + "/" + encodeURIComponent(name), {method: "DELETE"})
+    removeClick(id: string) {
+        StandardFetch(Endpoint + "/" + id, {method: "DELETE"})
         .then(response => {
             if (response.status === 200) {
-                this.props.removeEntity(name);
+                this.props.removeEntity(id);
             }
         })
         .catch(err => {
@@ -65,13 +68,16 @@ export class Property extends React.Component<Props, State> {
 
         StandardFetch(Endpoint, {
             method: "POST",
-            body: JSON.stringify({ name: this.state.entityName })
+            body: JSON.stringify({
+                id: this.state.entityId,
+                name: this.state.entityName,
+            }),
         })
         .then(response => response.json())
         .then(response => {
             // add to parent
             const e = response.entity;
-            this.props.addEntity(e.name, e.createdBy);
+            this.props.addEntity(e.id, e.name, e.updatedBy);
             this.setState(this.getResetState());
         })
         .catch(err => {
@@ -98,8 +104,8 @@ export class Property extends React.Component<Props, State> {
         return (
             <tr key={this.props.entityName}>
                 <th scope="row">{this.props.entityName}</th>
-                <td>{this.props.createdBy}</td>
-                <td><Button variant="secondary" onClick={evt => this.removeClick(this.props.entityName)}>Delete</Button></td>
+                <td>{this.props.updatedBy}</td>
+                <td><Button variant="secondary" onClick={evt => this.removeClick(this.props.entityId)}>Delete</Button></td>
             </tr>
         );
     }

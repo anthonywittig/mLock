@@ -6,25 +6,26 @@ import (
 	"log"
 	"mlock/shared"
 	"mlock/shared/dynamo"
+	"mlock/shared/dynamo/property"
+	"mlock/shared/dynamo/unit/last"
+	"sort"
 	"strings"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbattribute"
+	"github.com/google/uuid"
 )
 
 const (
-	tableName = "Unit"
-	itemType  = "1" // Not really using ATM.
+	tableName = "Unit_v2"
 )
 
-func Delete(ctx context.Context, name string) error {
+func Delete(ctx context.Context, id uuid.UUID) error {
 	dy, err := dynamo.GetClient(ctx)
 	if err != nil {
 		return fmt.Errorf("error getting client: %s", err.Error())
 	}
-
-	name = strings.TrimSpace(name)
 
 	// TODO: under what circumstances would we want to stop this?
 
@@ -32,8 +33,7 @@ func Delete(ctx context.Context, name string) error {
 
 	if _, err = dy.DeleteItemWithContext(ctx, &dynamodb.DeleteItemInput{
 		Key: map[string]*dynamodb.AttributeValue{
-			"type": {S: aws.String(itemType)},
-			"name": {S: aws.String(name)},
+			"id": {B: id[:]},
 		},
 		TableName: aws.String(tableName),
 	}); err != nil {
@@ -43,19 +43,16 @@ func Delete(ctx context.Context, name string) error {
 	return nil
 }
 
-func Get(ctx context.Context, name string) (shared.Unit, bool, error) {
+func Get(ctx context.Context, id uuid.UUID) (shared.Unit, bool, error) {
 	dy, err := dynamo.GetClient(ctx)
 	if err != nil {
 		return shared.Unit{}, false, fmt.Errorf("error getting client: %s", err.Error())
 	}
 
-	name = strings.TrimSpace(name)
-
 	result, err := dy.GetItemWithContext(ctx, &dynamodb.GetItemInput{
 		TableName: aws.String(tableName),
 		Key: map[string]*dynamodb.AttributeValue{
-			"type": {S: aws.String(itemType)},
-			"name": {S: aws.String(name)},
+			"id": {B: id[:]},
 		},
 	})
 	if err != nil {
@@ -80,22 +77,13 @@ func List(ctx context.Context) ([]shared.Unit, error) {
 		return []shared.Unit{}, fmt.Errorf("error getting client: %s", err.Error())
 	}
 
-	input := &dynamodb.QueryInput{
+	input := &dynamodb.ScanInput{
 		TableName: aws.String(tableName),
-		KeyConditions: map[string]*dynamodb.Condition{
-			"type": {
-				ComparisonOperator: aws.String("EQ"),
-				AttributeValueList: []*dynamodb.AttributeValue{
-					{S: aws.String(itemType)},
-				},
-			},
-		},
 	}
 
 	items := []shared.Unit{}
 	for {
-		// Get the list of tables
-		result, err := dy.QueryWithContext(ctx, input)
+		result, err := dy.ScanWithContext(ctx, input)
 		if err != nil {
 			return []shared.Unit{}, fmt.Errorf("error calling dynamo: %s", err.Error())
 		}
@@ -114,17 +102,25 @@ func List(ctx context.Context) ([]shared.Unit, error) {
 		}
 	}
 
+	sort.Slice(items, func(i, j int) bool {
+		return items[i].Name < items[j].Name
+	})
+
 	return items, nil
 }
 
-func Put(ctx context.Context, oldKey string, item shared.Unit) (shared.Unit, error) {
+func Put(ctx context.Context, item shared.Unit) (shared.Unit, error) {
 	dy, err := dynamo.GetClient(ctx)
 	if err != nil {
 		return shared.Unit{}, fmt.Errorf("error getting client: %s", err.Error())
 	}
 
+	if item.ID == uuid.Nil {
+		// Since an ID can easily be forgotten, let's never assume we need to create one.
+		return shared.Unit{}, fmt.Errorf("an ID is required")
+	}
+
 	item.Name = strings.TrimSpace(item.Name)
-	item.PropertyName = strings.TrimSpace(item.PropertyName)
 	item.CalendarURL = strings.TrimSpace(item.CalendarURL)
 
 	cd, err := shared.GetContextData(ctx)
@@ -136,8 +132,6 @@ func Put(ctx context.Context, oldKey string, item shared.Unit) (shared.Unit, err
 	if currentUser == nil {
 		return shared.Unit{}, fmt.Errorf("no current user")
 	}
-
-	item.Type = itemType
 	item.UpdatedBy = currentUser.Email
 
 	av, err := dynamodbattribute.MarshalMap(item)
@@ -155,7 +149,7 @@ func Put(ctx context.Context, oldKey string, item shared.Unit) (shared.Unit, err
 		return shared.Unit{}, fmt.Errorf("error putting item: %s", err.Error())
 	}
 
-	entity, ok, err := Get(ctx, item.Name)
+	entity, ok, err := Get(ctx, item.ID)
 	if err != nil {
 		return shared.Unit{}, err
 	}
@@ -163,16 +157,22 @@ func Put(ctx context.Context, oldKey string, item shared.Unit) (shared.Unit, err
 		return shared.Unit{}, fmt.Errorf("couldn't find entity after insert")
 	}
 
-	if oldKey != "" && oldKey != entity.Name {
-		if err := Delete(ctx, oldKey); err != nil {
-			return shared.Unit{}, fmt.Errorf("error deleting old item: %s", err.Error())
-		}
-	}
-
 	return entity, nil
 }
 
 func Migrate(ctx context.Context) error {
+	if err := migrateCreateTable(ctx); err != nil {
+		return fmt.Errorf("error creating table: %s", err.Error())
+	}
+
+	if err := migrateData(ctx); err != nil {
+		return fmt.Errorf("error migrating data: %s", err.Error())
+	}
+
+	return nil
+}
+
+func migrateCreateTable(ctx context.Context) error {
 	exists, err := dynamo.TableExists(ctx, tableName)
 	if err != nil {
 		return fmt.Errorf("error checking for table: %s", err.Error())
@@ -189,23 +189,15 @@ func Migrate(ctx context.Context) error {
 	input := &dynamodb.CreateTableInput{
 		AttributeDefinitions: []*dynamodb.AttributeDefinition{
 			{
-				AttributeName: aws.String("type"),
-				AttributeType: aws.String("S"),
-			},
-			{
-				AttributeName: aws.String("name"),
-				AttributeType: aws.String("S"),
+				AttributeName: aws.String("id"),
+				AttributeType: aws.String("B"),
 			},
 		},
 		BillingMode: aws.String("PAY_PER_REQUEST"),
 		KeySchema: []*dynamodb.KeySchemaElement{
 			{
-				AttributeName: aws.String("type"),
+				AttributeName: aws.String("id"),
 				KeyType:       aws.String("HASH"),
-			},
-			{
-				AttributeName: aws.String("name"),
-				KeyType:       aws.String("RANGE"),
 			},
 		},
 		TableName: aws.String(tableName),
@@ -217,6 +209,57 @@ func Migrate(ctx context.Context) error {
 	}
 
 	log.Printf("created table: %s - %+v", tableName, result)
+
+	return nil
+}
+
+func migrateData(ctx context.Context) error {
+	existingItems, err := List(ctx)
+	if err != nil {
+		return fmt.Errorf("error getting existing items: %s", err.Error())
+	}
+	if len(existingItems) > 0 {
+		log.Println("already migrated unit data")
+		return nil
+	}
+
+	items, err := last.List(ctx)
+	if err != nil {
+		return fmt.Errorf("error getting items: %s", err.Error())
+	}
+
+	properties, err := property.List(ctx)
+	if err != nil {
+		return fmt.Errorf("error getting properties: %s", err.Error())
+	}
+
+	for _, item := range items {
+		cd, err := shared.GetContextData(ctx)
+		if err != nil {
+			return fmt.Errorf("error getting context data: %s", err.Error())
+		}
+
+		propertyID := uuid.Nil
+		for _, p := range properties {
+			if p.Name == item.PropertyName {
+				propertyID = p.ID
+			}
+		}
+		if propertyID == uuid.Nil {
+			return fmt.Errorf("couldn't find property: %s", item.PropertyName)
+		}
+
+		cd.User = &shared.User{Email: item.UpdatedBy}
+		if _, err := Put(ctx, shared.Unit{
+			ID:          uuid.New(),
+			Name:        item.Name,
+			PropertyID:  propertyID,
+			CalendarURL: item.CalendarURL,
+			UpdatedBy:   item.UpdatedBy,
+		}); err != nil {
+			return fmt.Errorf("error getting context data: %s", err.Error())
+		}
+	}
 
 	return nil
 }

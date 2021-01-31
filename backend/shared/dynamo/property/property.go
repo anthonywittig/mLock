@@ -6,7 +6,8 @@ import (
 	"log"
 	"mlock/shared"
 	"mlock/shared/dynamo"
-	"strings"
+	"mlock/shared/dynamo/property/last"
+	"sort"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
@@ -15,17 +16,14 @@ import (
 )
 
 const (
-	tableName = "Property"
-	itemType  = "1" // Not really using ATM.
+	tableName = "Property_v2"
 )
 
-func Delete(ctx context.Context, name string) error {
+func Delete(ctx context.Context, id uuid.UUID) error {
 	dy, err := dynamo.GetClient(ctx)
 	if err != nil {
 		return fmt.Errorf("error getting client: %s", err.Error())
 	}
-
-	name = strings.TrimSpace(name)
 
 	// TODO: don't delete if in use?
 
@@ -33,8 +31,7 @@ func Delete(ctx context.Context, name string) error {
 
 	if _, err = dy.DeleteItemWithContext(ctx, &dynamodb.DeleteItemInput{
 		Key: map[string]*dynamodb.AttributeValue{
-			"type": {S: aws.String(itemType)},
-			"name": {S: aws.String(name)},
+			"id": {B: id[:]},
 		},
 		TableName: aws.String(tableName),
 	}); err != nil {
@@ -44,19 +41,16 @@ func Delete(ctx context.Context, name string) error {
 	return nil
 }
 
-func Get(ctx context.Context, name string) (shared.Property, bool, error) {
+func Get(ctx context.Context, id uuid.UUID) (shared.Property, bool, error) {
 	dy, err := dynamo.GetClient(ctx)
 	if err != nil {
 		return shared.Property{}, false, fmt.Errorf("error getting client: %s", err.Error())
 	}
 
-	name = strings.TrimSpace(name)
-
 	result, err := dy.GetItemWithContext(ctx, &dynamodb.GetItemInput{
 		TableName: aws.String(tableName),
 		Key: map[string]*dynamodb.AttributeValue{
-			"type": {S: aws.String(itemType)},
-			"name": {S: aws.String(name)},
+			"id": {B: id[:]},
 		},
 	})
 	if err != nil {
@@ -81,22 +75,13 @@ func List(ctx context.Context) ([]shared.Property, error) {
 		return []shared.Property{}, fmt.Errorf("error getting client: %s", err.Error())
 	}
 
-	input := &dynamodb.QueryInput{
+	input := &dynamodb.ScanInput{
 		TableName: aws.String(tableName),
-		KeyConditions: map[string]*dynamodb.Condition{
-			"type": {
-				ComparisonOperator: aws.String("EQ"),
-				AttributeValueList: []*dynamodb.AttributeValue{
-					{S: aws.String(itemType)},
-				},
-			},
-		},
 	}
 
 	items := []shared.Property{}
 	for {
-		// Get the list of tables
-		result, err := dy.QueryWithContext(ctx, input)
+		result, err := dy.ScanWithContext(ctx, input)
 		if err != nil {
 			return []shared.Property{}, fmt.Errorf("error calling dynamo: %s", err.Error())
 		}
@@ -115,20 +100,23 @@ func List(ctx context.Context) ([]shared.Property, error) {
 		}
 	}
 
+	sort.Slice(items, func(i, j int) bool {
+		return items[i].Name < items[j].Name
+	})
+
 	return items, nil
 }
 
-func Put(ctx context.Context, oldKey string, name string) (shared.Property, error) {
-	return PutID(ctx, oldKey, name, uuid.New().String())
-}
-
-func PutID(ctx context.Context, oldKey string, name string, id string) (shared.Property, error) {
+func Put(ctx context.Context, item shared.Property) (shared.Property, error) {
 	dy, err := dynamo.GetClient(ctx)
 	if err != nil {
 		return shared.Property{}, fmt.Errorf("error getting client: %s", err.Error())
 	}
 
-	name = strings.TrimSpace(name)
+	if item.ID == uuid.Nil {
+		// Since an ID can easily be forgotten, let's never assume we need to create one.
+		return shared.Property{}, fmt.Errorf("an ID is required")
+	}
 
 	cd, err := shared.GetContextData(ctx)
 	if err != nil {
@@ -139,13 +127,7 @@ func PutID(ctx context.Context, oldKey string, name string, id string) (shared.P
 	if currentUser == nil {
 		return shared.Property{}, fmt.Errorf("no current user")
 	}
-
-	item := shared.Property{
-		Type:      itemType,
-		Name:      name,
-		ID:        id,
-		CreatedBy: currentUser.Email,
-	}
+	item.UpdatedBy = currentUser.Email
 
 	av, err := dynamodbattribute.MarshalMap(item)
 	if err != nil {
@@ -162,7 +144,7 @@ func PutID(ctx context.Context, oldKey string, name string, id string) (shared.P
 		return shared.Property{}, fmt.Errorf("error putting item: %s", err.Error())
 	}
 
-	entity, ok, err := Get(ctx, name)
+	entity, ok, err := Get(ctx, item.ID)
 	if err != nil {
 		return shared.Property{}, err
 	}
@@ -170,16 +152,22 @@ func PutID(ctx context.Context, oldKey string, name string, id string) (shared.P
 		return shared.Property{}, fmt.Errorf("couldn't find entity after insert")
 	}
 
-	if oldKey != "" && oldKey != entity.Name {
-		if err := Delete(ctx, oldKey); err != nil {
-			return shared.Property{}, fmt.Errorf("error deleting old item: %s", err.Error())
-		}
-	}
-
 	return entity, nil
 }
 
 func Migrate(ctx context.Context) error {
+	if err := migrateCreateTable(ctx); err != nil {
+		return fmt.Errorf("error creating table: %s", err.Error())
+	}
+
+	if err := migrateData(ctx); err != nil {
+		return fmt.Errorf("error migrating data: %s", err.Error())
+	}
+
+	return nil
+}
+
+func migrateCreateTable(ctx context.Context) error {
 	exists, err := dynamo.TableExists(ctx, tableName)
 	if err != nil {
 		return fmt.Errorf("error checking for table: %s", err.Error())
@@ -196,23 +184,15 @@ func Migrate(ctx context.Context) error {
 	input := &dynamodb.CreateTableInput{
 		AttributeDefinitions: []*dynamodb.AttributeDefinition{
 			{
-				AttributeName: aws.String("type"),
-				AttributeType: aws.String("S"),
-			},
-			{
-				AttributeName: aws.String("name"),
-				AttributeType: aws.String("S"),
+				AttributeName: aws.String("id"),
+				AttributeType: aws.String("B"),
 			},
 		},
 		BillingMode: aws.String("PAY_PER_REQUEST"),
 		KeySchema: []*dynamodb.KeySchemaElement{
 			{
-				AttributeName: aws.String("type"),
+				AttributeName: aws.String("id"),
 				KeyType:       aws.String("HASH"),
-			},
-			{
-				AttributeName: aws.String("name"),
-				KeyType:       aws.String("RANGE"),
 			},
 		},
 		TableName: aws.String(tableName),
@@ -224,6 +204,43 @@ func Migrate(ctx context.Context) error {
 	}
 
 	log.Printf("created table: %s - %+v", tableName, result)
+
+	return nil
+}
+
+func migrateData(ctx context.Context) error {
+	existingItems, err := List(ctx)
+	if err != nil {
+		return fmt.Errorf("error getting existing items: %s", err.Error())
+	}
+	if len(existingItems) > 0 {
+		log.Println("already migrated property data")
+		return nil
+	}
+
+	items, err := last.List(ctx)
+	if err != nil {
+		return fmt.Errorf("error getting items: %s", err.Error())
+	}
+
+	for _, item := range items {
+		cd, err := shared.GetContextData(ctx)
+		if err != nil {
+			return fmt.Errorf("error getting context data: %s", err.Error())
+		}
+		cd.User = &shared.User{Email: item.CreatedBy}
+		id, err := uuid.Parse(item.ID)
+		if err != nil {
+			return fmt.Errorf("error parsing ID: %s", err.Error())
+		}
+		if _, err := Put(ctx, shared.Property{
+			ID:        id,
+			Name:      item.Name,
+			UpdatedBy: item.CreatedBy,
+		}); err != nil {
+			return fmt.Errorf("error getting context data: %s", err.Error())
+		}
+	}
 
 	return nil
 }
