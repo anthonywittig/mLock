@@ -31,6 +31,16 @@ handleDb () {
     # TODO: execute lambda with "forward" option to run the migrations forward.
 }
 
+handleJobs () {
+    cd $scriptDir
+    cd ../lambdas/jobs
+
+    rm -rf build
+    mkdir build
+
+    handleLambda pollschedules
+}
+
 handleApis () {
     cd $scriptDir
     cd ../lambdas/apis
@@ -51,5 +61,6 @@ scriptDir=$(pwd)
 go vet ../...
 go test ../...
 
-handleDb
+handleJobs
 handleApis
+handleDb

@@ -143,7 +143,7 @@ func detail(ctx context.Context, req events.APIGatewayProxyRequest, id string) (
 	if entity.CalendarURL != "" {
 		var err error
 		// TODO: cache this.
-		reservations, err = ical.Get(context.Background(), entity.CalendarURL)
+		reservations, err = ical.Get(ctx, entity.CalendarURL)
 		if err != nil {
 			return nil, fmt.Errorf("error getting calendar items: %s", err.Error())
 		}
