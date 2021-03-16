@@ -7,6 +7,8 @@ import (
 	"mlock/shared"
 	"mlock/shared/dynamo/unit"
 	"mlock/shared/ical"
+	"mlock/shared/ses"
+	"strings"
 	"time"
 
 	"github.com/aws/aws-lambda-go/lambda"
@@ -57,6 +59,9 @@ func HandleRequest(ctx context.Context, event MyEvent) (Response, error) {
 	}
 
 	// TODO: send email when reservations would start (and end?) - also log somewhere?
+	if err := ses.SendEamil(ctx, "test reservation", strings.Join(messages, "; ")); err != nil {
+		return Response{}, fmt.Errorf("error sending email: %s", err.Error())
+	}
 
 	return Response{
 		Messages: messages,
