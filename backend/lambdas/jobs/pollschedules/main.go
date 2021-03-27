@@ -50,21 +50,46 @@ func HandleRequest(ctx context.Context, event MyEvent) (Response, error) {
 		return Response{}, fmt.Errorf("error getting reservations: %s", err.Error())
 	}
 
-	messages := []string{}
+	var sb strings.Builder
 	for i, ress := range reservations {
+		now := time.Now()
+		notTooFarAway := now.Add(45 * time.Minute)
 		if len(ress) != 0 {
+			upcomingRess := []string{}
+			for _, r := range ress {
+				if r.Start.After(now) && r.Start.Before(notTooFarAway) {
+					upcomingRess = append(upcomingRess, fmt.Sprintf("<li>tx:%s<ul>%s (start) (%f hours till)</ul><ul>%s (end) (%f hours till)</ul></li>", r.TransactionNumber, r.Start, r.Start.Sub(time.Now()).Hours(), r.End, r.End.Sub(time.Now()).Hours()))
+				}
+			}
+
+			if len(upcomingRess) == 0 {
+				continue
+			}
+
 			u := units[i]
-			messages = append(messages, fmt.Sprintf("unit: %s, some reservation: %+v", u.Name, ress[0]))
+			sb.WriteString(fmt.Sprintf("<h1>Unit %s</h1>", u.Name))
+			sb.WriteString("<ul>")
+			for _, s := range upcomingRess {
+				sb.WriteString(s)
+			}
+			sb.WriteString("</ul>")
 		}
 	}
 
-	// TODO: send email when reservations would start (and end?) - also log somewhere?
-	if err := ses.SendEamil(ctx, "test reservation", strings.Join(messages, "; ")); err != nil {
+	message := sb.String()
+
+	if message == "" {
+		return Response{
+			Messages: []string{"no reservations to return"},
+		}, nil
+	}
+
+	if err := ses.SendEamil(ctx, "Upcoming Reservations", message); err != nil {
 		return Response{}, fmt.Errorf("error sending email: %s", err.Error())
 	}
 
 	return Response{
-		Messages: messages,
+		Messages: []string{message},
 	}, nil
 }
 
