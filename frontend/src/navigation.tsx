@@ -5,6 +5,10 @@ import { useLocation } from 'react-router-dom';
 export const Navigation = () => {
     let location = useLocation();
 
+    if (location.pathname.startsWith("/sign-in")) {
+        return null;
+    }
+
     return (
         <Navbar bg="light" expand="lg">
             <Navbar.Brand href="/units/">MLock</Navbar.Brand>
