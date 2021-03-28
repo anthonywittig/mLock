@@ -5,6 +5,7 @@ import {
     Route,
     Switch,
   } from 'react-router-dom';
+import { Navigation } from './navigation';
 import { Properties } from './pages/Properties';
 import { PrivacyPolicy } from './pages/PrivacyPolicy';
 import { TermsOfService } from './pages/TermsOfService';
@@ -15,6 +16,7 @@ import { Users } from './pages/Users';
 export const Routes = () => {
     return (
         <Router>
+            <Navigation />
             <div>
                 <Switch>
                 <Route path="/properties">
