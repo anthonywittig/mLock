@@ -4,10 +4,11 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"mlock/shared"
-	"mlock/shared/dynamo/unit"
-	"mlock/shared/ical"
-	"mlock/shared/ses"
+	"mlock/lambdas/shared"
+	"mlock/lambdas/shared/dynamo/unit"
+	"mlock/lambdas/shared/ical"
+	"mlock/lambdas/shared/ses"
+	mshared "mlock/shared"
 	"strings"
 	"time"
 
@@ -32,7 +33,7 @@ func HandleRequest(ctx context.Context, event MyEvent) (Response, error) {
 
 	log.Printf("starting poll\n")
 
-	if err := shared.LoadConfig(); err != nil {
+	if err := mshared.LoadConfig(); err != nil {
 		return Response{}, fmt.Errorf("error loading config: %s", err.Error())
 	}
 

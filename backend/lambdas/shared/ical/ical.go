@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io/ioutil"
-	"mlock/shared"
+	"mlock/lambdas/shared"
 	"net/http"
 	"regexp"
 	"sort"

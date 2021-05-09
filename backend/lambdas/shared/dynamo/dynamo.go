@@ -3,7 +3,7 @@ package dynamo
 import (
 	"context"
 	"fmt"
-	"mlock/shared"
+	"mlock/lambdas/shared"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"

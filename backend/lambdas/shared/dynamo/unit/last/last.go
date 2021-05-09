@@ -4,25 +4,25 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"mlock/shared"
-	"mlock/shared/dynamo"
+	"mlock/lambdas/shared"
+	"mlock/lambdas/shared/dynamo"
 	"strings"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbattribute"
-	"github.com/google/uuid"
 )
 
-type Property struct {
-	Type      string `json:"type"`
-	Name      string `json:"name"`
-	ID        string `json:"id"`
-	CreatedBy string `json:"createdBy"`
+type Unit struct {
+	Type         string `json:"type"`
+	Name         string `json:"name"`
+	PropertyName string `json:"propertyName"`
+	CalendarURL  string `json:"calendarUrl"`
+	UpdatedBy    string `json:"updatedBy"`
 }
 
 const (
-	tableName = "Property"
+	tableName = "Unit"
 	itemType  = "1" // Not really using ATM.
 )
 
@@ -34,7 +34,7 @@ func Delete(ctx context.Context, name string) error {
 
 	name = strings.TrimSpace(name)
 
-	// TODO: don't delete if in use?
+	// TODO: under what circumstances would we want to stop this?
 
 	// No audit trail for deletes. :(
 
@@ -51,10 +51,10 @@ func Delete(ctx context.Context, name string) error {
 	return nil
 }
 
-func Get(ctx context.Context, name string) (Property, bool, error) {
+func Get(ctx context.Context, name string) (Unit, bool, error) {
 	dy, err := dynamo.GetClient(ctx)
 	if err != nil {
-		return Property{}, false, fmt.Errorf("error getting client: %s", err.Error())
+		return Unit{}, false, fmt.Errorf("error getting client: %s", err.Error())
 	}
 
 	name = strings.TrimSpace(name)
@@ -67,25 +67,25 @@ func Get(ctx context.Context, name string) (Property, bool, error) {
 		},
 	})
 	if err != nil {
-		return Property{}, false, fmt.Errorf("error getting item: %s", err.Error())
+		return Unit{}, false, fmt.Errorf("error getting item: %s", err.Error())
 	}
 	if result.Item == nil {
-		return Property{}, false, nil
+		return Unit{}, false, nil
 	}
 
-	item := Property{}
+	item := Unit{}
 	err = dynamodbattribute.UnmarshalMap(result.Item, &item)
 	if err != nil {
-		return Property{}, false, fmt.Errorf("error unmarshalling: %s", err.Error())
+		return Unit{}, false, fmt.Errorf("error unmarshalling: %s", err.Error())
 	}
 
 	return item, true, nil
 }
 
-func List(ctx context.Context) ([]Property, error) {
+func List(ctx context.Context) ([]Unit, error) {
 	dy, err := dynamo.GetClient(ctx)
 	if err != nil {
-		return []Property{}, fmt.Errorf("error getting client: %s", err.Error())
+		return []Unit{}, fmt.Errorf("error getting client: %s", err.Error())
 	}
 
 	input := &dynamodb.QueryInput{
@@ -100,18 +100,18 @@ func List(ctx context.Context) ([]Property, error) {
 		},
 	}
 
-	items := []Property{}
+	items := []Unit{}
 	for {
 		// Get the list of tables
 		result, err := dy.QueryWithContext(ctx, input)
 		if err != nil {
-			return []Property{}, fmt.Errorf("error calling dynamo: %s", err.Error())
+			return []Unit{}, fmt.Errorf("error calling dynamo: %s", err.Error())
 		}
 
 		for _, i := range result.Items {
-			item := Property{}
+			item := Unit{}
 			if err = dynamodbattribute.UnmarshalMap(i, &item); err != nil {
-				return []Property{}, fmt.Errorf("error unmarshaling: %s", err.Error())
+				return []Unit{}, fmt.Errorf("error unmarshaling: %s", err.Error())
 			}
 			items = append(items, item)
 		}
@@ -125,38 +125,32 @@ func List(ctx context.Context) ([]Property, error) {
 	return items, nil
 }
 
-func Put(ctx context.Context, oldKey string, name string) (Property, error) {
-	return PutID(ctx, oldKey, name, uuid.New().String())
-}
-
-func PutID(ctx context.Context, oldKey string, name string, id string) (Property, error) {
+func Put(ctx context.Context, oldKey string, item Unit) (Unit, error) {
 	dy, err := dynamo.GetClient(ctx)
 	if err != nil {
-		return Property{}, fmt.Errorf("error getting client: %s", err.Error())
+		return Unit{}, fmt.Errorf("error getting client: %s", err.Error())
 	}
 
-	name = strings.TrimSpace(name)
+	item.Name = strings.TrimSpace(item.Name)
+	item.PropertyName = strings.TrimSpace(item.PropertyName)
+	item.CalendarURL = strings.TrimSpace(item.CalendarURL)
 
 	cd, err := shared.GetContextData(ctx)
 	if err != nil {
-		return Property{}, fmt.Errorf("can't get context data: %s", err.Error())
+		return Unit{}, fmt.Errorf("can't get context data: %s", err.Error())
 	}
 
 	currentUser := cd.User
 	if currentUser == nil {
-		return Property{}, fmt.Errorf("no current user")
+		return Unit{}, fmt.Errorf("no current user")
 	}
 
-	item := Property{
-		Type:      itemType,
-		Name:      name,
-		ID:        id,
-		CreatedBy: currentUser.Email,
-	}
+	item.Type = itemType
+	item.UpdatedBy = currentUser.Email
 
 	av, err := dynamodbattribute.MarshalMap(item)
 	if err != nil {
-		return Property{}, fmt.Errorf("error marshalling map: %s", err.Error())
+		return Unit{}, fmt.Errorf("error marshalling map: %s", err.Error())
 	}
 
 	input := &dynamodb.PutItemInput{
@@ -166,20 +160,20 @@ func PutID(ctx context.Context, oldKey string, name string, id string) (Property
 
 	_, err = dy.PutItemWithContext(ctx, input)
 	if err != nil {
-		return Property{}, fmt.Errorf("error putting item: %s", err.Error())
+		return Unit{}, fmt.Errorf("error putting item: %s", err.Error())
 	}
 
-	entity, ok, err := Get(ctx, name)
+	entity, ok, err := Get(ctx, item.Name)
 	if err != nil {
-		return Property{}, err
+		return Unit{}, err
 	}
 	if !ok {
-		return Property{}, fmt.Errorf("couldn't find entity after insert")
+		return Unit{}, fmt.Errorf("couldn't find entity after insert")
 	}
 
 	if oldKey != "" && oldKey != entity.Name {
 		if err := Delete(ctx, oldKey); err != nil {
-			return Property{}, fmt.Errorf("error deleting old item: %s", err.Error())
+			return Unit{}, fmt.Errorf("error deleting old item: %s", err.Error())
 		}
 	}
 

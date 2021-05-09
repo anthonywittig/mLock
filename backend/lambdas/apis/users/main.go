@@ -5,8 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"mlock/lambdas/helpers"
-	"mlock/shared"
-	"mlock/shared/dynamo/user"
+	"mlock/lambdas/shared"
+	"mlock/lambdas/shared/dynamo/user"
 	"net/http"
 	"strings"
 

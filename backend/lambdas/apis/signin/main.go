@@ -6,8 +6,8 @@ import (
 	"errors"
 	"fmt"
 	"mlock/lambdas/helpers"
-	"mlock/shared"
-	"mlock/shared/dynamo/user"
+	"mlock/lambdas/shared"
+	"mlock/lambdas/shared/dynamo/user"
 	"net/http"
 
 	"github.com/aws/aws-lambda-go/events"

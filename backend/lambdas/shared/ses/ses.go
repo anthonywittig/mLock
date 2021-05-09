@@ -3,7 +3,8 @@ package ses
 import (
 	"context"
 	"fmt"
-	"mlock/shared"
+	"mlock/lambdas/shared"
+	mshared "mlock/shared"
 	"strings"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -38,13 +39,13 @@ func SendEamil(ctx context.Context, subject string, body string) error {
 		return fmt.Errorf("error getting client: %s", err.Error())
 	}
 
-	from := shared.GetConfig("EMAIL_FROM_ADDRESS")
+	from := mshared.GetConfig("EMAIL_FROM_ADDRESS")
 	if from == "" {
 		return fmt.Errorf("empty from address")
 	}
 
 	tos := []*string{}
-	for _, a := range strings.Split(shared.GetConfig("EMAIL_TO_ADDRESSES"), ";") {
+	for _, a := range strings.Split(mshared.GetConfig("EMAIL_TO_ADDRESSES"), ";") {
 		tos = append(tos, &a)
 	}
 

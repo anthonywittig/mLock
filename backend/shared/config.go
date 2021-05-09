@@ -1,7 +1,6 @@
 package shared
 
 import (
-	"errors"
 	"fmt"
 	"os"
 	"path"
@@ -16,7 +15,7 @@ func LoadConfig() error {
 	}
 	dir := path.Dir(ex)
 	if err := godotenv.Load(dir + "/.env"); err != nil {
-		return errors.New("Error loading .env file")
+		return fmt.Errorf("error loading .env file from %s", dir)
 	}
 	return nil
 }

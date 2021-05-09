@@ -5,10 +5,11 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
-	"mlock/shared"
-	"mlock/shared/dynamo/property"
-	"mlock/shared/dynamo/unit"
-	"mlock/shared/dynamo/user"
+	"mlock/lambdas/shared"
+	"mlock/lambdas/shared/dynamo/property"
+	"mlock/lambdas/shared/dynamo/unit"
+	"mlock/lambdas/shared/dynamo/user"
+	mshared "mlock/shared"
 	"time"
 
 	"github.com/aws/aws-lambda-go/lambda"
@@ -31,7 +32,7 @@ func HandleRequest(ctx context.Context, event MyEvent) (Response, error) {
 	defer cancel()
 
 	log.Printf("starting migrations\n")
-	if err := shared.LoadConfig(); err != nil {
+	if err := mshared.LoadConfig(); err != nil {
 		return Response{}, fmt.Errorf("error loading config: %s", err.Error())
 	}
 

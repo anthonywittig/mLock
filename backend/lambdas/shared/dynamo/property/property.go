@@ -1,15 +1,13 @@
-package unit
+package property
 
 import (
 	"context"
 	"fmt"
 	"log"
-	"mlock/shared"
-	"mlock/shared/dynamo"
-	"mlock/shared/dynamo/property"
-	"mlock/shared/dynamo/unit/last"
+	"mlock/lambdas/shared"
+	"mlock/lambdas/shared/dynamo"
+	"mlock/lambdas/shared/dynamo/property/last"
 	"sort"
-	"strings"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
@@ -18,7 +16,7 @@ import (
 )
 
 const (
-	tableName = "Unit_v2"
+	tableName = "Property_v2"
 )
 
 func Delete(ctx context.Context, id uuid.UUID) error {
@@ -27,7 +25,7 @@ func Delete(ctx context.Context, id uuid.UUID) error {
 		return fmt.Errorf("error getting client: %s", err.Error())
 	}
 
-	// TODO: under what circumstances would we want to stop this?
+	// TODO: don't delete if in use?
 
 	// No audit trail for deletes. :(
 
@@ -43,10 +41,10 @@ func Delete(ctx context.Context, id uuid.UUID) error {
 	return nil
 }
 
-func Get(ctx context.Context, id uuid.UUID) (shared.Unit, bool, error) {
+func Get(ctx context.Context, id uuid.UUID) (shared.Property, bool, error) {
 	dy, err := dynamo.GetClient(ctx)
 	if err != nil {
-		return shared.Unit{}, false, fmt.Errorf("error getting client: %s", err.Error())
+		return shared.Property{}, false, fmt.Errorf("error getting client: %s", err.Error())
 	}
 
 	result, err := dy.GetItemWithContext(ctx, &dynamodb.GetItemInput{
@@ -56,42 +54,42 @@ func Get(ctx context.Context, id uuid.UUID) (shared.Unit, bool, error) {
 		},
 	})
 	if err != nil {
-		return shared.Unit{}, false, fmt.Errorf("error getting item: %s", err.Error())
+		return shared.Property{}, false, fmt.Errorf("error getting item: %s", err.Error())
 	}
 	if result.Item == nil {
-		return shared.Unit{}, false, nil
+		return shared.Property{}, false, nil
 	}
 
-	item := shared.Unit{}
+	item := shared.Property{}
 	err = dynamodbattribute.UnmarshalMap(result.Item, &item)
 	if err != nil {
-		return shared.Unit{}, false, fmt.Errorf("error unmarshalling: %s", err.Error())
+		return shared.Property{}, false, fmt.Errorf("error unmarshalling: %s", err.Error())
 	}
 
 	return item, true, nil
 }
 
-func List(ctx context.Context) ([]shared.Unit, error) {
+func List(ctx context.Context) ([]shared.Property, error) {
 	dy, err := dynamo.GetClient(ctx)
 	if err != nil {
-		return []shared.Unit{}, fmt.Errorf("error getting client: %s", err.Error())
+		return []shared.Property{}, fmt.Errorf("error getting client: %s", err.Error())
 	}
 
 	input := &dynamodb.ScanInput{
 		TableName: aws.String(tableName),
 	}
 
-	items := []shared.Unit{}
+	items := []shared.Property{}
 	for {
 		result, err := dy.ScanWithContext(ctx, input)
 		if err != nil {
-			return []shared.Unit{}, fmt.Errorf("error calling dynamo: %s", err.Error())
+			return []shared.Property{}, fmt.Errorf("error calling dynamo: %s", err.Error())
 		}
 
 		for _, i := range result.Items {
-			item := shared.Unit{}
+			item := shared.Property{}
 			if err = dynamodbattribute.UnmarshalMap(i, &item); err != nil {
-				return []shared.Unit{}, fmt.Errorf("error unmarshaling: %s", err.Error())
+				return []shared.Property{}, fmt.Errorf("error unmarshaling: %s", err.Error())
 			}
 			items = append(items, item)
 		}
@@ -109,34 +107,31 @@ func List(ctx context.Context) ([]shared.Unit, error) {
 	return items, nil
 }
 
-func Put(ctx context.Context, item shared.Unit) (shared.Unit, error) {
+func Put(ctx context.Context, item shared.Property) (shared.Property, error) {
 	dy, err := dynamo.GetClient(ctx)
 	if err != nil {
-		return shared.Unit{}, fmt.Errorf("error getting client: %s", err.Error())
+		return shared.Property{}, fmt.Errorf("error getting client: %s", err.Error())
 	}
 
 	if item.ID == uuid.Nil {
 		// Since an ID can easily be forgotten, let's never assume we need to create one.
-		return shared.Unit{}, fmt.Errorf("an ID is required")
+		return shared.Property{}, fmt.Errorf("an ID is required")
 	}
-
-	item.Name = strings.TrimSpace(item.Name)
-	item.CalendarURL = strings.TrimSpace(item.CalendarURL)
 
 	cd, err := shared.GetContextData(ctx)
 	if err != nil {
-		return shared.Unit{}, fmt.Errorf("can't get context data: %s", err.Error())
+		return shared.Property{}, fmt.Errorf("can't get context data: %s", err.Error())
 	}
 
 	currentUser := cd.User
 	if currentUser == nil {
-		return shared.Unit{}, fmt.Errorf("no current user")
+		return shared.Property{}, fmt.Errorf("no current user")
 	}
 	item.UpdatedBy = currentUser.Email
 
 	av, err := dynamodbattribute.MarshalMap(item)
 	if err != nil {
-		return shared.Unit{}, fmt.Errorf("error marshalling map: %s", err.Error())
+		return shared.Property{}, fmt.Errorf("error marshalling map: %s", err.Error())
 	}
 
 	input := &dynamodb.PutItemInput{
@@ -146,15 +141,15 @@ func Put(ctx context.Context, item shared.Unit) (shared.Unit, error) {
 
 	_, err = dy.PutItemWithContext(ctx, input)
 	if err != nil {
-		return shared.Unit{}, fmt.Errorf("error putting item: %s", err.Error())
+		return shared.Property{}, fmt.Errorf("error putting item: %s", err.Error())
 	}
 
 	entity, ok, err := Get(ctx, item.ID)
 	if err != nil {
-		return shared.Unit{}, err
+		return shared.Property{}, err
 	}
 	if !ok {
-		return shared.Unit{}, fmt.Errorf("couldn't find entity after insert")
+		return shared.Property{}, fmt.Errorf("couldn't find entity after insert")
 	}
 
 	return entity, nil
@@ -219,7 +214,7 @@ func migrateData(ctx context.Context) error {
 		return fmt.Errorf("error getting existing items: %s", err.Error())
 	}
 	if len(existingItems) > 0 {
-		log.Println("already migrated unit data")
+		log.Println("already migrated property data")
 		return nil
 	}
 
@@ -228,34 +223,20 @@ func migrateData(ctx context.Context) error {
 		return fmt.Errorf("error getting items: %s", err.Error())
 	}
 
-	properties, err := property.List(ctx)
-	if err != nil {
-		return fmt.Errorf("error getting properties: %s", err.Error())
-	}
-
 	for _, item := range items {
 		cd, err := shared.GetContextData(ctx)
 		if err != nil {
 			return fmt.Errorf("error getting context data: %s", err.Error())
 		}
-
-		propertyID := uuid.Nil
-		for _, p := range properties {
-			if p.Name == item.PropertyName {
-				propertyID = p.ID
-			}
+		cd.User = &shared.User{Email: item.CreatedBy}
+		id, err := uuid.Parse(item.ID)
+		if err != nil {
+			return fmt.Errorf("error parsing ID: %s", err.Error())
 		}
-		if propertyID == uuid.Nil {
-			return fmt.Errorf("couldn't find property: %s", item.PropertyName)
-		}
-
-		cd.User = &shared.User{Email: item.UpdatedBy}
-		if _, err := Put(ctx, shared.Unit{
-			ID:          uuid.New(),
-			Name:        item.Name,
-			PropertyID:  propertyID,
-			CalendarURL: item.CalendarURL,
-			UpdatedBy:   item.UpdatedBy,
+		if _, err := Put(ctx, shared.Property{
+			ID:        id,
+			Name:      item.Name,
+			UpdatedBy: item.CreatedBy,
 		}); err != nil {
 			return fmt.Errorf("error getting context data: %s", err.Error())
 		}

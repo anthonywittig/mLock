@@ -5,8 +5,9 @@ import (
 	"errors"
 	"fmt"
 	"log"
-	"mlock/shared"
-	"mlock/shared/dynamo/user"
+	"mlock/lambdas/shared"
+	"mlock/lambdas/shared/dynamo/user"
+	mshared "mlock/shared"
 	"net/http"
 	"time"
 
@@ -70,7 +71,7 @@ func handleRequest(
 	middlewares []string,
 ) handlerResponse {
 
-	if err := shared.LoadConfig(); err != nil {
+	if err := mshared.LoadConfig(); err != nil {
 		return handlerResponse{
 			response: events.APIGatewayProxyResponse{},
 			err:      fmt.Errorf("error loading config: %s", err.Error()),

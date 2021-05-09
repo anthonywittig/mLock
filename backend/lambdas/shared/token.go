@@ -2,6 +2,7 @@ package shared
 
 import (
 	"context"
+	"mlock/shared"
 	"net/http"
 
 	googleAuthIDTokenVerifier "github.com/futurenda/google-auth-id-token-verifier"
@@ -19,7 +20,7 @@ type TokenData struct {
 func GetUserFromToken(ctx context.Context, token string, userService UserService) (TokenData, error) {
 	// Verify the token.
 	v := googleAuthIDTokenVerifier.Verifier{}
-	if err := v.VerifyIDToken(token, []string{GetConfig("GOOGLE_SIGNIN_CLIENT_ID")}); err != nil {
+	if err := v.VerifyIDToken(token, []string{shared.GetConfig("GOOGLE_SIGNIN_CLIENT_ID")}); err != nil {
 		// For now we'll just assume the token is bad (could be network error etc.).
 		return TokenData{Error: err}, nil
 	}
