@@ -12,8 +12,9 @@ import (
 )
 
 type Client struct {
-	sqsClient *awssqs.Client
-	queueURL  *string
+	sqsClient                  *awssqs.Client
+	queueURL                   *string
+	visibilityTimeoutInSeconds int32
 }
 
 func New(ctx context.Context) (*Client, error) {
@@ -43,18 +44,44 @@ func New(ctx context.Context) (*Client, error) {
 	*/
 
 	return &Client{
-		sqsClient: svc,
-		queueURL:  queueURL,
+		sqsClient:                  svc,
+		queueURL:                   queueURL,
+		visibilityTimeoutInSeconds: 60,
 	}, nil
 }
 
-func getQueueURL(ctx context.Context, svc *awssqs.Client, queue string) (*awssqs.GetQueueUrlOutput, error) {
+func (c *Client) GetMessages(ctx context.Context) ([]types.Message, error) {
+	msgResult, err := c.sqsClient.ReceiveMessage(ctx, &awssqs.ReceiveMessageInput{
+		AttributeNames: []types.QueueAttributeName{
+			"All",
+		},
+		MessageAttributeNames: []string{
+			"All",
+		},
+		QueueUrl:            c.queueURL,
+		MaxNumberOfMessages: 1,
+		VisibilityTimeout:   c.visibilityTimeoutInSeconds,
+	})
+	if err != nil {
+		return nil, err
+	}
 
-	/*
-		urlResult, err := svc.GetQueueUrl(&awssqs.GetQueueUrlInput{
-			QueueName: &queue,
-		})
-	*/
+	return msgResult.Messages, nil
+}
+
+func (c *Client) AcknowledgeMessage(ctx context.Context, message types.Message) error {
+	_, err := c.sqsClient.DeleteMessage(ctx, &awssqs.DeleteMessageInput{
+		QueueUrl:      c.queueURL,
+		ReceiptHandle: message.ReceiptHandle,
+	})
+	if err != nil {
+		return fmt.Errorf("error deleting message: %s", err.Error())
+	}
+
+	return nil
+}
+
+func getQueueURL(ctx context.Context, svc *awssqs.Client, queue string) (*awssqs.GetQueueUrlOutput, error) {
 	urlResult, err := svc.GetQueueUrl(ctx, &awssqs.GetQueueUrlInput{
 		QueueName: &queue,
 	})
@@ -63,25 +90,6 @@ func getQueueURL(ctx context.Context, svc *awssqs.Client, queue string) (*awssqs
 	}
 
 	return urlResult, nil
-}
-
-func (c *Client) getMessages(ctx context.Context, queueURL *string, timeoutInSeconds int32) (*awssqs.ReceiveMessageOutput, error) {
-	msgResult, err := c.sqsClient.ReceiveMessage(ctx, &awssqs.ReceiveMessageInput{
-		AttributeNames: []types.QueueAttributeName{
-			".",
-		},
-		MessageAttributeNames: []string{
-			".",
-		},
-		QueueUrl:            queueURL,
-		MaxNumberOfMessages: 1,
-		VisibilityTimeout:   timeoutInSeconds,
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	return msgResult, nil
 }
 
 func sqsClient(ctx context.Context) (*awssqs.Client, error) {

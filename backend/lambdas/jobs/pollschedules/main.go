@@ -8,7 +8,9 @@ import (
 	"mlock/lambdas/shared/dynamo/unit"
 	"mlock/lambdas/shared/ical"
 	"mlock/lambdas/shared/ses"
+	"mlock/lambdas/shared/sqs"
 	mshared "mlock/shared"
+	"mlock/shared/protos/messaging"
 	"strings"
 	"time"
 
@@ -31,13 +33,21 @@ func HandleRequest(ctx context.Context, event MyEvent) (Response, error) {
 	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
 	defer cancel()
 
+	ctx = shared.CreateContextData(ctx)
+
 	log.Printf("starting poll\n")
+
+	queuePrefix := "test"
+	log.Printf("adding message to \"%s\"\n", queuePrefix)
+	if err := sqs.SendMessage(ctx, queuePrefix, &messaging.HabCommand{
+		Description: fmt.Sprintf("hello there @ %s", time.Now().String()),
+	}); err != nil {
+		return Response{}, fmt.Errorf("error sending message: %s", err.Error())
+	}
 
 	if err := mshared.LoadConfig(); err != nil {
 		return Response{}, fmt.Errorf("error loading config: %s", err.Error())
 	}
-
-	ctx = shared.CreateContextData(ctx)
 
 	// get all units
 	units, err := unit.List(ctx)

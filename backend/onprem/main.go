@@ -4,7 +4,8 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"mlock/onprem/messaging/sqs"
+	"mlock/onprem/app"
+	"mlock/onprem/sqs"
 	"mlock/shared"
 	"os"
 )
@@ -23,12 +24,15 @@ func run() error {
 		return fmt.Errorf("error loading config: %s", err.Error())
 	}
 
-	_, err := sqs.New(ctx)
+	sqsClient, err := sqs.New(ctx)
 	if err != nil {
 		return fmt.Errorf("error getting new sqs: %s", err.Error())
 	}
 
-	//messaging.
+	a, err := app.NewApp(sqsClient)
+	if err != nil {
+		return fmt.Errorf("error getting new app: %s", err.Error())
+	}
 
-	return nil
+	return a.Run(ctx)
 }
