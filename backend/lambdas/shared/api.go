@@ -27,7 +27,7 @@ func NewAPIResponse(status int, body interface{}) (*APIResponse, error) {
 		"Content-Type": "application/json",
 		// Not all of the CORS headers need to be in every request, but to make things easy we'll include them all.
 		"Access-Control-Allow-Methods":     "GET, HEAD, POST, PUT, DELETE, OPTIONS, PATCH", // Can't use `*` with credentials.
-		"Access-Control-Allow-Origin":      shared.GetConfig("FRONTEND_DOMAIN"),
+		"Access-Control-Allow-Origin":      shared.GetConfigUnsafe("FRONTEND_DOMAIN"),
 		"Access-Control-Allow-Credentials": "true",
 	}}
 	resp.StatusCode = status

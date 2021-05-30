@@ -7,13 +7,16 @@ import (
 	"mlock/onprem/app"
 	"mlock/onprem/sqs"
 	"mlock/shared"
-	"os"
+	"time"
 )
 
 func main() {
-	if err := run(); err != nil {
-		log.Fatalf("error running application: %s", err.Error())
-		os.Exit(1)
+	for {
+		if err := run(); err != nil {
+			log.Fatalf("error running application: %s", err.Error())
+		}
+		log.Println("(sleeping for a minute before trying again)")
+		time.Sleep(1 * time.Minute)
 	}
 }
 

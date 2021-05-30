@@ -38,7 +38,10 @@ handleJobs () {
     rm -rf build
     mkdir build
 
-    handleLambda pollschedules
+    lambdas=('messagehandler' 'pollschedules')
+    for lambda in "${lambdas[@]}" ; do
+        handleLambda $lambda
+    done
 }
 
 handleApis () {

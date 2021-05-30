@@ -2,11 +2,12 @@ package app
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"log"
+	"mlock/onprem/hab"
 	"mlock/onprem/sqs"
 	"mlock/shared"
+	"mlock/shared/protos/messaging"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/service/sqs/types"
@@ -36,7 +37,7 @@ func (a *App) Run(ctx context.Context) error {
 		case <-ticker.C:
 			handledMessage, err := a.processMessage(ctx)
 			if err != nil {
-				return errors.New(fmt.Sprintf("error on process message: %s", err.Error()))
+				return fmt.Errorf("error on process message: %s", err.Error())
 			}
 
 			nextDelay := longDelay
@@ -69,12 +70,23 @@ func (a *App) processMessage(ctx context.Context) (bool, error) {
 		}
 
 		switch *mType.StringValue {
-		case "messaging.HabCommand":
-			message, err := shared.DecodeMessageHabMessage(*m.Body)
+		case string((&messaging.HabCommand{}).ProtoReflect().Descriptor().FullName()):
+			message, err := shared.DecodeMessageHabCommand(*m.Body)
 			if err != nil {
 				return true, fmt.Errorf("error decoding messages: %s", err.Error())
 			}
 			log.Printf("message description: %s", message.Description)
+
+			resp, err := hab.ProcessCommand(ctx, message)
+			if err != nil {
+				return true, fmt.Errorf("error processing command: %s", err.Error())
+			}
+			log.Printf("response: %s", resp.Description)
+
+			if err := a.sqsClient.SendMessage(ctx, resp); err != nil {
+				return true, fmt.Errorf("error sending response: %s", err.Error())
+			}
+
 		default:
 			// TODO: signal back error to the cloud
 			return true, fmt.Errorf("unhandled message type: %s", *mType.StringValue)

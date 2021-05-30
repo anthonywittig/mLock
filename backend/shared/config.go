@@ -20,10 +20,18 @@ func LoadConfig() error {
 	return nil
 }
 
-func GetConfig(name string) string {
+func GetConfigUnsafe(name string) string {
+	v, err := GetConfig(name)
+	if err != nil {
+		fmt.Printf("error getting config: \"%s\"\n", err.Error())
+	}
+	return v
+}
+
+func GetConfig(name string) (string, error) {
 	val := os.Getenv(name)
 	if val == "" {
-		fmt.Printf("can't find config for \"%s\"\n", name)
+		return "", fmt.Errorf("can't find config for \"%s\"", name)
 	}
-	return val
+	return val, nil
 }

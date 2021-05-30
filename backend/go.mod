@@ -11,6 +11,7 @@ require (
 	github.com/google/uuid v1.1.2
 	github.com/joho/godotenv v1.3.0
 	github.com/pressly/goose v2.6.0+incompatible
+	github.com/stretchr/testify v1.6.1
 	golang.org/x/oauth2 v0.0.0-20201109201403-9fd604954f58 // indirect
 	golang.org/x/sync v0.0.0-20201020160332-67f06af15bc9
 	google.golang.org/protobuf v1.25.0

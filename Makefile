@@ -18,3 +18,6 @@ run-onprem: gen-protos
 	./backend/onprem/dist/onprem
 
 	# env GOOS=linux GOARCH=arm GOARM=5 go build
+
+run-onprem-tests-integ:
+	cd backend && export $(cat onprem/.env | sed 's/#.*//g' | xargs) && go test mlock/onprem/hab

@@ -4,4 +4,14 @@ option go_package = "/messaging";
 
 message HabCommand {
     string description = 1;
+    HTTPRequest request = 2;
+}
+
+message HTTPRequest {
+    string method = 1;
+    string path = 2;
+}
+
+message OnPremResponse {
+    string description = 1;
 }

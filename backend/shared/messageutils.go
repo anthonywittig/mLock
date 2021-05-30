@@ -18,7 +18,7 @@ func EncodeMessage(message protoreflect.ProtoMessage) (string, error) {
 	return base64.StdEncoding.EncodeToString(messageBytes), nil
 }
 
-func DecodeMessageHabMessage(encodedMessage string) (*messaging.HabCommand, error) {
+func DecodeMessageHabCommand(encodedMessage string) (*messaging.HabCommand, error) {
 	messageBytes, err := base64.StdEncoding.DecodeString(encodedMessage)
 	if err != nil {
 		return nil, fmt.Errorf("error decoding message: %s", err.Error())
@@ -30,4 +30,28 @@ func DecodeMessageHabMessage(encodedMessage string) (*messaging.HabCommand, erro
 	}
 
 	return message, nil
+}
+
+func DecodeMessageOnPremResponse(encodedMessage string) (*messaging.OnPremResponse, error) {
+	messageBytes, err := base64.StdEncoding.DecodeString(encodedMessage)
+	if err != nil {
+		return nil, fmt.Errorf("error decoding message: %s", err.Error())
+	}
+
+	message := &messaging.OnPremResponse{}
+	if err := proto.Unmarshal(messageBytes, message); err != nil {
+		return nil, fmt.Errorf("error unmarshalling message: %s", err.Error())
+	}
+
+	return message, nil
+}
+
+func HabCommandListThings(description string) *messaging.HabCommand {
+	return &messaging.HabCommand{
+		Description: description,
+		Request: &messaging.HTTPRequest{
+			Method: "GET",
+			Path:   "/rest/things",
+		},
+	}
 }

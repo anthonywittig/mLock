@@ -39,13 +39,13 @@ func SendEamil(ctx context.Context, subject string, body string) error {
 		return fmt.Errorf("error getting client: %s", err.Error())
 	}
 
-	from := mshared.GetConfig("EMAIL_FROM_ADDRESS")
-	if from == "" {
+	from, err := mshared.GetConfig("EMAIL_FROM_ADDRESS")
+	if err != nil {
 		return fmt.Errorf("empty from address")
 	}
 
 	tos := []*string{}
-	for _, a := range strings.Split(mshared.GetConfig("EMAIL_TO_ADDRESSES"), ";") {
+	for _, a := range strings.Split(mshared.GetConfigUnsafe("EMAIL_TO_ADDRESSES"), ";") {
 		tos = append(tos, &a)
 	}
 

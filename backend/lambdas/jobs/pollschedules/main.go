@@ -10,7 +10,6 @@ import (
 	"mlock/lambdas/shared/ses"
 	"mlock/lambdas/shared/sqs"
 	mshared "mlock/shared"
-	"mlock/shared/protos/messaging"
 	"strings"
 	"time"
 
@@ -37,16 +36,20 @@ func HandleRequest(ctx context.Context, event MyEvent) (Response, error) {
 
 	log.Printf("starting poll\n")
 
-	queuePrefix := "test"
-	log.Printf("adding message to \"%s\"\n", queuePrefix)
-	if err := sqs.SendMessage(ctx, queuePrefix, &messaging.HabCommand{
-		Description: fmt.Sprintf("hello there @ %s", time.Now().String()),
-	}); err != nil {
-		return Response{}, fmt.Errorf("error sending message: %s", err.Error())
-	}
-
 	if err := mshared.LoadConfig(); err != nil {
 		return Response{}, fmt.Errorf("error loading config: %s", err.Error())
+	}
+
+	queueName := "test-in.fifo"
+	log.Printf("adding message to \"%s\"\n", queueName)
+
+	s, err := sqs.GetClient(ctx)
+	if err != nil {
+		return Response{}, fmt.Errorf("error getting sqs client: %s", err.Error())
+	}
+
+	if err := s.SendMessage(ctx, queueName, mshared.HabCommandListThings(fmt.Sprintf("hello there @ %s - requesting a list", time.Now().String()))); err != nil {
+		return Response{}, fmt.Errorf("error sending message: %s", err.Error())
 	}
 
 	// get all units
