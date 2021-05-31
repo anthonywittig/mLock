@@ -310,38 +310,6 @@ func migrateCreateTable(ctx context.Context) error {
 }
 
 func migrateData(ctx context.Context) error {
-	nService := NewUserService()
-	existingUsers, err := nService.List(ctx)
-	if err != nil {
-		return fmt.Errorf("error getting existing items: %s", err.Error())
-	}
-	if len(existingUsers) > 0 {
-		log.Println("already migrated user data")
-		return nil
-	}
-
-	oService := NewUserService()
-	oService.tableName = lastTableName
-
-	users, err := oService.ListOld(ctx)
-	if err != nil {
-		return fmt.Errorf("error getting users: %s", err.Error())
-	}
-
-	for _, u := range users {
-		cd, err := shared.GetContextData(ctx)
-		if err != nil {
-			return fmt.Errorf("error getting context data: %s", err.Error())
-		}
-		cd.User = &shared.User{Email: u.CreatedBy}
-		if _, err := nService.Put(ctx, shared.User{
-			ID:    uuid.New(),
-			Email: u.Email,
-		}); err != nil {
-			return fmt.Errorf("error getting context data: %s", err.Error())
-		}
-	}
-
 	return nil
 }
 

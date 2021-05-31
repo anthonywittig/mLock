@@ -5,6 +5,7 @@ import {
     Route,
     Switch,
   } from 'react-router-dom';
+import { DeviceRoutes } from './pages/devices/Routes';
 import { Navigation } from './navigation';
 import { Properties } from './pages/Properties';
 import { PrivacyPolicy } from './pages/PrivacyPolicy';
@@ -19,6 +20,9 @@ export const Routes = () => {
             <Navigation />
             <div>
                 <Switch>
+                <Route path="/devices">
+                    <DeviceRoutes />
+                </Route>
                 <Route path="/properties">
                     <Properties />
                 </Route>

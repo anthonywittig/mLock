@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"mlock/lambdas/shared"
+	"mlock/lambdas/shared/dynamo/device"
 	"mlock/lambdas/shared/dynamo/property"
 	"mlock/lambdas/shared/dynamo/unit"
 	"mlock/lambdas/shared/dynamo/user"
@@ -37,6 +38,12 @@ func HandleRequest(ctx context.Context, event MyEvent) (Response, error) {
 	}
 
 	ctx = shared.CreateContextData(ctx)
+
+	log.Printf("migrating devices...\n")
+	if err := device.Migrate(ctx); err != nil {
+		return Response{}, fmt.Errorf("error migrating dynamo devices: %s", err.Error())
+	}
+	log.Printf("migrated devices\n")
 
 	log.Printf("migrating user...\n")
 	if err := user.Migrate(ctx); err != nil {

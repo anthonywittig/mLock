@@ -6,8 +6,6 @@ import (
 	"log"
 	"mlock/lambdas/shared"
 	"mlock/lambdas/shared/dynamo"
-	"mlock/lambdas/shared/dynamo/property"
-	"mlock/lambdas/shared/dynamo/unit/last"
 	"sort"
 	"strings"
 
@@ -214,52 +212,5 @@ func migrateCreateTable(ctx context.Context) error {
 }
 
 func migrateData(ctx context.Context) error {
-	existingItems, err := List(ctx)
-	if err != nil {
-		return fmt.Errorf("error getting existing items: %s", err.Error())
-	}
-	if len(existingItems) > 0 {
-		log.Println("already migrated unit data")
-		return nil
-	}
-
-	items, err := last.List(ctx)
-	if err != nil {
-		return fmt.Errorf("error getting items: %s", err.Error())
-	}
-
-	properties, err := property.List(ctx)
-	if err != nil {
-		return fmt.Errorf("error getting properties: %s", err.Error())
-	}
-
-	for _, item := range items {
-		cd, err := shared.GetContextData(ctx)
-		if err != nil {
-			return fmt.Errorf("error getting context data: %s", err.Error())
-		}
-
-		propertyID := uuid.Nil
-		for _, p := range properties {
-			if p.Name == item.PropertyName {
-				propertyID = p.ID
-			}
-		}
-		if propertyID == uuid.Nil {
-			return fmt.Errorf("couldn't find property: %s", item.PropertyName)
-		}
-
-		cd.User = &shared.User{Email: item.UpdatedBy}
-		if _, err := Put(ctx, shared.Unit{
-			ID:          uuid.New(),
-			Name:        item.Name,
-			PropertyID:  propertyID,
-			CalendarURL: item.CalendarURL,
-			UpdatedBy:   item.UpdatedBy,
-		}); err != nil {
-			return fmt.Errorf("error getting context data: %s", err.Error())
-		}
-	}
-
 	return nil
 }

@@ -5,6 +5,11 @@ option go_package = "/messaging";
 message HabCommand {
     string description = 1;
     HTTPRequest request = 2;
+    enum CommandType {
+        UNKNOWN = 0;
+        LIST_THINGS = 1;
+    }
+    CommandType command_type = 3;
 }
 
 message HTTPRequest {
@@ -12,6 +17,8 @@ message HTTPRequest {
     string path = 2;
 }
 
-message OnPremResponse {
+message OnPremHabCommandResponse {
     string description = 1;
+    HabCommand hab_command = 2;
+    bytes response = 3;
 }

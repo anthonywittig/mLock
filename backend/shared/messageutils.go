@@ -32,13 +32,13 @@ func DecodeMessageHabCommand(encodedMessage string) (*messaging.HabCommand, erro
 	return message, nil
 }
 
-func DecodeMessageOnPremResponse(encodedMessage string) (*messaging.OnPremResponse, error) {
+func DecodeMessageOnPremHabCommandResponse(encodedMessage string) (*messaging.OnPremHabCommandResponse, error) {
 	messageBytes, err := base64.StdEncoding.DecodeString(encodedMessage)
 	if err != nil {
 		return nil, fmt.Errorf("error decoding message: %s", err.Error())
 	}
 
-	message := &messaging.OnPremResponse{}
+	message := &messaging.OnPremHabCommandResponse{}
 	if err := proto.Unmarshal(messageBytes, message); err != nil {
 		return nil, fmt.Errorf("error unmarshalling message: %s", err.Error())
 	}
@@ -53,5 +53,6 @@ func HabCommandListThings(description string) *messaging.HabCommand {
 			Method: "GET",
 			Path:   "/rest/things",
 		},
+		CommandType: messaging.HabCommand_LIST_THINGS,
 	}
 }

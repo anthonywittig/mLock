@@ -11,7 +11,7 @@ import (
 	"time"
 )
 
-func ProcessCommand(ctx context.Context, in *messaging.HabCommand) (*messaging.OnPremResponse, error) {
+func ProcessCommand(ctx context.Context, in *messaging.HabCommand) (*messaging.OnPremHabCommandResponse, error) {
 	client := &http.Client{
 		Timeout: 1 * time.Minute,
 	}
@@ -45,7 +45,9 @@ func ProcessCommand(ctx context.Context, in *messaging.HabCommand) (*messaging.O
 		return nil, fmt.Errorf("error reading body: %s", err.Error())
 	}
 
-	return &messaging.OnPremResponse{
-		Description: string(body),
+	return &messaging.OnPremHabCommandResponse{
+		Description: "HAB command response",
+		HabCommand:  in,
+		Response:    body,
 	}, nil
 }
