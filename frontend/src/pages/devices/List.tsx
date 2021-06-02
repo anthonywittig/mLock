@@ -3,6 +3,7 @@ import { Button } from 'react-bootstrap';
 import { Loading } from '../utils/Loading';
 import { StandardFetch } from '../utils/FetchHelper';
 import { useHistory } from 'react-router';
+import { formatDistance } from 'date-fns';
 
 type Entity = {
     id: string,
@@ -15,7 +16,7 @@ type Entity = {
         },
         uid: string,
     },
-    lastRefreshedAt: Date,
+    lastRefreshedAt: string,
 }
 
 type Property = {
@@ -74,7 +75,7 @@ export const List = () => {
                 <thead>
                     <tr>
                         <th scope="col">Label</th>
-                        <th scope="col">Last Refreshed At</th>
+                        <th scope="col">Last Refreshed</th>
                         <th scope="col">Status</th>
                         <th scope="col">Property</th>
                     </tr>
@@ -87,7 +88,7 @@ export const List = () => {
                                     {entity.habThing.label}
                                 </Button>
                             </th>
-                            <td>{ entity.lastRefreshedAt }</td>
+                            <td>{ formatDistance(Date.parse(entity.lastRefreshedAt), new Date(), { addSuffix: true }) }</td>
                             <td>{ entity.habThing.statusInfo.status }</td>
                             <td>{ properties.find(e => e.id === entity.propertyId )?.name }</td>
                         </tr>

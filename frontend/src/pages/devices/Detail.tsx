@@ -1,5 +1,6 @@
 import React from 'react';
 import { Form} from 'react-bootstrap';
+import { formatDistance } from 'date-fns';
 import { useRouteMatch } from 'react-router-dom';
 import { Loading } from '../utils/Loading';
 import { StandardFetch } from '../utils/FetchHelper';
@@ -15,7 +16,7 @@ type Entity = {
         },
         uid: string,
     },
-    lastRefreshedAt: Date,
+    lastRefreshedAt: string,
 }
 
 type Property = {
@@ -40,7 +41,7 @@ export const Detail = () => {
             },
             uid: "",
         },
-        lastRefreshedAt: new Date(),
+        lastRefreshedAt: "",
     });
     const [loading, setLoading] = React.useState<boolean>(true);
     const [properties, setProperties] = React.useState<Property[]>([]);
@@ -91,8 +92,8 @@ export const Detail = () => {
                 </Form.Group>
 
                 <Form.Group>
-                    <Form.Label>Last Refreshed At</Form.Label>
-                    <Form.Control type="text" value={entity.lastRefreshedAt.toString()} disabled={true}/>
+                    <Form.Label>Last Refreshed</Form.Label>
+                    <Form.Control type="text" value={formatDistance(Date.parse(entity.lastRefreshedAt), new Date(), { addSuffix: true }) } disabled={true}/>
                 </Form.Group>
 
                 <Form.Group>
