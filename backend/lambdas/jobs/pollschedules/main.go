@@ -66,6 +66,7 @@ func HandleRequest(ctx context.Context, event MyEvent) (Response, error) {
 
 	var sb strings.Builder
 	for i, ress := range reservations {
+		// Start/End dates are UTC but they're really naive and just the day. Check-in is at 4 pm and check-out is at 11 am.
 		now := time.Now()
 		notTooFarAway := now.Add(45 * time.Minute)
 		if len(ress) != 0 {

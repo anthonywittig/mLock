@@ -64,16 +64,30 @@ func HandleRequest(ctx context.Context, event events.SQSEvent) (Response, error)
 
 		switch *mType.StringValue {
 		case string((&messaging.OnPremHabCommandResponse{}).ProtoReflect().Descriptor().FullName()):
+			log.Printf("message is an onprem hab command response\n")
+
 			message, err := mshared.DecodeMessageOnPremHabCommandResponse(m.Body)
 			if err != nil {
 				return Response{}, fmt.Errorf("error decoding messages: %s", err.Error())
 			}
-			log.Printf("message description: %s", message.Description)
-			log.Printf("message body: %s", string(message.Response))
+			log.Printf("message description: %s\n", message.Description)
+			log.Printf("message body: %s\n", string(message.Response))
 
 			if err := handleOnPremHabResponse(ctx, anthonysHouse, message); err != nil {
 				return Response{}, fmt.Errorf("error handling on-prem HAB response: %s", err.Error())
 			}
+		case string((&messaging.OnPremError{}).ProtoReflect().Descriptor().FullName()):
+			log.Printf("message is an onprem error response\n")
+
+			message := &messaging.OnPremError{}
+			err := mshared.DecodeMessage(m.Body, message)
+			if err != nil {
+				return Response{}, fmt.Errorf("error decoding messages: %s", err.Error())
+			}
+			log.Printf("message's error message: %s\n", message.ErrorMessage)
+
+			// TODO: we want to signal error, but we can't fail the request or it'll just make us reprocess the message later.
+			return Response{}, nil
 		default:
 			return Response{}, fmt.Errorf("unhandled message type: %s", *mType.StringValue)
 		}

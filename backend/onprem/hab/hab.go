@@ -36,7 +36,7 @@ func ProcessCommand(ctx context.Context, in *messaging.HabCommand) (*messaging.O
 
 	resp, err := client.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("error making request: %s", err.Error())
+		return nil, fmt.Errorf("error doing request: %s", err.Error())
 	}
 	defer resp.Body.Close()
 

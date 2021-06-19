@@ -13,7 +13,7 @@ import (
 func main() {
 	for {
 		if err := run(); err != nil {
-			log.Fatalf("error running application: %s", err.Error())
+			log.Printf("error running application: %s", err.Error())
 		}
 		log.Println("(sleeping for a minute before trying again)")
 		time.Sleep(1 * time.Minute)

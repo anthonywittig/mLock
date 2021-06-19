@@ -18,6 +18,19 @@ func EncodeMessage(message protoreflect.ProtoMessage) (string, error) {
 	return base64.StdEncoding.EncodeToString(messageBytes), nil
 }
 
+func DecodeMessage(encodedMessage string, out protoreflect.ProtoMessage) error {
+	messageBytes, err := base64.StdEncoding.DecodeString(encodedMessage)
+	if err != nil {
+		return fmt.Errorf("error decoding message: %s", err.Error())
+	}
+
+	if err := proto.Unmarshal(messageBytes, out); err != nil {
+		return fmt.Errorf("error unmarshalling message: %s", err.Error())
+	}
+
+	return nil
+}
+
 func DecodeMessageHabCommand(encodedMessage string) (*messaging.HabCommand, error) {
 	messageBytes, err := base64.StdEncoding.DecodeString(encodedMessage)
 	if err != nil {

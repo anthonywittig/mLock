@@ -14,12 +14,64 @@ type Device struct {
 }
 
 type HABThing struct {
+	Configuration struct {
+		Config_10_1     int      `json:"config_10_1"`
+		Config_11_1     int      `json:"config_11_1"`
+		Config_12_4     int      `json:"config_12_4"`
+		Config_13_4     int      `json:"config_13_4"`
+		Config_14_4     int      `json:"config_14_4"`
+		Config_15_1     int      `json:"config_15_1"`
+		Config_16_1     int      `json:"config_16_1"`
+		Config_17_4     int      `json:"config_17_4"`
+		Config_18_1     int      `json:"config_18_1"`
+		Config_3_1      int      `json:"config_3_1"`
+		Config_4_1      int      `json:"config_4_1"`
+		Config_5_1      int      `json:"config_5_1"`
+		Config_6_4      int      `json:"config_6_4"`
+		Config_7_1      int      `json:"config_7_1"`
+		Config_8_1      int      `json:"config_8_1"`
+		Config_9_1      int      `json:"config_9_1"`
+		DoorlockTimeout int      `json:"doorlock_timeout"`
+		Group1          []string `json:"group_1"`
+		NodeID          int      `json:"node_id"`
+		UsercodeCode1   string   `json:"usercode_code_1"`
+		UsercodeCode2   string   `json:"usercode_code_2"`
+		UsercodeCode3   string   `json:"usercode_code_3"`
+		UsercodeCode4   string   `json:"usercode_code_4"`
+		UsercodeCode5   string   `json:"usercode_code_5"`
+		UsercodeCode6   string   `json:"usercode_code_6"`
+		UsercodeCode7   string   `json:"usercode_code_7"`
+		UsercodeCode8   string   `json:"usercode_code_8"`
+		UsercodeCode9   string   `json:"usercode_code_9"`
+		UsercodeCode10  string   `json:"usercode_code_10"`
+		UsercodeCode11  string   `json:"usercode_code_11"`
+		UsercodeCode12  string   `json:"usercode_code_12"`
+		UsercodeCode13  string   `json:"usercode_code_13"`
+		UsercodeCode14  string   `json:"usercode_code_14"`
+		UsercodeCode15  string   `json:"usercode_code_15"`
+		UsercodeCode16  string   `json:"usercode_code_16"`
+		UsercodeCode17  string   `json:"usercode_code_17"`
+		UsercodeCode18  string   `json:"usercode_code_18"`
+		UsercodeCode19  string   `json:"usercode_code_19"`
+		UsercodeCode20  string   `json:"usercode_code_20"`
+		UsercodeCode21  string   `json:"usercode_code_21"`
+		UsercodeCode22  string   `json:"usercode_code_22"`
+		UsercodeCode23  string   `json:"usercode_code_23"`
+		UsercodeCode24  string   `json:"usercode_code_24"`
+		UsercodeCode25  string   `json:"usercode_code_25"`
+		UsercodeCode26  string   `json:"usercode_code_26"`
+		UsercodeCode27  string   `json:"usercode_code_27"`
+		UsercodeCode28  string   `json:"usercode_code_28"`
+		UsercodeCode29  string   `json:"usercode_code_29"`
+		UsercodeCode30  string   `json:"usercode_code_30"`
+	} `json:"configuration"`
 	Label      string `json:"label"`
 	StatusInfo struct {
 		Status       string `json:"status"`
 		StatusDetail string `json:"statusDetail"`
 	} `json:"statusInfo"`
-	UID string `json:"UID"`
+	ThingTypeUID string `json:"thingTypeUID"`
+	UID          string `json:"UID"`
 }
 
 /*
@@ -133,7 +185,7 @@ OpenHAB things:
             "uid": "zwave:device:94acf23fa3:node2:lock_door"
         }
     ],
-    "configuration": {
+    --"configuration": {
         "config_10_1": 3,
         "config_11_1": 0,
         "config_12_4": 4,
@@ -217,7 +269,7 @@ OpenHAB things:
         --"status": "ONLINE",
         --"statusDetail": "NONE"
     },
-    "thingTypeUID": "zwave:schlage_be468zp_00_000",
+    --"thingTypeUID": "zwave:schlage_be468zp_00_000",
     --"UID": "zwave:device:94acf23fa3:node2"
 },
 {

@@ -42,6 +42,11 @@ func Get(ctx context.Context, url string) ([]shared.Reservation, error) {
 		return false
 	})
 
+	ress, err = updateTimestampsForCheckInOut(ress)
+	if err != nil {
+		return []shared.Reservation{}, fmt.Errorf("error updating reservation check in/out times: %s", err.Error())
+	}
+
 	return ress, nil
 }
 
@@ -103,8 +108,6 @@ func parseReservations(data string) ([]shared.Reservation, error) {
 
 		res := shared.Reservation{}
 
-		//m, err := getMatch(".*U.*I.*D.*:(.*)", lines[i])
-		//m, err := getMatch("^UID:(.*)$", "UID:6799168@LiveRez.com")
 		m, err := getMatch("^UID:(.*)$", lines[i])
 		if err != nil {
 			return []shared.Reservation{}, fmt.Errorf("expected UID: %s (%s)", lines[i], err.Error())
@@ -195,4 +198,63 @@ func getMatch(pattern string, input string) (string, error) {
 	}
 
 	return submatch[1], nil
+}
+
+func updateTimestampsForCheckInOut(ress []shared.Reservation) ([]shared.Reservation, error) {
+	out := []shared.Reservation{}
+
+	for _, res := range ress {
+		t, err := getCheckinTimestamp(res.Start)
+		if err != nil {
+			return []shared.Reservation{}, fmt.Errorf("error getting check-in timestamp %s", err.Error())
+		}
+		res.Start = t
+
+		t, err = getCheckoutTimestamp(res.End)
+		if err != nil {
+			return []shared.Reservation{}, fmt.Errorf("error getting check-out timestamp %s", err.Error())
+		}
+		res.End = t
+
+		out = append(out, res)
+	}
+
+	return out, nil
+}
+
+func getCheckinTimestamp(in time.Time) (time.Time, error) {
+	utc := in.UTC()
+	if utc.Hour() != 0 || utc.Minute() != 0 || utc.Second() != 0 || utc.Nanosecond() != 0 {
+		return time.Time{}, fmt.Errorf("timestamp isn't midnight UTC: %s", in)
+	}
+
+	// Change to MT (this should be configurable)
+	mt, err := time.LoadLocation("America/Denver")
+	if err != nil {
+		return time.Time{}, fmt.Errorf("error getting time zone %s", err.Error())
+	}
+
+	// Change to 4 pm (this really should be configurable)
+	fourPM := 16
+
+	return time.Date(utc.Year(), utc.Month(), utc.Day(), fourPM, utc.Minute(), utc.Second(), utc.Nanosecond(), mt), nil
+}
+
+func getCheckoutTimestamp(in time.Time) (time.Time, error) {
+	utc := in.UTC()
+	if utc.Hour() != 0 || utc.Minute() != 0 || utc.Second() != 0 || utc.Nanosecond() != 0 {
+		return time.Time{}, fmt.Errorf("timestamp isn't midnight UTC: %s", in)
+	}
+
+	// Change to MT (this should be configurable)
+	mt, err := time.LoadLocation("America/Denver")
+	if err != nil {
+		return time.Time{}, fmt.Errorf("error getting time zone %s", err.Error())
+	}
+
+	// Change to 11 am (this really should be configurable)
+	elevenAM := 11
+
+	return time.Date(utc.Year(), utc.Month(), utc.Day(), elevenAM, utc.Minute(), utc.Second(), utc.Nanosecond(), mt), nil
+
 }

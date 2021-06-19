@@ -9,15 +9,22 @@ gen-protos:
 	protoc  -I=backend --go_out=backend/shared/protos backend/protos/*
 	cd backend && go mod tidy
 
-run-onprem: gen-protos
+build-onprem-mac: gen-protos
 	cd backend/onprem && go test ./...
-	cd backend/onprem && go build
+	cd backend/onprem && go build -o mlock-onprem
 	mkdir -p backend/onprem/dist
-	mv backend/onprem/onprem backend/onprem/dist
+	mv backend/onprem/mlock-onprem backend/onprem/dist
 	cp backend/onprem/.env backend/onprem/dist
-	./backend/onprem/dist/onprem
 
-	# env GOOS=linux GOARCH=arm GOARM=5 go build
+build-onprem-rpi: gen-protos
+	cd backend/onprem && go test ./...
+	cd backend/onprem && env GOOS=linux GOARCH=arm GOARM=5 go build -o mlock-onprem
+	mkdir -p backend/onprem/dist
+	mv backend/onprem/mlock-onprem backend/onprem/dist
+	cp backend/onprem/.env backend/onprem/dist
+
+run-onprem: build-onprem-mac
+	./backend/onprem/dist/mlock-onprem
 
 run-onprem-tests-integ:
 	cd backend && export $(cat onprem/.env | sed 's/#.*//g' | xargs) && go test mlock/onprem/hab

@@ -22,3 +22,7 @@ message OnPremHabCommandResponse {
     HabCommand hab_command = 2;
     bytes response = 3;
 }
+
+message OnPremError {
+    string error_message = 1;
+}
