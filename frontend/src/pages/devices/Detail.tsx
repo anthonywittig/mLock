@@ -1,55 +1,9 @@
 import React from 'react';
-import { Form} from 'react-bootstrap';
+import { Button, Form} from 'react-bootstrap';
 import { formatDistance } from 'date-fns';
-import { useRouteMatch } from 'react-router-dom';
+import { useHistory, useRouteMatch } from 'react-router-dom';
 import { Loading } from '../utils/Loading';
 import { StandardFetch } from '../utils/FetchHelper';
-
-type Entity = {
-    id: string,
-    propertyId: string,
-    habThing: {
-        configuration: {
-            usercode_code_1: string,
-            usercode_code_10: string,
-            usercode_code_11: string,
-            usercode_code_12: string,
-            usercode_code_13: string,
-            usercode_code_14: string,
-            usercode_code_15: string,
-            usercode_code_16: string,
-            usercode_code_17: string,
-            usercode_code_18: string,
-            usercode_code_19: string,
-            usercode_code_2: string,
-            usercode_code_20: string,
-            usercode_code_21: string,
-            usercode_code_22: string,
-            usercode_code_23: string,
-            usercode_code_24: string,
-            usercode_code_25: string,
-            usercode_code_26: string,
-            usercode_code_27: string,
-            usercode_code_28: string,
-            usercode_code_29: string,
-            usercode_code_3: string,
-            usercode_code_30: string,
-            usercode_code_4: string,
-            usercode_code_5: string,
-            usercode_code_6: string,
-            usercode_code_7: string,
-            usercode_code_8: string,
-            usercode_code_9: string,
-        },
-        label: string,
-        statusInfo: {
-            status: string,
-            statusDetail: string,
-        },
-        uid: string,
-    },
-    lastRefreshedAt: string,
-}
 
 type Property = {
     id: string,
@@ -62,9 +16,10 @@ type MatchParams = {id: string};
 const Endpoint = "devices";
 
 export const Detail = () => {
-    const [entity, setEntity] = React.useState<Entity>({
+    const [entity, setEntity] = React.useState<DeviceT>({
         id: "",
         propertyId: "",
+        unitId: "",
         habThing: {
             configuration: {
                 usercode_code_1: "",
@@ -109,10 +64,12 @@ export const Detail = () => {
     });
     const [loading, setLoading] = React.useState<boolean>(true);
     const [properties, setProperties] = React.useState<Property[]>([]);
+    const [units, setUnits] = React.useState<UnitT[]>([]);
 
     const m = useRouteMatch('/' + Endpoint + '/:id');
     const mp = m?.params as MatchParams;
     const id = mp.id;
+    const history = useHistory();
 
     React.useEffect(() => {
         setLoading(true);
@@ -123,6 +80,7 @@ export const Detail = () => {
             setEntity(response.entity);
             setLoading(false);
             setProperties(response.extra.properties);
+            setUnits(response.extra.units);
         })
         .catch(err => {
             // TODO: indicate error.
@@ -130,6 +88,37 @@ export const Detail = () => {
         });
     }, [id]);
 
+    const detailFormUnitChange = (evt: React.ChangeEvent<HTMLSelectElement>) => {
+        let val: (string | null) = evt.target.value;
+        if (val === "") {
+            val = null;
+        }
+        setEntity({
+            ...entity,
+            unitId: val,
+        });
+    };
+
+    const formSubmit = (evt: React.FormEvent<HTMLFormElement>) => {
+        evt.preventDefault();
+
+        setLoading(true);
+
+        StandardFetch(Endpoint + "/" + id, {
+            method: "PUT",
+            body: JSON.stringify(entity)
+        })
+        .then(response => response.json())
+        .then(response => {
+            setEntity(response.entity);
+            setLoading(false);
+            history.push('/' + Endpoint + '/' + response.entity.id);
+        })
+        .catch(err => {
+            // TODO: indicate error.
+            console.log(err);
+        });
+    };
 
     const render = () => {
         return (
@@ -149,9 +138,9 @@ export const Detail = () => {
             return <Loading />;
         }
         return (
-            <Form>
+            <Form onSubmit={evt => formSubmit(evt)}>
                 <Form.Group>
-                    <Form.Label>Label</Form.Label>
+                    <Form.Label>Name</Form.Label>
                     <Form.Control type="text" value={entity.habThing.label} disabled={true} />
                 </Form.Group>
 
@@ -171,6 +160,20 @@ export const Detail = () => {
                         {properties.map(property =>
                             <option value={property.id} selected={property.id === entity.propertyId}>
                                 {property.name}
+                            </option>
+                        )}
+                    </Form.Control>
+                </Form.Group>
+
+                <Form.Group controlId="unit">
+                    <Form.Label>Unit</Form.Label>
+                    <Form.Control as="select" onChange={evt => detailFormUnitChange(evt as any)}>
+                        <option></option>
+                        {units.filter(unit =>
+                            unit.propertyId === entity.propertyId
+                        ).map(unit =>
+                            <option value={unit.id} selected={unit.id === entity.unitId}>
+                                {unit.name}
                             </option>
                         )}
                     </Form.Control>
@@ -218,6 +221,11 @@ export const Detail = () => {
                         );
                     })
                 }
+
+                <Button variant="secondary" type="submit">
+                    Update
+                </Button>
+
             </Form>
         );
     };

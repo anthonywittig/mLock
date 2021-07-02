@@ -113,6 +113,21 @@ func List(ctx context.Context) ([]shared.Device, error) {
 	return items, nil
 }
 
+func ListForUnit(ctx context.Context, unit shared.Unit) ([]shared.Device, error) {
+	all, err := List(ctx)
+	if err != nil {
+		return []shared.Device{}, fmt.Errorf("error getting devices: %s", err.Error())
+	}
+
+	forU := []shared.Device{}
+	for _, d := range all {
+		if d.UnitID != nil && *d.UnitID == unit.ID {
+			forU = append(forU, d)
+		}
+	}
+	return forU, nil
+}
+
 func Put(ctx context.Context, item shared.Device) (shared.Device, error) {
 	dy, err := dynamo.GetClient(ctx)
 	if err != nil {

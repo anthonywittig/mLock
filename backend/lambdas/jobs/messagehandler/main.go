@@ -132,18 +132,17 @@ func handleListThingsResponse(ctx context.Context, property shared.Property, in 
 	}
 
 	for _, t := range ts {
-		d := shared.Device{
-			ID:              uuid.New(),
-			PropertyID:      property.ID,
-			HABThing:        t,
-			LastRefreshedAt: time.Now(),
-		}
+		d := shared.Device{}
 		for _, ed := range eds {
 			if ed.PropertyID == property.ID && ed.HABThing.UID == t.UID {
 				// We found a match.
-				d.ID = ed.ID
+				d = ed
 			}
 		}
+
+		d.PropertyID = property.ID
+		d.HABThing = t
+		d.LastRefreshedAt = time.Now()
 
 		if _, err := device.Put(ctx, d); err != nil {
 			return fmt.Errorf("error putting device: %s", err.Error())

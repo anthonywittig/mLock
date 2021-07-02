@@ -7,10 +7,11 @@ import (
 )
 
 type Device struct {
-	ID              uuid.UUID `json:"id"`
-	PropertyID      uuid.UUID `json:"propertyId"`
-	HABThing        HABThing  `json:"habThing"`
-	LastRefreshedAt time.Time `json:"lastRefreshedAt"`
+	HABThing        HABThing   `json:"habThing"`
+	ID              uuid.UUID  `json:"id"`
+	LastRefreshedAt time.Time  `json:"lastRefreshedAt"`
+	PropertyID      uuid.UUID  `json:"propertyId"`
+	UnitID          *uuid.UUID `json:"unitId"`
 }
 
 type HABThing struct {

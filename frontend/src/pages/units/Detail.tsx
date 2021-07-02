@@ -6,14 +6,6 @@ import { useHistory } from 'react-router-dom';
 import { Loading } from '../utils/Loading';
 import { StandardFetch } from '../utils/FetchHelper';
 
-type Entity = {
-    id: string,
-    name: string,
-    propertyId: string,
-    calendarUrl: string,
-    updatedBy: string,
-}
-
 type Reservation = {
     id: string,
     start: string,
@@ -35,7 +27,7 @@ type MatchParams = {id: string};
 const Endpoint = "units";
 
 export const Detail = () => {
-    const [entity, setEntity] = React.useState<Entity>({
+    const [entity, setEntity] = React.useState<UnitT>({
         id: "",
         name: "",
         propertyId: "",
@@ -44,10 +36,11 @@ export const Detail = () => {
     });
     const [loading, setLoading] = React.useState<boolean>(true);
     const [properties, setProperties] = React.useState<Property[]>([]);
+    const [devices, setDevices] = React.useState<DeviceT[]>([]);
     const [reservations, setReservations] = React.useState<Reservation[]>([]);
     const history = useHistory();
 
-    const m = useRouteMatch('/units/:id');
+    const m = useRouteMatch('/' + Endpoint + '/:id');
     const mp = m?.params as MatchParams;
     const id = mp.id;
 
@@ -68,6 +61,8 @@ export const Detail = () => {
                 r.endDate = parseISO(r.end.slice(0, -1));
             });
             setReservations(reservations);
+
+            setDevices(response.extra.devices as DeviceT[]);
         })
         .catch(err => {
             // TODO: indicate error.
@@ -109,7 +104,7 @@ export const Detail = () => {
         .then(response => {
             setEntity(response.entity);
             setLoading(false);
-            history.push('/units/' + response.entity.id);
+            history.push('/' + Endpoint + '/' + response.entity.id);
         })
         .catch(err => {
             // TODO: indicate error.
@@ -130,6 +125,12 @@ export const Detail = () => {
                     <div className="card-body">
                         <h2 className="card-title">Upcoming Reservations</h2>
                         {renderCalendar()}
+                    </div>
+                </div>
+                <div className="card" style={{marginBottom: "1rem", marginTop: "1rem"}}>
+                    <div className="card-body">
+                        <h2 className="card-title">Devices</h2>
+                        {renderDevices()}
                     </div>
                 </div>
             </>
@@ -155,6 +156,28 @@ export const Detail = () => {
                             <th scope="row">{res.summary}</th>
                             <td>{format(res.startDate, "LL/dd/yyyy")}</td>
                             <td>{format(res.endDate, "LL/dd/yyyy")}</td>
+                        </tr>
+                    )}
+                </tbody>
+            </table>
+        );
+    };
+
+    const renderDevices = () => {
+        if (loading) {
+            return <Loading />;
+        }
+        return (
+            <table className="table table-responsive-sm">
+                <thead>
+                    <tr>
+                        <th scope="col">Name</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {devices.map(device =>
+                        <tr>
+                            <th scope="row">{device.habThing.label}</th>
                         </tr>
                     )}
                 </tbody>

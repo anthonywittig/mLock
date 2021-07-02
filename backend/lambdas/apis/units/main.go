@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"mlock/lambdas/helpers"
 	"mlock/lambdas/shared"
+	"mlock/lambdas/shared/dynamo/device"
 	"mlock/lambdas/shared/dynamo/property"
 	"mlock/lambdas/shared/dynamo/unit"
 	"mlock/lambdas/shared/ical"
@@ -39,18 +40,19 @@ type CreateResponse struct {
 	Entity shared.Unit `json:"entity"`
 }
 
-type UpdateResponse struct {
-	Entity shared.Unit `json:"entity"`
-	Error  string      `json:"error"`
-}
-
 type UpdateBody struct {
 	Name        string    `json:"name"`
 	PropertyID  uuid.UUID `json:"propertyId"`
 	CalendarURL string    `json:"calendarUrl"`
 }
 
+type UpdateResponse struct {
+	Entity shared.Unit `json:"entity"`
+	Error  string      `json:"error"`
+}
+
 type ExtraEntities struct {
+	Devices      []shared.Device      `json:"devices"`
 	Properties   []shared.Property    `json:"properties"`
 	Reservations []shared.Reservation `json:"reservations"`
 }
@@ -139,10 +141,9 @@ func detail(ctx context.Context, req events.APIGatewayProxyRequest, id string) (
 		return nil, fmt.Errorf("entity not found: %s", parsedID)
 	}
 
-	var reservations []shared.Reservation
+	reservations := []shared.Reservation{}
 	if entity.CalendarURL != "" {
 		var err error
-		// TODO: cache this.
 		reservations, err = ical.Get(ctx, entity.CalendarURL)
 		if err != nil {
 			return nil, fmt.Errorf("error getting calendar items: %s", err.Error())
@@ -154,9 +155,15 @@ func detail(ctx context.Context, req events.APIGatewayProxyRequest, id string) (
 		return nil, fmt.Errorf("error getting properties: %s", err.Error())
 	}
 
+	devices, err := device.ListForUnit(ctx, entity)
+	if err != nil {
+		return nil, fmt.Errorf("error getting devices: %s", err.Error())
+	}
+
 	return shared.NewAPIResponse(http.StatusOK, DetailResponse{
 		Entity: entity,
 		Extra: ExtraEntities{
+			Devices:      devices,
 			Properties:   properties,
 			Reservations: reservations,
 		},
