@@ -12,6 +12,7 @@ import (
 	"net/http"
 	"regexp"
 	"strings"
+	"time"
 
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/google/uuid"
@@ -82,15 +83,24 @@ func delete(ctx context.Context, req events.APIGatewayProxyRequest) (*shared.API
 	// TODO: Can't delete a device that's being used. For now we'll require the status to be in an allow list.
 
 	ok = false
-	// I think one was in an "UNINITIALIZED" state, but let's wait to add it until we know what it is for sure.
-	for _, s := range []string{"OFFLINE"} {
-		if s == entity.HABThing.StatusInfo.Status {
-			ok = true
+
+	awhileAgo := time.Now().Add(-2 * time.Hour)
+	if entity.LastRefreshedAt.Before(awhileAgo) {
+		ok = true
+	}
+
+	if !ok {
+		// I think one was in an "UNINITIALIZED" state, but let's wait to add it until we know what it is for sure.
+		for _, s := range []string{"OFFLINE"} {
+			if s == entity.HABThing.StatusInfo.Status {
+				ok = true
+			}
 		}
 	}
+
 	if !ok {
 		return shared.NewAPIResponse(http.StatusBadRequest, DeleteResponse{
-			Error: fmt.Sprintf("invalid device status: %s", entity.HABThing.StatusInfo.Status),
+			Error: fmt.Sprintf("device can't be deleted because it was recently refreshed and/or the device status"),
 		})
 	}
 

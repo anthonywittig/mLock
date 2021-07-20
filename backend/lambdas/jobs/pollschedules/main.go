@@ -40,7 +40,13 @@ func HandleRequest(ctx context.Context, event MyEvent) (Response, error) {
 		return Response{}, fmt.Errorf("error loading config: %s", err.Error())
 	}
 
-	queueName := "test-in.fifo"
+	queueName, err := mshared.GetConfig("AWS_SQS_QUEUE_PREFIX")
+	if err != nil {
+		return Response{}, fmt.Errorf("error getting queue prefix: %s", err.Error())
+	}
+
+	queueName = queueName + "-in.fifo"
+
 	log.Printf("adding message to \"%s\"\n", queueName)
 
 	s, err := sqs.GetClient(ctx)

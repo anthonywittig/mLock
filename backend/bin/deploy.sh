@@ -38,7 +38,7 @@ handleJobs () {
     rm -rf build
     mkdir build
 
-    lambdas=('pollschedules' 'messagehandler')
+    lambdas=('messagehandler' 'pollschedules')
     for lambda in "${lambdas[@]}" ; do
         handleLambda $lambda
     done
@@ -64,6 +64,6 @@ scriptDir=$(pwd)
 go vet ../...
 go test ../...
 
-handleApis
 handleJobs
+handleApis
 handleDb

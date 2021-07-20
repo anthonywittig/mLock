@@ -10,6 +10,7 @@ import (
 	"mlock/lambdas/shared/dynamo/property"
 	mshared "mlock/shared"
 	"mlock/shared/protos/messaging"
+	"strings"
 	"time"
 
 	"github.com/aws/aws-lambda-go/events"
@@ -40,22 +41,12 @@ func HandleRequest(ctx context.Context, event events.SQSEvent) (Response, error)
 
 	log.Printf("handling message(s)")
 
-	log.Printf("pretending that this event is for \"zzz Anthony's House\"")
-	props, err := property.List(ctx)
-	if err != nil {
-		return Response{}, fmt.Errorf("error loading properties: %s", err.Error())
-	}
-	anthonysHouse := shared.Property{}
-	for _, p := range props {
-		if p.Name == "zzz Anthony's House" {
-			anthonysHouse = p
-		}
-	}
-	if anthonysHouse.ID == uuid.Nil {
-		return Response{}, fmt.Errorf("error getting Anthony's house: %s", err.Error())
-	}
-
 	for _, m := range event.Records {
+		prop, err := getPropertyForEventARN(ctx, m.EventSourceARN)
+		if err != nil {
+			return Response{}, fmt.Errorf("error getting property for \"%s\": %s", m.EventSourceARN, err.Error())
+		}
+
 		mType, ok := m.MessageAttributes[mshared.SQSProtoMessageTypeKey]
 		if !ok {
 			// Send to deadletter queue?
@@ -73,7 +64,7 @@ func HandleRequest(ctx context.Context, event events.SQSEvent) (Response, error)
 			log.Printf("message description: %s\n", message.Description)
 			log.Printf("message body: %s\n", string(message.Response))
 
-			if err := handleOnPremHabResponse(ctx, anthonysHouse, message); err != nil {
+			if err := handleOnPremHabResponse(ctx, prop, message); err != nil {
 				return Response{}, fmt.Errorf("error handling on-prem HAB response: %s", err.Error())
 			}
 		case string((&messaging.OnPremError{}).ProtoReflect().Descriptor().FullName()):
@@ -132,7 +123,10 @@ func handleListThingsResponse(ctx context.Context, property shared.Property, in 
 	}
 
 	for _, t := range ts {
-		d := shared.Device{}
+		d := shared.Device{
+			ID: uuid.New(),
+		}
+
 		for _, ed := range eds {
 			if ed.PropertyID == property.ID && ed.HABThing.UID == t.UID {
 				// We found a match.
@@ -150,4 +144,39 @@ func handleListThingsResponse(ctx context.Context, property shared.Property, in 
 	}
 
 	return nil
+}
+
+func getPropertyForEventARN(ctx context.Context, eventARN string) (shared.Property, error) {
+	// TODO: move this to the property object.
+	m := map[string]string{
+		"test-out.fifo": "zzz anthony's house",
+		"rpi1-out.fifo": "zion's camp",
+	}
+
+	propName := ""
+	for k, v := range m {
+		if strings.Contains(eventARN, k) {
+			propName = v
+		}
+	}
+	if propName == "" {
+		return shared.Property{}, fmt.Errorf("unable to get property name for \"%s\"", eventARN)
+	}
+
+	props, err := property.List(ctx)
+	if err != nil {
+		return shared.Property{}, fmt.Errorf("error loading properties: %s", err.Error())
+	}
+
+	prop := shared.Property{}
+	for _, p := range props {
+		if strings.Contains(strings.ToLower(p.Name), propName) {
+			prop = p
+		}
+	}
+	if prop.ID == uuid.Nil {
+		return shared.Property{}, fmt.Errorf("error getting property for \"%s\" -> \"%s\": %s", eventARN, propName, err.Error())
+	}
+
+	return prop, nil
 }
