@@ -28,3 +28,8 @@ run-onprem: build-onprem-mac
 
 run-onprem-tests-integ:
 	cd backend && export $(cat onprem/.env | sed 's/#.*//g' | xargs) && go test mlock/onprem/hab
+
+# Example command that could be helpful:
+#copy-on-prem-to-rpi: build-onprem-rpi
+#	cd backend/onprem/dist && scp -P 8901 mlock-onprem .env pi@127.0.0.1:/usr/local/mlock-onprem/
+#	cd backend/onprem && scp -P 8901 mlock-onprem.service pi@127.0.0.1:/usr/local/mlock-onprem/
