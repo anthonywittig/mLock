@@ -90,8 +90,7 @@ func delete(ctx context.Context, req events.APIGatewayProxyRequest) (*shared.API
 	}
 
 	if !ok {
-		// I think one was in an "UNINITIALIZED" state, but let's wait to add it until we know what it is for sure.
-		for _, s := range []string{"OFFLINE"} {
+		for _, s := range []string{shared.DeviceStatusOffline} {
 			if s == entity.HABThing.StatusInfo.Status {
 				ok = true
 			}

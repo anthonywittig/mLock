@@ -7,9 +7,10 @@ cd "$(dirname "$0")"
 # move up one level
 cd ../
 
+npm install
 CI=true npm run build
 
-aws --profile=mLock s3 cp build s3://mlock-site --recursive
+aws --profile=mLock-dev s3 cp build s3://mlock-site --recursive
 
 # clear the cache
-aws --profile=mLock cloudfront create-invalidation --distribution-id E3RMAC8N7J8VMP --paths "/*"
+aws --profile=mLock-dev cloudfront create-invalidation --distribution-id E3RMAC8N7J8VMP --paths "/*"

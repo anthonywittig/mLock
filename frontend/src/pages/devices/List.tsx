@@ -1,9 +1,9 @@
 import React from 'react';
-import { Button } from 'react-bootstrap';
+import { Badge, Button } from 'react-bootstrap';
 import { Loading } from '../utils/Loading';
 import { StandardFetch } from '../utils/FetchHelper';
 import { useHistory } from 'react-router';
-import { formatDistance } from 'date-fns';
+import { formatDistance, isAfter, isBefore, sub } from 'date-fns';
 
 type Property = {
     id: string,
@@ -62,7 +62,7 @@ export const List = () => {
                 <div className="card" style={{marginBottom: "1rem", marginTop: "1rem"}}>
                     <div className="card-body">
                         <h2 className="card-title">Details</h2>
-                        {renderEntities()}
+                        { renderEntities() }
                     </div>
                 </div>
             </>
@@ -80,6 +80,7 @@ export const List = () => {
                         <th scope="col">Name</th>
                         <th scope="col">Last Refreshed</th>
                         <th scope="col">Status</th>
+                        <th scope="col">Went Offline</th>
                         <th scope="col">Property</th>
                         <th scope="col">Unit</th>
                         <th scope="col">Actions</th>
@@ -87,14 +88,15 @@ export const List = () => {
                 </thead>
                 <tbody>
                     {entities.map(entity =>
-                        <tr key={entity.id}>
+                        <tr key={ entity.id }>
                             <th scope="row">
                                 <Button variant="link" onClick={evt => labelClick(entity.id)}>
-                                    {entity.habThing.label}
+                                    { entity.habThing.label }
                                 </Button>
                             </th>
-                            <td>{ formatDistance(Date.parse(entity.lastRefreshedAt), new Date(), { addSuffix: true }) }</td>
-                            <td>{ entity.habThing.statusInfo.status }</td>
+                            <td>{ renderEntityLastRefreshed(entity) }</td>
+                            <td>{ renderEntityStatus(entity) }</td>
+                            <td>{ renderEntityLastWentOffline(entity) }</td>
                             <td>{ properties.find(e => e.id === entity.propertyId )?.name }</td>
                             <td>{ units.find(e => e.id === entity.unitId )?.name }</td>
                             <td><Button variant="secondary" onClick={() => deleteDevice(entity.id)}>Delete</Button></td>
@@ -103,6 +105,44 @@ export const List = () => {
                 </tbody>
             </table>
         );
+    };
+
+    const renderEntityLastRefreshed = (entity : DeviceT) => {
+        const lr = Date.parse(entity.lastRefreshedAt);
+        const recently = sub(new Date(), {minutes: 10});
+        const distance = formatDistance(lr, new Date(), { addSuffix: true });
+
+        if (isBefore(lr, recently)) {
+            return <Badge variant="danger">{ distance }</Badge>;
+        }
+
+        return "recently";
+    };
+
+    const renderEntityStatus = (entity : DeviceT) => {
+        const status = entity.habThing.statusInfo.status;
+        if (status !== "ONLINE") {
+            return <Badge variant="danger">{ entity.habThing.statusInfo.status }</Badge>;
+        }
+        return entity.habThing.statusInfo.status;
+    };
+
+    const renderEntityLastWentOffline = (entity : DeviceT) => {
+        const lwo = entity.lastWentOfflineAt;
+
+        if (lwo === null) {
+            return "";
+        }
+
+        const lwod = Date.parse(entity.lastWentOfflineAt!);
+        const recently = sub(new Date(), {days: 1});
+        const distance = formatDistance(lwod, new Date(), { addSuffix: true });
+
+        if (isAfter(lwod, recently)) {
+            return <Badge variant="danger">{ distance }</Badge>;
+        }
+
+        return distance;
     };
 
     return render();

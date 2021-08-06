@@ -61,6 +61,7 @@ export const Detail = () => {
             uid: "",
         },
         lastRefreshedAt: "",
+        lastWentOfflineAt: null,
     });
     const [loading, setLoading] = React.useState<boolean>(true);
     const [properties, setProperties] = React.useState<Property[]>([]);

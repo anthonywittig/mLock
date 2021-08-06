@@ -43,6 +43,7 @@ type DeviceT = {
         uid: string,
     },
     lastRefreshedAt: string,
+    lastWentOfflineAt: string | null,
 }
 
 type UnitT = {

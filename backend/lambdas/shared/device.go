@@ -7,11 +7,12 @@ import (
 )
 
 type Device struct {
-	HABThing        HABThing   `json:"habThing"`
-	ID              uuid.UUID  `json:"id"`
-	LastRefreshedAt time.Time  `json:"lastRefreshedAt"`
-	PropertyID      uuid.UUID  `json:"propertyId"`
-	UnitID          *uuid.UUID `json:"unitId"`
+	HABThing          HABThing   `json:"habThing"`
+	ID                uuid.UUID  `json:"id"`
+	LastRefreshedAt   time.Time  `json:"lastRefreshedAt"`
+	LastWentOfflineAt *time.Time `json:"lastWentOfflineAt"`
+	PropertyID        uuid.UUID  `json:"propertyId"`
+	UnitID            *uuid.UUID `json:"unitId"`
 }
 
 type HABThing struct {
@@ -75,21 +76,11 @@ type HABThing struct {
 	UID          string `json:"UID"`
 }
 
-/*
-func NewDevice(propertyID uuid.UUID, h HABThing) (*Device, error) {
-	if propertyID == uuid.Nil {
-		return nil, fmt.Errorf("missing required parameter \"propertyID\"")
-	}
-	if h.UID == "" {
-		return nil, fmt.Errorf("missing required parameter \"HABThing.UID\"")
-	}
-
-	return &Device{
-		ID:       fmt.Sprintf("%s:-:%s", rpi, h.UID),
-		HABThing: h,
-	}, nil
-}
-*/
+const (
+	DeviceStatusOffline = "OFFLINE"
+	DeviceStatusOnline  = "ONLINE"
+	// I think "UNINITIALIZED" is another one, maybe.
+)
 
 /*
 OpenHAB things:

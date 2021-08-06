@@ -8,6 +8,7 @@ import (
 	"mlock/lambdas/shared"
 	"mlock/lambdas/shared/dynamo/device"
 	"mlock/lambdas/shared/dynamo/property"
+	"mlock/lambdas/shared/ses"
 	mshared "mlock/shared"
 	"mlock/shared/protos/messaging"
 	"strings"
@@ -122,6 +123,9 @@ func handleListThingsResponse(ctx context.Context, property shared.Property, in 
 		return fmt.Errorf("error parsing json: %s", err.Error())
 	}
 
+	transitioningToOfflineDevices := []shared.Device{}
+	offlineDevices := []shared.Device{}
+
 	for _, t := range ts {
 		d := shared.Device{
 			ID: uuid.New(),
@@ -131,6 +135,18 @@ func handleListThingsResponse(ctx context.Context, property shared.Property, in 
 			if ed.PropertyID == property.ID && ed.HABThing.UID == t.UID {
 				// We found a match.
 				d = ed
+
+				wasOffline := t.StatusInfo.Status == shared.DeviceStatusOffline
+				isOffline := d.HABThing.StatusInfo.Status == shared.DeviceStatusOffline
+
+				if isOffline {
+					offlineDevices = append(offlineDevices, d)
+					if !wasOffline {
+						now := time.Now()
+						d.LastWentOfflineAt = &now
+						transitioningToOfflineDevices = append(transitioningToOfflineDevices, d)
+					}
+				}
 			}
 		}
 
@@ -141,6 +157,37 @@ func handleListThingsResponse(ctx context.Context, property shared.Property, in 
 		if _, err := device.Put(ctx, d); err != nil {
 			return fmt.Errorf("error putting device: %s", err.Error())
 		}
+	}
+
+	if err := sendOfflineDeviceEmail(ctx, transitioningToOfflineDevices, offlineDevices); err != nil {
+		return fmt.Errorf("error sending offline device email: %s", err.Error())
+	}
+	return nil
+}
+
+func sendOfflineDeviceEmail(ctx context.Context, transitioningToOfflineDevices []shared.Device, offlineDevices []shared.Device) error {
+	if len(transitioningToOfflineDevices) == 0 {
+		return nil
+	}
+
+	var sb strings.Builder
+
+	sb.WriteString("<h1>Devices That Recently Went Offline</h1>")
+	sb.WriteString("<ul>")
+	for _, d := range transitioningToOfflineDevices {
+		sb.WriteString(fmt.Sprintf("<li>Device: %s</li>", d.HABThing.Label))
+	}
+	sb.WriteString("</ul>")
+
+	sb.WriteString("<h1>Devices That Are Currently Offline</h1>")
+	sb.WriteString("<ul>")
+	for _, d := range offlineDevices {
+		sb.WriteString(fmt.Sprintf("<li>Device: %s</li>", d.HABThing.Label))
+	}
+	sb.WriteString("</ul>")
+
+	if err := ses.SendEamil(ctx, "MursetLock - Devices That Recently Went Offline", sb.String()); err != nil {
+		return fmt.Errorf("error sending email: %s", err.Error())
 	}
 
 	return nil

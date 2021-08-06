@@ -74,12 +74,12 @@ func HandleRequest(ctx context.Context, event MyEvent) (Response, error) {
 	for i, ress := range reservations {
 		// Start/End dates are UTC but they're really naive and just the day. Check-in is at 4 pm and check-out is at 11 am.
 		now := time.Now()
-		notTooFarAway := now.Add(45 * time.Minute)
+		notTooFarAway := now.Add(5 * time.Minute)
 		if len(ress) != 0 {
 			upcomingRess := []string{}
 			for _, r := range ress {
 				if r.Start.After(now) && r.Start.Before(notTooFarAway) {
-					upcomingRess = append(upcomingRess, fmt.Sprintf("<li>tx:%s<ul>%s (start) (%f hours till)</ul><ul>%s (end) (%f hours till)</ul></li>", r.TransactionNumber, r.Start, r.Start.Sub(time.Now()).Hours(), r.End, r.End.Sub(time.Now()).Hours()))
+					upcomingRess = append(upcomingRess, fmt.Sprintf("<li>tx:%s<ul>%s (start) (%f hours till)</ul><ul>%s (end) (%f hours till)</ul></li>", r.TransactionNumber, r.Start, time.Until(r.Start).Hours(), r.End, time.Until(r.End).Hours()))
 				}
 			}
 
