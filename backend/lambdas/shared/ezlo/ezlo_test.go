@@ -13,10 +13,13 @@ import (
 func Test_HW(t *testing.T) {
 	assert.Nil(t, loadConfig())
 
-	body, err := HW(context.Background(), os.Getenv("USERNAME"), os.Getenv("PASSWORD"))
+	body, err := Authenticate(context.Background(), os.Getenv("USERNAME"), os.Getenv("PASSWORD"))
 	assert.Nil(t, err)
 
-	assert.Equal(t, "ahh", body)
+	resp, err := X(context.Background(), body, os.Getenv("HUB_SERIAL_NUMBER"))
+	assert.Nil(t, err)
+
+	assert.Equal(t, "ahh", resp)
 }
 
 func loadConfig() error {
