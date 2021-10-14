@@ -2,6 +2,10 @@ type DeviceT = {
     id: string,
     propertyId: string,
     unitId: string | null,
+    battery: {
+        lastUpdatedAt: string | null,
+        level: string,
+    },
     habThing: {
         configuration: {
             usercode_code_1: string,

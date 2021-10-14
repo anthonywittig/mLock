@@ -20,6 +20,10 @@ export const Detail = () => {
         id: "",
         propertyId: "",
         unitId: "",
+        battery: {
+            lastUpdatedAt: null,
+            level: "",
+        },
         habThing: {
             configuration: {
                 usercode_code_1: "",

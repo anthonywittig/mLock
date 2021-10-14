@@ -2,6 +2,7 @@ package shared
 
 import (
 	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"mlock/shared/protos/messaging"
 
@@ -59,6 +60,17 @@ func DecodeMessageOnPremHabCommandResponse(encodedMessage string) (*messaging.On
 	return message, nil
 }
 
+func HabCommandListItems(description string) *messaging.HabCommand {
+	return &messaging.HabCommand{
+		Description: description,
+		Request: &messaging.HTTPRequest{
+			Method: "GET",
+			Path:   "/rest/items",
+		},
+		CommandType: messaging.HabCommand_LIST_ITEMS,
+	}
+}
+
 func HabCommandListThings(description string) *messaging.HabCommand {
 	return &messaging.HabCommand{
 		Description: description,
@@ -68,4 +80,39 @@ func HabCommandListThings(description string) *messaging.HabCommand {
 		},
 		CommandType: messaging.HabCommand_LIST_THINGS,
 	}
+}
+
+func HabCommandCreateBatteryLevelItem(description string, channelUID string) (*messaging.HabCommand, error) {
+	name := channelUID + "_BatteryLevel"
+
+	body := struct {
+		Category   string   `json:"category"`
+		GroupNames []string `json:"groupNames"`
+		Label      string   `json:"label"`
+		Name       string   `json:"name"`
+		Tags       []string `json:"tags"`
+		Type       string   `json:"type"`
+	}{
+		Category: "Battery",
+		Label:    "Battery Level",
+		Name:     name,
+		Tags:     []string{"Point"},
+		Type:     "Number",
+	}
+
+	bodyBytes, err := json.Marshal(body)
+	if err != nil {
+		// Not sure if this is even possible...
+		return nil, fmt.Errorf("error marshalling json: %s", err.Error())
+	}
+
+	return &messaging.HabCommand{
+		Description: description,
+		Request: &messaging.HTTPRequest{
+			Method: "PUT",
+			Path:   "/rest/items/" + name,
+			Body:   bodyBytes,
+		},
+		CommandType: messaging.HabCommand_CREATE_ITEM_BATTERY_LEVEL,
+	}, nil
 }

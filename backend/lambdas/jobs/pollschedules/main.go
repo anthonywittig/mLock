@@ -40,22 +40,31 @@ func HandleRequest(ctx context.Context, event MyEvent) (Response, error) {
 		return Response{}, fmt.Errorf("error loading config: %s", err.Error())
 	}
 
-	queueName, err := mshared.GetConfig("AWS_SQS_QUEUE_PREFIX")
+	queuePrefixes, err := mshared.GetConfig("AWS_SQS_QUEUE_PREFIXES")
 	if err != nil {
-		return Response{}, fmt.Errorf("error getting queue prefix: %s", err.Error())
+		return Response{}, fmt.Errorf("error getting queue prefixes: %s", err.Error())
 	}
 
-	queueName = queueName + "-in.fifo"
-
-	log.Printf("adding message to \"%s\"\n", queueName)
+	queueNames := []string{}
+	for _, n := range strings.Split(queuePrefixes, ",") {
+		queueNames = append(queueNames, n+"-in.fifo")
+	}
 
 	s, err := sqs.GetClient(ctx)
 	if err != nil {
 		return Response{}, fmt.Errorf("error getting sqs client: %s", err.Error())
 	}
 
-	if err := s.SendMessage(ctx, queueName, mshared.HabCommandListThings(fmt.Sprintf("hello there @ %s - requesting a list", time.Now().String()))); err != nil {
-		return Response{}, fmt.Errorf("error sending message: %s", err.Error())
+	// TODO: This should really move somewhere else.
+	for _, qn := range queueNames {
+		log.Printf("adding list things message to \"%s\"\n", qn)
+		if err := s.SendMessage(
+			ctx,
+			qn,
+			mshared.HabCommandListThings(fmt.Sprintf("hello there @ %s - requesting a list", time.Now().String())),
+		); err != nil {
+			return Response{}, fmt.Errorf("error sending message: %s", err.Error())
+		}
 	}
 
 	// get all units

@@ -10,7 +10,9 @@ func TestAPIResponse_AddCookie_Simple(t *testing.T) {
 		t.Fatalf("unexpected error: %s", err.Error())
 	}
 
-	resp.AddCookie("A", "1")
+	if err := resp.AddCookie("A", "1"); err != nil {
+		t.Fatalf("unexpected error: %s", err.Error())
+	}
 
 	val, exists := resp.Proxy.Headers[SetCookieHeaderName]
 	if !exists {

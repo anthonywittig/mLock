@@ -8,6 +8,8 @@ message HabCommand {
     enum CommandType {
         UNKNOWN = 0;
         LIST_THINGS = 1;
+        CREATE_ITEM_BATTERY_LEVEL = 2;
+        LIST_ITEMS = 3;
     }
     CommandType command_type = 3;
 }
@@ -15,6 +17,7 @@ message HabCommand {
 message HTTPRequest {
     string method = 1;
     string path = 2;
+    bytes body = 3;
 }
 
 message OnPremHabCommandResponse {

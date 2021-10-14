@@ -9,6 +9,7 @@ import (
 	"mlock/lambdas/shared/dynamo/device"
 	"mlock/lambdas/shared/dynamo/property"
 	"mlock/lambdas/shared/ses"
+	"mlock/lambdas/shared/workflows/devicebatterylevel"
 	mshared "mlock/shared"
 	"mlock/shared/protos/messaging"
 	"strings"
@@ -28,6 +29,12 @@ type Response struct {
 
 func main() {
 	lambda.Start(HandleRequest)
+}
+
+// TODO: move this to the property object.
+var queueToPropertyName = map[string]string{
+	"test-out.fifo": "zzz anthony's house",
+	"rpi1-out.fifo": "zion's camp",
 }
 
 func HandleRequest(ctx context.Context, event events.SQSEvent) (Response, error) {
@@ -101,7 +108,15 @@ func handleOnPremHabResponse(ctx context.Context, property shared.Property, in *
 			// Just log and continue.
 			logError(fmt.Errorf("error processing list things: %s", err.Error()))
 		}
-
+	case messaging.HabCommand_LIST_ITEMS:
+		log.Printf("got a list items command")
+		if err := devicebatterylevel.ProcessListItems(ctx, property, in); err != nil {
+			// Just log and continue.
+			logError(fmt.Errorf("error processing list items: %s", err.Error()))
+		}
+	default:
+		// Just log and continue.
+		logError(fmt.Errorf("unhandled command type: %s", in.HabCommand.CommandType.String()))
 	}
 	return nil
 }
@@ -120,7 +135,7 @@ func handleListThingsResponse(ctx context.Context, property shared.Property, in 
 
 	eds, err := device.List(ctx)
 	if err != nil {
-		return fmt.Errorf("error parsing json: %s", err.Error())
+		return fmt.Errorf("error getting devices: %s", err.Error())
 	}
 
 	transitioningToOfflineDevices := []shared.Device{}
@@ -128,6 +143,13 @@ func handleListThingsResponse(ctx context.Context, property shared.Property, in 
 
 	for _, t := range ts {
 		d := shared.Device{
+			History: []shared.DeviceHistory{
+				{
+					Description: "Initial State",
+					HABThing:    t,
+					RecordedAt:  time.Now(),
+				},
+			},
 			ID: uuid.New(),
 		}
 
@@ -138,7 +160,6 @@ func handleListThingsResponse(ctx context.Context, property shared.Property, in 
 
 				wasOffline := t.StatusInfo.Status == shared.DeviceStatusOffline
 				isOffline := d.HABThing.StatusInfo.Status == shared.DeviceStatusOffline
-
 				if isOffline {
 					offlineDevices = append(offlineDevices, d)
 					if !wasOffline {
@@ -146,6 +167,21 @@ func handleListThingsResponse(ctx context.Context, property shared.Property, in 
 						d.LastWentOfflineAt = &now
 						transitioningToOfflineDevices = append(transitioningToOfflineDevices, d)
 					}
+				}
+
+				statusChanged := (t.StatusInfo.Status != d.HABThing.StatusInfo.Status) || (t.StatusInfo.StatusDetail != d.HABThing.StatusInfo.StatusDetail)
+				if statusChanged {
+					d.History = append(d.History, shared.DeviceHistory{
+						Description: "Status Changed",
+						HABThing:    t,
+						RecordedAt:  time.Now(),
+					})
+				}
+
+				maxHistoryCount := 1
+				historyStartIndex := len(d.History) - maxHistoryCount
+				if historyStartIndex > 0 {
+					d.History = d.History[historyStartIndex:]
 				}
 			}
 		}
@@ -162,6 +198,7 @@ func handleListThingsResponse(ctx context.Context, property shared.Property, in 
 	if err := sendOfflineDeviceEmail(ctx, transitioningToOfflineDevices, offlineDevices); err != nil {
 		return fmt.Errorf("error sending offline device email: %s", err.Error())
 	}
+
 	return nil
 }
 
@@ -194,14 +231,8 @@ func sendOfflineDeviceEmail(ctx context.Context, transitioningToOfflineDevices [
 }
 
 func getPropertyForEventARN(ctx context.Context, eventARN string) (shared.Property, error) {
-	// TODO: move this to the property object.
-	m := map[string]string{
-		"test-out.fifo": "zzz anthony's house",
-		"rpi1-out.fifo": "zion's camp",
-	}
-
 	propName := ""
-	for k, v := range m {
+	for k, v := range queueToPropertyName {
 		if strings.Contains(eventARN, k) {
 			propName = v
 		}
@@ -226,4 +257,14 @@ func getPropertyForEventARN(ctx context.Context, eventARN string) (shared.Proper
 	}
 
 	return prop, nil
+}
+
+func getQueueForProperty(property shared.Property) (string, error) {
+	propName := strings.ToLower(property.Name)
+	for k, v := range queueToPropertyName {
+		if propName == v {
+			return k, nil
+		}
+	}
+	return "", fmt.Errorf("unable to find property %s", propName)
 }

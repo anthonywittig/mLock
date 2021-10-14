@@ -1,5 +1,5 @@
 import React from 'react';
-import { Badge, Button } from 'react-bootstrap';
+import { Badge, Button, OverlayTrigger, Tooltip } from 'react-bootstrap';
 import { Loading } from '../utils/Loading';
 import { StandardFetch } from '../utils/FetchHelper';
 import { useHistory } from 'react-router';
@@ -78,9 +78,8 @@ export const List = () => {
                 <thead>
                     <tr>
                         <th scope="col">Name</th>
-                        <th scope="col">Last Refreshed</th>
                         <th scope="col">Status</th>
-                        <th scope="col">Went Offline</th>
+                        <th scope="col">Battery</th>
                         <th scope="col">Property</th>
                         <th scope="col">Unit</th>
                         <th scope="col">Actions</th>
@@ -94,12 +93,11 @@ export const List = () => {
                                     { entity.habThing.label }
                                 </Button>
                             </th>
-                            <td>{ renderEntityLastRefreshed(entity) }</td>
                             <td>{ renderEntityStatus(entity) }</td>
-                            <td>{ renderEntityLastWentOffline(entity) }</td>
+                            <td>{ renderEntityBatteryLevel(entity) }</td>
                             <td>{ properties.find(e => e.id === entity.propertyId )?.name }</td>
                             <td>{ units.find(e => e.id === entity.unitId )?.name }</td>
-                            <td><Button variant="secondary" onClick={() => deleteDevice(entity.id)}>Delete</Button></td>
+                            <td>{ renderDeleteButton(entity) }</td>
                         </tr>
                     )}
                 </tbody>
@@ -107,42 +105,111 @@ export const List = () => {
         );
     };
 
-    const renderEntityLastRefreshed = (entity : DeviceT) => {
+    const renderDeleteButton = (entity: DeviceT) => {
+        const lr = Date.parse(entity.lastRefreshedAt);
+        const recently = sub(new Date(), {hours: 2});
+
+        if (isAfter(lr, recently) && entity.habThing.statusInfo.status === "ONLINE") {
+            return (
+                <OverlayTrigger overlay={<Tooltip id="tooltip-disabled">Must be offline or not refreshed in the last two hours.</Tooltip>}>
+                    <span className="d-inline-block">
+                        <Button variant="secondary" disabled style={{ pointerEvents: 'none' }}>Delete</Button>
+                    </span>
+                </OverlayTrigger>
+            );
+        }
+
+        return <Button variant="secondary" onClick={() => deleteDevice(entity.id)}>Delete</Button>;
+    };
+
+    const renderEntityStatus = (entity: DeviceT) => {
+        const warnings = getLastRefreshedWarnings(entity);
+        warnings.push.apply(warnings, getStatusInfoWarning(entity));
+        warnings.push.apply(warnings, getLastWentOfflineWarnings(entity));
+
+        return (
+            <ul>
+                { warnings.map(warn =>
+                    <li>{ warn }</li>
+                )}
+            </ul>
+        );
+    };
+
+    const renderEntityBatteryLevel = (entity : DeviceT) => {
+
+        const lu = entity.battery.lastUpdatedAt;
+        if (lu === null) {
+            return <></>;
+        }
+
+        const lud = Date.parse(lu);
+        const recently = sub(new Date(), {days: 1, hours: 12});
+
+        if (isBefore(lud, recently)) {
+            const distance = formatDistance(lud, new Date(), { addSuffix: true });
+            return <Badge variant="danger">Last battery level taken over { distance }</Badge>;
+        }
+
+        const level = parseFloat(entity.battery.level);
+        if (isNaN(level)) {
+            return <Badge variant="danger">Unknown</Badge>;
+        }
+
+        if (level < 25) {
+            return <Badge variant="danger">{ level }%</Badge>;
+        }
+
+        return <>{ level }%</>;
+    };
+
+    const getLastRefreshedWarnings = (entity : DeviceT) => {
+        const warnings: JSX.Element[] = [];
+
         const lr = Date.parse(entity.lastRefreshedAt);
         const recently = sub(new Date(), {minutes: 10});
-        const distance = formatDistance(lr, new Date(), { addSuffix: true });
 
         if (isBefore(lr, recently)) {
-            return <Badge variant="danger">{ distance }</Badge>;
+            const distance = formatDistance(lr, new Date(), { addSuffix: true });
+            warnings.push(<Badge variant="danger">Last Data Sync: { distance }</Badge>);
         }
 
-        return "recently";
+        return warnings;
     };
 
-    const renderEntityStatus = (entity : DeviceT) => {
-        const status = entity.habThing.statusInfo.status;
-        if (status !== "ONLINE") {
-            return <Badge variant="danger">{ entity.habThing.statusInfo.status }</Badge>;
-        }
-        return entity.habThing.statusInfo.status;
-    };
+    const getLastWentOfflineWarnings = (entity: DeviceT) => {
+        const warnings: JSX.Element[] = [];
 
-    const renderEntityLastWentOffline = (entity : DeviceT) => {
         const lwo = entity.lastWentOfflineAt;
-
         if (lwo === null) {
-            return "";
+            return warnings;
         }
 
         const lwod = Date.parse(entity.lastWentOfflineAt!);
         const recently = sub(new Date(), {days: 1});
-        const distance = formatDistance(lwod, new Date(), { addSuffix: true });
 
-        if (isAfter(lwod, recently)) {
-            return <Badge variant="danger">{ distance }</Badge>;
+        if (entity.habThing.statusInfo.status !== "ONLINE" || isAfter(lwod, recently)) {
+            const distance = formatDistance(lwod, new Date(), { addSuffix: true });
+            warnings.push(<Badge variant="danger">Was Offline: { distance }</Badge>);
         }
 
-        return distance;
+        return warnings;
+    };
+
+    const getStatusInfoWarning = (entity: DeviceT) => {
+        const warnings: JSX.Element[] = [];
+
+        const s = entity.habThing.statusInfo.status;
+        if (s !== "ONLINE") {
+            warnings.push(<Badge variant="danger">{ s }</Badge>);
+        }
+
+        const sd = entity.habThing.statusInfo.statusDetail;
+        if (sd !== "NONE") {
+            warnings.push(<Badge variant="secondary">{ sd }</Badge>);
+        }
+
+        return warnings;
     };
 
     return render();

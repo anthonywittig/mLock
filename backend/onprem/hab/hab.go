@@ -1,6 +1,7 @@
 package hab
 
 import (
+	"bytes"
 	"context"
 	"encoding/base64"
 	"fmt"
@@ -22,7 +23,7 @@ func ProcessCommand(ctx context.Context, in *messaging.HabCommand) (*messaging.O
 	}
 	url := endpoint + in.Request.Path
 
-	req, err := http.NewRequestWithContext(ctx, in.Request.Method, url, nil)
+	req, err := http.NewRequestWithContext(ctx, in.Request.Method, url, bytes.NewReader(in.Request.Body))
 	if err != nil {
 		return nil, fmt.Errorf("error making request: %s", err.Error())
 	}
@@ -40,7 +41,7 @@ func ProcessCommand(ctx context.Context, in *messaging.HabCommand) (*messaging.O
 	}
 	defer resp.Body.Close()
 
-	body, err := io.ReadAll(resp.Body)
+	respBody, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, fmt.Errorf("error reading body: %s", err.Error())
 	}
@@ -48,6 +49,6 @@ func ProcessCommand(ctx context.Context, in *messaging.HabCommand) (*messaging.O
 	return &messaging.OnPremHabCommandResponse{
 		Description: "HAB command response",
 		HabCommand:  in,
-		Response:    body,
+		Response:    respBody,
 	}, nil
 }
