@@ -31,7 +31,7 @@ ezlo_port = '17000'
 wss_user = ''
 wss_token = ''
 wss_authorization = ''
-	
+
 def EzloLoginLocal(user_id, password, controller_ip, serial):
     # If we have the logon data for local, no need to get it again.
     global wss_user
@@ -86,7 +86,7 @@ def EzloLoginLocal(user_id, password, controller_ip, serial):
             print("====================================================================\n")
         js_resp = response.json()
         token=js_resp.get('token')
-	
+
         # Get controller keys (user & token)
         if debug:
             print("====================================================================")
@@ -103,7 +103,7 @@ def EzloLoginLocal(user_id, password, controller_ip, serial):
             'call': 'access_keys_sync',
             'version': '1',
             'params': {
-                'version': 53, 
+                'version': 53,
                 'entity': 'controller',
                 'uuid': str(new_uuid)
             }
@@ -164,7 +164,7 @@ if __name__ == '__main__':
     if args.debug:
         debug = True
 
-    # Enable debugging of http requests (gives more details on Python 2 than 3 it seems)    
+    # Enable debugging of http requests (gives more details on Python 2 than 3 it seems)
     if debug:
         http.client.HTTPConnection.debuglevel = 1
         logging.basicConfig()

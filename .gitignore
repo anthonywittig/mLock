@@ -1,5 +1,6 @@
 .DS_Store
 .env
+.env.test
 backend/onprem/dist/
 ezlo/env/
 ezlo/node_modules/
