@@ -23,14 +23,17 @@ type AuthResponse struct {
 }
 
 type WSRequest struct {
-	Method string   `json:"method"`
-	ID     string   `json:"id"`
-	Params struct{} `json:"params"`
+	Method string `json:"method"`
+	ID     string `json:"id"`
 }
 
 type WSDeviceListResponse struct {
-	API    string                     `json:"api"`
-	Error  *string                    `json:"error"` // Not sure if this is really a string.
+	API   string `json:"api"`
+	Error *struct {
+		Code        int    `json:"code"`
+		Data        string `json:"data"`
+		Description string `json:"description"`
+	} `json:"error"`
 	ID     string                     `json:"id"`
 	Method string                     `json:"method"`
 	Result WSDeviceListResponseResult `json:"result"`
@@ -126,89 +129,66 @@ func Authenticate(ctx context.Context, username string, password string) (AuthRe
 }
 
 func WSLogIn(ws *websocket.Conn, authResponse AuthResponse) error {
-	logInReq, err := json.Marshal(
+	id := fmt.Sprintf("loginUserMios.%s", uuid.New())
+	err := sendCommand(
+		ws,
+		id,
 		WSLogInRequest{
 			Method: "loginUserMios",
-			ID:     "loginUser",
+			ID:     id,
 			Params: WSLogInRequestParams{
 				MMSAuth:    authResponse.Identity,
 				MMSAuthSig: authResponse.IdentitySignature,
 			},
 		},
+		&struct{}{},
 	)
 	if err != nil {
-		return fmt.Errorf("marshal: %s", err.Error())
+		return fmt.Errorf("error sending command: %s", err.Error())
 	}
-
-	if err := ws.WriteMessage(websocket.TextMessage, logInReq); err != nil {
-		return fmt.Errorf("write: %s", err.Error())
-	}
-
-	_, _, err = ws.ReadMessage()
-	if err != nil {
-		return fmt.Errorf("read: %s", err.Error())
-	}
-
-	// TODO: confirm `message` has expected response ID (probably want a random piece to it).
 
 	return nil
 }
 
 func WSRegisterHub(ws *websocket.Conn, hubSerialNumber string) error {
-	registerReq, err := json.Marshal(
+	id := fmt.Sprintf("register.%s", uuid.New())
+	err := sendCommand(
+		ws,
+		id,
 		WSRegisterRequest{
 			Method: "register",
-			ID:     "register",
+			ID:     id,
 			Params: WSRegisterRequestParams{
 				Serial: hubSerialNumber,
 			},
 		},
+		&struct{}{},
 	)
 	if err != nil {
-		return fmt.Errorf("marshal: %s", err.Error())
+		return fmt.Errorf("error sending command: %s", err.Error())
 	}
-
-	if err := ws.WriteMessage(websocket.TextMessage, registerReq); err != nil {
-		return fmt.Errorf("write: %s", err.Error())
-	}
-
-	_, _, err = ws.ReadMessage()
-	if err != nil {
-		return fmt.Errorf("read: %s", err.Error())
-	}
-
-	// TODO: confirm `message` has expected response ID (probably want a random piece to it).
 
 	return nil
 }
 
 func WSDeviceList(ws *websocket.Conn) (WSDeviceListResponse, error) {
 	id := fmt.Sprintf("hub.devices.list.%s", uuid.New())
-	registerReq, err := json.Marshal(
-		WSRequest{
+	resp := WSDeviceListResponse{}
+	err := sendCommand(
+		ws,
+		id,
+		struct {
+			Method string   `json:"method"`
+			ID     string   `json:"id"`
+			Params struct{} `json:"params"`
+		}{
 			Method: "hub.devices.list",
 			ID:     id,
 		},
+		&resp,
 	)
 	if err != nil {
-		return WSDeviceListResponse{}, fmt.Errorf("marshal: %s", err.Error())
-	}
-
-	if err := ws.WriteMessage(websocket.TextMessage, registerReq); err != nil {
-		return WSDeviceListResponse{}, fmt.Errorf("write: %s", err.Error())
-	}
-
-	_, message, err := ws.ReadMessage()
-	if err != nil {
-		return WSDeviceListResponse{}, fmt.Errorf("read: %s", err.Error())
-	}
-
-	// TODO: confirm `message` has expected response ID (probably want a random piece to it).
-	// We should probably check the response ID before unmarshalling it.
-
-	resp := WSDeviceListResponse{}
-	if err := json.Unmarshal(message, &resp); err != nil {
-		return WSDeviceListResponse{}, fmt.Errorf("unmarshal: %s", err.Error())
+		return WSDeviceListResponse{}, fmt.Errorf("error sending command: %s", err.Error())
 	}
 
 	return resp, nil
@@ -216,7 +196,8 @@ func WSDeviceList(ws *websocket.Conn) (WSDeviceListResponse, error) {
 
 func X(context context.Context, authResponse AuthResponse, hubSerialNumber string) (string, error) {
 	// TODO: get a list of the endpoints and use a random one.
-	wsURL := "nma-server7-ui-cloud.ezlo.com"
+	//wsURL := "nma-server7-ui-cloud.ezlo.com"
+	wsURL := "nma-server9-ui-cloud.ezlo.com"
 	u := url.URL{Scheme: "wss", Host: wsURL, Path: ""}
 
 	ws, _, err := websocket.DefaultDialer.Dial(u.String(), nil)
@@ -224,6 +205,10 @@ func X(context context.Context, authResponse AuthResponse, hubSerialNumber strin
 		return "", fmt.Errorf("dial: %s", err.Error())
 	}
 	defer ws.Close()
+
+	if err := ws.SetReadDeadline(time.Now().Add(30 * time.Second)); err != nil {
+		return "", fmt.Errorf("setting read deadline: %s", err.Error())
+	}
 
 	if err := WSLogIn(ws, authResponse); err != nil {
 		return "", fmt.Errorf("login: %s", err.Error())
@@ -244,6 +229,48 @@ func X(context context.Context, authResponse AuthResponse, hubSerialNumber strin
 	}
 
 	return string(jsonResp), nil
+}
+
+func sendCommand(ws *websocket.Conn, id string, request interface{}, outResponse interface{}) error {
+	jsonReq, err := json.Marshal(request)
+	if err != nil {
+		return fmt.Errorf("marshal: %s", err.Error())
+	}
+
+	fmt.Printf("sending: %s\n", string(jsonReq))
+
+	if err := ws.WriteMessage(websocket.TextMessage, jsonReq); err != nil {
+		return fmt.Errorf("write: %s", err.Error())
+	}
+
+	for {
+		_, jsonResp, err := ws.ReadMessage()
+		if err != nil {
+			return fmt.Errorf("read: %s", err.Error())
+		}
+
+		resp := WSRequest{}
+		if err := json.Unmarshal(jsonResp, &resp); err != nil {
+			return fmt.Errorf("unmarshal: %s", err.Error())
+		}
+
+		if resp.ID == "ui_broadcast" {
+			// We don't care about these, try to get the next message.
+			continue
+		}
+
+		if resp.ID != id {
+			return fmt.Errorf("unexpected response ID: %s, expected: %s", resp.ID, id)
+		}
+
+		if err := json.Unmarshal(jsonResp, &outResponse); err != nil {
+			return fmt.Errorf("unmarshal: %s", err.Error())
+		}
+
+		fmt.Printf("received: %s\n", string(jsonResp))
+
+		return nil
+	}
 }
 
 /*
