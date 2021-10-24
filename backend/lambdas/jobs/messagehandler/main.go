@@ -109,6 +109,7 @@ func handleOnPremHabResponse(ctx context.Context, property shared.Property, in *
 			logError(fmt.Errorf("error processing list things: %s", err.Error()))
 		}
 	case messaging.HabCommand_LIST_ITEMS:
+		// TODO: this looks wrong, it was probably never wired up right but it'll die soon.
 		log.Printf("got a list items command")
 		if err := devicebatterylevel.ProcessListItems(ctx, property, in); err != nil {
 			// Just log and continue.

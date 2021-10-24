@@ -5,15 +5,17 @@ import (
 	"fmt"
 	"log"
 	"mlock/lambdas/shared"
+	"mlock/lambdas/shared/dynamo/device"
 	"mlock/lambdas/shared/dynamo/unit"
+	"mlock/lambdas/shared/ezlo"
 	"mlock/lambdas/shared/ical"
 	"mlock/lambdas/shared/ses"
-	"mlock/lambdas/shared/sqs"
 	mshared "mlock/shared"
 	"strings"
 	"time"
 
 	"github.com/aws/aws-lambda-go/lambda"
+	"github.com/google/uuid"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -40,32 +42,8 @@ func HandleRequest(ctx context.Context, event MyEvent) (Response, error) {
 		return Response{}, fmt.Errorf("error loading config: %s", err.Error())
 	}
 
-	queuePrefixes, err := mshared.GetConfig("AWS_SQS_QUEUE_PREFIXES")
-	if err != nil {
-		return Response{}, fmt.Errorf("error getting queue prefixes: %s", err.Error())
-	}
-
-	queueNames := []string{}
-	for _, n := range strings.Split(queuePrefixes, ",") {
-		queueNames = append(queueNames, n+"-in.fifo")
-	}
-
-	s, err := sqs.GetClient(ctx)
-	if err != nil {
-		return Response{}, fmt.Errorf("error getting sqs client: %s", err.Error())
-	}
-
 	// TODO: This should really move somewhere else.
-	for _, qn := range queueNames {
-		log.Printf("adding list things message to \"%s\"\n", qn)
-		if err := s.SendMessage(
-			ctx,
-			qn,
-			mshared.HabCommandListThings(fmt.Sprintf("hello there @ %s - requesting a list", time.Now().String())),
-		); err != nil {
-			return Response{}, fmt.Errorf("error sending message: %s", err.Error())
-		}
-	}
+	updateDevices(ctx)
 
 	// get all units
 	units, err := unit.List(ctx)
@@ -146,4 +124,81 @@ func getReservations(ctx context.Context, units []shared.Unit) ([][]shared.Reser
 	}
 
 	return reservations, nil
+}
+
+func updateDevices(ctx context.Context) error {
+	ds, err := ezlo.GetDevices(ctx)
+	if err != nil {
+		return fmt.Errorf("error getting devices: %s", err.Error())
+	}
+
+	eds, err := device.List(ctx)
+	if err != nil {
+		return fmt.Errorf("error getting devices: %s", err.Error())
+	}
+
+	transitioningToOfflineDevices := []shared.Device{}
+	offlineDevices := []shared.Device{}
+
+	for _, d := range ds {
+		device := shared.Device{
+			History: []shared.DeviceHistory{
+				{
+					Description: "Initial State",
+					EZLODevice:  d,
+					RecordedAt:  time.Now(),
+				},
+			},
+			ID: uuid.New(),
+		}
+
+		for _, ed := range eds {
+			what do we do about properties?, v2?
+
+			if ed.PropertyID == property.ID && ed.HABThing.UID == t.UID {
+				// We found a match.
+				d = ed
+
+				wasOffline := t.StatusInfo.Status == shared.DeviceStatusOffline
+				isOffline := d.HABThing.StatusInfo.Status == shared.DeviceStatusOffline
+				if isOffline {
+					offlineDevices = append(offlineDevices, d)
+					if !wasOffline {
+						now := time.Now()
+						d.LastWentOfflineAt = &now
+						transitioningToOfflineDevices = append(transitioningToOfflineDevices, d)
+					}
+				}
+
+				statusChanged := (t.StatusInfo.Status != d.HABThing.StatusInfo.Status) || (t.StatusInfo.StatusDetail != d.HABThing.StatusInfo.StatusDetail)
+				if statusChanged {
+					d.History = append(d.History, shared.DeviceHistory{
+						Description: "Status Changed",
+						HABThing:    t,
+						RecordedAt:  time.Now(),
+					})
+				}
+
+				maxHistoryCount := 1
+				historyStartIndex := len(d.History) - maxHistoryCount
+				if historyStartIndex > 0 {
+					d.History = d.History[historyStartIndex:]
+				}
+			}
+		}
+
+		d.PropertyID = property.ID
+		d.HABThing = t
+		d.LastRefreshedAt = time.Now()
+
+		if _, err := device.Put(ctx, d); err != nil {
+			return fmt.Errorf("error putting device: %s", err.Error())
+		}
+	}
+
+	if err := sendOfflineDeviceEmail(ctx, transitioningToOfflineDevices, offlineDevices); err != nil {
+		return fmt.Errorf("error sending offline device email: %s", err.Error())
+	}
+
+	return nil
 }
