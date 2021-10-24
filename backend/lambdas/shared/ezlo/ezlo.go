@@ -2,16 +2,52 @@ package ezlo
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
 	"net/url"
+	"regexp"
 	"time"
 
 	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
 )
+
+type AuthIdentity struct {
+	// There are lot of other fields that we get back.
+	PKAccount int `json:"PK_Account"`
+	//"Expires":1635128723,
+	//"Generated":1635042323,
+	//"PermissionsEnabled":[
+	//  1,
+	//  2,
+	//  {
+	//	"PK":1653,
+	//	"Arguments":"[9,10,11,12,13]"
+	//  }
+	//],
+	//"PermissionsDisabled":[],
+	//"Version":2,
+	//"PK_AccountType":5,
+	//"PK_AccountChild":0,
+	//"PK_Account_Parent":2375,
+	//"PK_Account_Parent2":1,
+	//"PK_Account_Parent3":0,
+	//"PK_Account_Parent4":0,
+	//"PK_App":0,
+	//"PK_Oem":1,
+	//"PK_Oem_User":"",
+	//"PK_PermissionRole":10,
+	//"PK_User":2928592,
+	//"PK_Server_Auth":1,
+	//"PK_Server_Account":5,
+	//"PK_Server_Event":53,
+	//"Server_Auth":"vera-us-oem-autha11.mios.com",
+	//"Seq":6359588,
+	//"Username":"anthony.wittig"
+}
 
 type AuthResponse struct {
 	Identity          string `json:"Identity"`
@@ -22,9 +58,41 @@ type AuthResponse struct {
 	ServerAccountAlt  string `json:"Server_Account_Alt"`
 }
 
-type WSRequest struct {
-	Method string `json:"method"`
-	ID     string `json:"id"`
+type AuthData struct {
+	Identity AuthIdentity
+	Response AuthResponse
+}
+
+type Device struct {
+	Blocked         int    `json:"Blocked"`
+	DeviceAssigned  string `json:"DeviceAssigned"`
+	MACAddress      string `json:"MacAddress"`
+	PKDevice        string `json:"PK_Device"`
+	PKDeviceSubType string `json:"PK_DeviceSubType"`
+	PKDeviceType    string `json:"PK_DeviceType"`
+	PKInstallation  string `json:"PK_Installation"`
+	ServerDevice    string `json:"Server_Device"`
+	ServerDeviceAlt string `json:"Server_Device_Alt"`
+}
+
+type DeviceResponse struct {
+	//EngineStatus: "0"
+	//FK_Branding: "1"
+	//HasAlarmPanel: "0"
+	//HasWifi: "0"
+	//LinuxFirmware: 1
+	//MacAddress: "..."
+	//NMAControllerStatus: 1
+	//NMAUuid: "..."
+	//PK_Device: "..."
+	ServerRelay string `json:"Server_Relay"`
+	//UI: "4"
+	//public_key_android: ""
+	//public_key_ios: ""
+}
+
+type DevicesResponse struct {
+	Devices []Device `json:"Devices"`
 }
 
 type WSDeviceListResponse struct {
@@ -78,6 +146,16 @@ type WSLogInRequestParams struct {
 	MMSAuthSig string `json:"MMSAuthSig"`
 }
 
+type WSResponse struct {
+	Error *struct {
+		Code        int    `json:"code"`
+		Data        string `json:"data"`
+		Description string `json:"description"`
+	} `json:"error"`
+	Method string `json:"method"`
+	ID     string `json:"id"`
+}
+
 type WSRegisterRequest struct {
 	Method  string                  `json:"method"`
 	ID      string                  `json:"id"`
@@ -89,13 +167,14 @@ type WSRegisterRequestParams struct {
 	Serial string `json:"serial"`
 }
 
-func Authenticate(ctx context.Context, username string, password string) (AuthResponse, error) {
+func authenticate(ctx context.Context, username string, password string) (AuthData, error) {
 	// TODO: get a list of the endpoints and use a random one.
+	// "vera-us-oem-account12.mios.com"
 	url := fmt.Sprintf("https://vera-us-oem-account11.mios.com/autha/auth/username/%s", username)
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
-		return AuthResponse{}, fmt.Errorf("error creating request: %s", err.Error())
+		return AuthData{}, fmt.Errorf("error creating request: %s", err.Error())
 	}
 
 	q := req.URL.Query()
@@ -113,19 +192,109 @@ func Authenticate(ctx context.Context, username string, password string) (AuthRe
 
 	resp, err := client.Do(req)
 	if err != nil {
-		return AuthResponse{}, fmt.Errorf("error doing request: %s", err.Error())
+		return AuthData{}, fmt.Errorf("error doing request: %s", err.Error())
 	}
 	defer resp.Body.Close()
 
 	respBody, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return AuthResponse{}, fmt.Errorf("error reading body: %s", err.Error())
+		return AuthData{}, fmt.Errorf("error reading body: %s", err.Error())
 	}
 
 	body := AuthResponse{}
-	json.Unmarshal(respBody, &body)
+	if err := json.Unmarshal(respBody, &body); err != nil {
+		return AuthData{}, fmt.Errorf("error unmarshalling body: %s", err.Error())
+	}
+
+	identityString, err := base64.StdEncoding.DecodeString(body.Identity)
+	if err != nil {
+		return AuthData{}, fmt.Errorf("error decoding identity: %s", err.Error())
+	}
+
+	identity := AuthIdentity{}
+	if err := json.Unmarshal(identityString, &identity); err != nil {
+		return AuthData{}, fmt.Errorf("error decoding identity: %s", err.Error())
+	}
+
+	return AuthData{
+		Identity: identity,
+		Response: body,
+	}, nil
+}
+
+func getDevice(ctx context.Context, authData AuthData, device Device) (DeviceResponse, error) {
+	// TODO: we probably need to use the same domain that we used to auth.
+	url := fmt.Sprintf("https://vera-us-oem-account11.mios.com/device/device/device/%s", device.PKDevice)
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	if err != nil {
+		return DeviceResponse{}, fmt.Errorf("error creating request: %s", err.Error())
+	}
+
+	req.Header.Set("mmsAuth", authData.Response.Identity)
+	req.Header.Set("mmsAuthSig", authData.Response.IdentitySignature)
+
+	client := &http.Client{
+		Timeout: 30 * time.Second,
+	}
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return DeviceResponse{}, fmt.Errorf("error doing request: %s", err.Error())
+	}
+	defer resp.Body.Close()
+
+	respBody, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return DeviceResponse{}, fmt.Errorf("error reading body: %s", err.Error())
+	}
+
+	body := DeviceResponse{}
+	if err := json.Unmarshal(respBody, &body); err != nil {
+		return DeviceResponse{}, fmt.Errorf("error unmarshalling body: %s", err.Error())
+	}
 
 	return body, nil
+}
+
+func getDevices(ctx context.Context, authData AuthData) (Device, error) {
+	// TODO: we probably need to use the same domain that we used to auth.
+	url := fmt.Sprintf("https://vera-us-oem-account11.mios.com/account/account/account/%d/devices", authData.Identity.PKAccount)
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	if err != nil {
+		return Device{}, fmt.Errorf("error creating request: %s", err.Error())
+	}
+
+	req.Header.Set("mmsAuth", authData.Response.Identity)
+	req.Header.Set("mmsAuthSig", authData.Response.IdentitySignature)
+
+	client := &http.Client{
+		Timeout: 30 * time.Second,
+	}
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return Device{}, fmt.Errorf("error doing request: %s", err.Error())
+	}
+	defer resp.Body.Close()
+
+	respBody, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return Device{}, fmt.Errorf("error reading body: %s", err.Error())
+	}
+
+	body := DevicesResponse{}
+	if err := json.Unmarshal(respBody, &body); err != nil {
+		return Device{}, fmt.Errorf("error unmarshalling body: %s; url: %s; authData: %+v; error: %s", string(respBody), url, authData, err.Error())
+	}
+
+	// For now, we'll only work with a single device.
+	if c := len(body.Devices); c != 1 {
+		return Device{}, fmt.Errorf("unexpected device count: %d", c)
+	}
+
+	return body.Devices[0], nil
 }
 
 func WSLogIn(ws *websocket.Conn, authResponse AuthResponse) error {
@@ -194,11 +363,33 @@ func WSDeviceList(ws *websocket.Conn) (WSDeviceListResponse, error) {
 	return resp, nil
 }
 
-func X(context context.Context, authResponse AuthResponse, hubSerialNumber string) (string, error) {
-	// TODO: get a list of the endpoints and use a random one.
-	//wsURL := "nma-server7-ui-cloud.ezlo.com"
-	wsURL := "nma-server9-ui-cloud.ezlo.com"
-	u := url.URL{Scheme: "wss", Host: wsURL, Path: ""}
+func X(ctx context.Context, username string, password string, hubSerialNumber string) (string, error) {
+	authData, err := authenticate(ctx, username, password)
+	if err != nil {
+		return "", fmt.Errorf("error authenticating: %s", err.Error())
+	}
+
+	device, err := getDevices(ctx, authData)
+	if err != nil {
+		return "", fmt.Errorf("error getting devices: %s", err.Error())
+	}
+
+	deviceResponse, err := getDevice(ctx, authData, device)
+	if err != nil {
+		return "", fmt.Errorf("error getting device: %s", err.Error())
+	}
+
+	r, err := regexp.Compile("wss://(.*):443")
+	if err != nil {
+		return "", fmt.Errorf("error compiling regex: %s", err.Error())
+	}
+
+	wsURLs := r.FindStringSubmatch(deviceResponse.ServerRelay)
+	if c := len(wsURLs); c != 2 {
+		return "", fmt.Errorf("unexpected match count: %d", c)
+	}
+
+	u := url.URL{Scheme: "wss", Host: wsURLs[1], Path: ""}
 
 	ws, _, err := websocket.DefaultDialer.Dial(u.String(), nil)
 	if err != nil {
@@ -210,7 +401,7 @@ func X(context context.Context, authResponse AuthResponse, hubSerialNumber strin
 		return "", fmt.Errorf("setting read deadline: %s", err.Error())
 	}
 
-	if err := WSLogIn(ws, authResponse); err != nil {
+	if err := WSLogIn(ws, authData.Response); err != nil {
 		return "", fmt.Errorf("login: %s", err.Error())
 	}
 
@@ -249,7 +440,7 @@ func sendCommand(ws *websocket.Conn, id string, request interface{}, outResponse
 			return fmt.Errorf("read: %s", err.Error())
 		}
 
-		resp := WSRequest{}
+		resp := WSResponse{}
 		if err := json.Unmarshal(jsonResp, &resp); err != nil {
 			return fmt.Errorf("unmarshal: %s", err.Error())
 		}
@@ -261,6 +452,10 @@ func sendCommand(ws *websocket.Conn, id string, request interface{}, outResponse
 
 		if resp.ID != id {
 			return fmt.Errorf("unexpected response ID: %s, expected: %s", resp.ID, id)
+		}
+
+		if resp.Error != nil {
+			return fmt.Errorf("error in WS response: %+v", resp.Error)
 		}
 
 		if err := json.Unmarshal(jsonResp, &outResponse); err != nil {
