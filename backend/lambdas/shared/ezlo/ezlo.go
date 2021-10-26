@@ -6,7 +6,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"mlock/shared"
+	"mlock/lambdas/shared"
+	mshared "mlock/shared"
 	"net/http"
 	"net/url"
 	"regexp"
@@ -15,10 +16,6 @@ import (
 	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
 )
-
-type Device struct {
-	Name string
-}
 
 type authIdentity struct {
 	// There are lot of other fields that we get back.
@@ -172,73 +169,81 @@ type wsRegisterRequestParams struct {
 	Serial string `json:"serial"`
 }
 
-func GetDevices(ctx context.Context) ([]Device, error) {
-	username, err := shared.GetConfig("EZLO_USERNAME")
-	if err != nil {
-		return []Device{}, fmt.Errorf("error getting username: %s", err.Error())
+func GetDevices(ctx context.Context, prop shared.Property) ([]shared.RawDevice, error) {
+	if prop.ControllerID == "" {
+		return []shared.RawDevice{}, nil
 	}
 
-	password, err := shared.GetConfig("EZLO_PASSWORD")
+	username, err := mshared.GetConfig("EZLO_USERNAME")
 	if err != nil {
-		return []Device{}, fmt.Errorf("error getting password: %s", err.Error())
+		return []shared.RawDevice{}, fmt.Errorf("error getting username: %s", err.Error())
+	}
+
+	password, err := mshared.GetConfig("EZLO_PASSWORD")
+	if err != nil {
+		return []shared.RawDevice{}, fmt.Errorf("error getting password: %s", err.Error())
 	}
 
 	authData, err := authenticate(ctx, username, password)
 	if err != nil {
-		return []Device{}, fmt.Errorf("error authenticating: %s", err.Error())
+		return []shared.RawDevice{}, fmt.Errorf("error authenticating: %s", err.Error())
 	}
 
-	device, err := getDevices(ctx, authData)
+	device, err := getDevices(ctx, authData, prop)
 	if err != nil {
-		return []Device{}, fmt.Errorf("error getting devices: %s", err.Error())
+		return []shared.RawDevice{}, fmt.Errorf("error getting devices: %s", err.Error())
 	}
 
 	deviceResponse, err := getDevice(ctx, authData, device)
 	if err != nil {
-		return []Device{}, fmt.Errorf("error getting device: %s", err.Error())
+		return []shared.RawDevice{}, fmt.Errorf("error getting device: %s", err.Error())
 	}
 
 	r, err := regexp.Compile("wss://(.*):443")
 	if err != nil {
-		return []Device{}, fmt.Errorf("error compiling regex: %s", err.Error())
+		return []shared.RawDevice{}, fmt.Errorf("error compiling regex: %s", err.Error())
 	}
 
 	wsURLs := r.FindStringSubmatch(deviceResponse.ServerRelay)
 	if c := len(wsURLs); c != 2 {
-		return []Device{}, fmt.Errorf("unexpected match count: %d", c)
+		return []shared.RawDevice{}, fmt.Errorf("unexpected match count: %d", c)
 	}
 
 	u := url.URL{Scheme: "wss", Host: wsURLs[1], Path: ""}
 
 	ws, _, err := websocket.DefaultDialer.Dial(u.String(), nil)
 	if err != nil {
-		return []Device{}, fmt.Errorf("dial: %s", err.Error())
+		return []shared.RawDevice{}, fmt.Errorf("dial: %s", err.Error())
 	}
 	defer ws.Close()
 
 	if err := ws.SetReadDeadline(time.Now().Add(30 * time.Second)); err != nil {
-		return []Device{}, fmt.Errorf("setting read deadline: %s", err.Error())
+		return []shared.RawDevice{}, fmt.Errorf("setting read deadline: %s", err.Error())
 	}
 
 	if err := wsLogIn(ws, authData.Response); err != nil {
-		return []Device{}, fmt.Errorf("login: %s", err.Error())
+		return []shared.RawDevice{}, fmt.Errorf("login: %s", err.Error())
 	}
 
 	if err := wsRegisterHub(ws, device.PKDevice); err != nil {
-		return []Device{}, fmt.Errorf("register: %s", err.Error())
+		return []shared.RawDevice{}, fmt.Errorf("register: %s", err.Error())
 	}
 
 	resp, err := wsDeviceList(ws)
 	if err != nil {
-		return []Device{}, fmt.Errorf("device list: %s", err.Error())
+		return []shared.RawDevice{}, fmt.Errorf("device list: %s", err.Error())
 	}
 
-	result := []Device{}
+	result := []shared.RawDevice{}
 	for _, d := range resp.Result.Devices {
-		if d.Category != "door_lock" {
+		/*if d.Category != "door_lock" {
 			continue
-		}
-		result = append(result, Device{Name: d.Name})
+		}*/
+		result = append(result, shared.RawDevice{
+			Category: d.Category,
+			ID:       d.ID,
+			Name:     d.Name,
+		})
 	}
 
 	return result, nil
@@ -334,7 +339,7 @@ func getDevice(ctx context.Context, ad authData, d device) (deviceResponse, erro
 	return body, nil
 }
 
-func getDevices(ctx context.Context, ad authData) (device, error) {
+func getDevices(ctx context.Context, ad authData, prop shared.Property) (device, error) {
 	// TODO: we probably need to use the same domain that we used to auth.
 	url := fmt.Sprintf("https://vera-us-oem-account11.mios.com/account/account/account/%d/devices", ad.Identity.PKAccount)
 
@@ -371,7 +376,13 @@ func getDevices(ctx context.Context, ad authData) (device, error) {
 		return device{}, fmt.Errorf("unexpected device count: %d", c)
 	}
 
-	return body.Devices[0], nil
+	d := body.Devices[0]
+
+	if d.PKDevice != prop.ControllerID {
+		return device{}, fmt.Errorf("unexpected PK: %s", d.PKDevice)
+	}
+
+	return d, nil
 }
 
 func wsSendCommand(ws *websocket.Conn, id string, request interface{}, outResponse interface{}) error {

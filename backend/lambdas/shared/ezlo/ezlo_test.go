@@ -3,6 +3,7 @@ package ezlo
 import (
 	"context"
 	"fmt"
+	"mlock/lambdas/shared"
 	"testing"
 
 	"github.com/joho/godotenv"
@@ -12,7 +13,7 @@ import (
 func Test_GetDevices(t *testing.T) {
 	assert.Nil(t, loadConfig())
 
-	resp, err := GetDevices(context.Background())
+	resp, err := GetDevices(context.Background(), shared.Property{ControllerID: "92001809"})
 	assert.Nil(t, err)
 
 	assert.Equal(t, "ahh", resp)

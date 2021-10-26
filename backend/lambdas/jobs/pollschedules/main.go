@@ -6,6 +6,7 @@ import (
 	"log"
 	"mlock/lambdas/shared"
 	"mlock/lambdas/shared/dynamo/device"
+	"mlock/lambdas/shared/dynamo/property"
 	"mlock/lambdas/shared/dynamo/unit"
 	"mlock/lambdas/shared/ezlo"
 	"mlock/lambdas/shared/ical"
@@ -43,7 +44,14 @@ func HandleRequest(ctx context.Context, event MyEvent) (Response, error) {
 	}
 
 	// TODO: This should really move somewhere else.
-	updateDevices(ctx)
+
+	ps, err := property.List(ctx)
+	if err != nil {
+		return Response{}, fmt.Errorf("error getting properties: %s", err.Error())
+	}
+	for _, p := range ps {
+		updateDevices(ctx, p)
+	}
 
 	// get all units
 	units, err := unit.List(ctx)
@@ -126,8 +134,8 @@ func getReservations(ctx context.Context, units []shared.Unit) ([][]shared.Reser
 	return reservations, nil
 }
 
-func updateDevices(ctx context.Context) error {
-	ds, err := ezlo.GetDevices(ctx)
+func updateDevices(ctx context.Context, property shared.Property) error {
+	rds, err := ezlo.GetDevices(ctx, property)
 	if err != nil {
 		return fmt.Errorf("error getting devices: %s", err.Error())
 	}
@@ -140,27 +148,26 @@ func updateDevices(ctx context.Context) error {
 	transitioningToOfflineDevices := []shared.Device{}
 	offlineDevices := []shared.Device{}
 
-	for _, d := range ds {
-		device := shared.Device{
+	for _, rd := range rds {
+		d := shared.Device{
 			History: []shared.DeviceHistory{
 				{
 					Description: "Initial State",
-					EZLODevice:  d,
 					RecordedAt:  time.Now(),
+					RawDevice:   rd,
 				},
 			},
 			ID: uuid.New(),
 		}
 
 		for _, ed := range eds {
-			what do we do about properties?, v2?
-
-			if ed.PropertyID == property.ID && ed.HABThing.UID == t.UID {
+			if ed.PropertyID == property.ID && ed.RawDevice.ID == rd.ID {
 				// We found a match.
 				d = ed
 
-				wasOffline := t.StatusInfo.Status == shared.DeviceStatusOffline
-				isOffline := d.HABThing.StatusInfo.Status == shared.DeviceStatusOffline
+				// TODO: fix these.
+				wasOffline := false //t.StatusInfo.Status == shared.DeviceStatusOffline
+				isOffline := false  //d.HABThing.StatusInfo.Status == shared.DeviceStatusOffline
 				if isOffline {
 					offlineDevices = append(offlineDevices, d)
 					if !wasOffline {
@@ -170,11 +177,12 @@ func updateDevices(ctx context.Context) error {
 					}
 				}
 
-				statusChanged := (t.StatusInfo.Status != d.HABThing.StatusInfo.Status) || (t.StatusInfo.StatusDetail != d.HABThing.StatusInfo.StatusDetail)
+				// TODO: fix this.
+				statusChanged := false //(t.StatusInfo.Status != d.HABThing.StatusInfo.Status) || (t.StatusInfo.StatusDetail != d.HABThing.StatusInfo.StatusDetail)
 				if statusChanged {
 					d.History = append(d.History, shared.DeviceHistory{
 						Description: "Status Changed",
-						HABThing:    t,
+						RawDevice:   rd,
 						RecordedAt:  time.Now(),
 					})
 				}
@@ -188,7 +196,7 @@ func updateDevices(ctx context.Context) error {
 		}
 
 		d.PropertyID = property.ID
-		d.HABThing = t
+		d.RawDevice = rd
 		d.LastRefreshedAt = time.Now()
 
 		if _, err := device.Put(ctx, d); err != nil {
@@ -198,6 +206,34 @@ func updateDevices(ctx context.Context) error {
 
 	if err := sendOfflineDeviceEmail(ctx, transitioningToOfflineDevices, offlineDevices); err != nil {
 		return fmt.Errorf("error sending offline device email: %s", err.Error())
+	}
+
+	return nil
+}
+
+func sendOfflineDeviceEmail(ctx context.Context, transitioningToOfflineDevices []shared.Device, offlineDevices []shared.Device) error {
+	if len(transitioningToOfflineDevices) == 0 {
+		return nil
+	}
+
+	var sb strings.Builder
+
+	sb.WriteString("<h1>Devices That Recently Went Offline</h1>")
+	sb.WriteString("<ul>")
+	for _, d := range transitioningToOfflineDevices {
+		sb.WriteString(fmt.Sprintf("<li>Device: %s</li>", d.HABThing.Label))
+	}
+	sb.WriteString("</ul>")
+
+	sb.WriteString("<h1>Devices That Are Currently Offline</h1>")
+	sb.WriteString("<ul>")
+	for _, d := range offlineDevices {
+		sb.WriteString(fmt.Sprintf("<li>Device: %s</li>", d.HABThing.Label))
+	}
+	sb.WriteString("</ul>")
+
+	if err := ses.SendEamil(ctx, "MursetLock - Devices That Recently Went Offline", sb.String()); err != nil {
+		return fmt.Errorf("error sending email: %s", err.Error())
 	}
 
 	return nil

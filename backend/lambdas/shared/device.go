@@ -1,7 +1,6 @@
 package shared
 
 import (
-	"mlock/lambdas/shared/ezlo"
 	"time"
 
 	"github.com/google/uuid"
@@ -12,21 +11,27 @@ type Device struct {
 		LastUpdatedAt *time.Time `json:"lastUpdatedAt"`
 		Level         string     `json:"level"` // Could probably do a numeric type, but this simplifies some things (e.g. "NAN").
 	} `json:"battery"`
-	EZLODevice        ezlo.Device     `json:"ezloDevice"`
 	HABThing          HABThing        `json:"habThing"`
 	History           []DeviceHistory `json:"history"`
 	ID                uuid.UUID       `json:"id"`
 	LastRefreshedAt   time.Time       `json:"lastRefreshedAt"`
 	LastWentOfflineAt *time.Time      `json:"lastWentOfflineAt"`
 	PropertyID        uuid.UUID       `json:"propertyId"`
+	RawDevice         RawDevice       `json:"rawDevice"`
 	UnitID            *uuid.UUID      `json:"unitId"`
 }
 
 type DeviceHistory struct {
-	Description string      `json:"description"`
-	EZLODevice  ezlo.Device `json:"ezloDevice"`
-	HABThing    HABThing    `json:"habThing"`
-	RecordedAt  time.Time   `json:"recordedAt"`
+	Description string    `json:"description"`
+	HABThing    HABThing  `json:"habThing"`
+	RawDevice   RawDevice `json:"rawDevice"`
+	RecordedAt  time.Time `json:"recordedAt"`
+}
+
+type RawDevice struct {
+	Category string `json:"category"`
+	ID       string `json:"id"`
+	Name     string `json:"name"`
 }
 
 func (d *Device) UpdateBatteryLevel(itemByName map[string]HABItem) bool {
