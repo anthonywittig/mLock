@@ -35,7 +35,7 @@ export const List = () => {
             // TODO: indicate error.
             console.log(err);
         });
-    }, []);
+    }, [entities.length]);
 
     const deleteDevice = (id: string) => {
         setLoading(true);
@@ -44,7 +44,11 @@ export const List = () => {
             method: "DELETE",
         })
         .then(_ => {
-            history.push('/' + Endpoint + '/');
+            setEntities(
+                entities.filter(value => {
+                    return value.id !== id;
+                }),
+            );
         })
         .catch(err => {
             // TODO: indicate error.
@@ -90,7 +94,7 @@ export const List = () => {
                         <tr key={ entity.id }>
                             <th scope="row">
                                 <Button variant="link" onClick={evt => labelClick(entity.id)}>
-                                    { entity.habThing.label }
+                                    { entity.rawDevice.name }
                                 </Button>
                             </th>
                             <td>{ renderEntityStatus(entity) }</td>
@@ -109,7 +113,7 @@ export const List = () => {
         const lr = Date.parse(entity.lastRefreshedAt);
         const recently = sub(new Date(), {hours: 2});
 
-        if (isAfter(lr, recently) && entity.habThing.statusInfo.status === "ONLINE") {
+        if (isAfter(lr, recently) && true /*entity.habThing.statusInfo.status === "ONLINE"*/) {
             return (
                 <OverlayTrigger overlay={<Tooltip id="tooltip-disabled">Must be offline or not refreshed in the last two hours.</Tooltip>}>
                     <span className="d-inline-block">
@@ -188,7 +192,7 @@ export const List = () => {
         const lwod = Date.parse(entity.lastWentOfflineAt!);
         const recently = sub(new Date(), {days: 1});
 
-        if (entity.habThing.statusInfo.status !== "ONLINE" || isAfter(lwod, recently)) {
+        if (/*entity.habThing.statusInfo.status !== "ONLINE"*/ true || isAfter(lwod, recently)) {
             const distance = formatDistance(lwod, new Date(), { addSuffix: true });
             warnings.push(<Badge variant="danger">Was Offline: { distance }</Badge>);
         }
@@ -199,6 +203,8 @@ export const List = () => {
     const getStatusInfoWarning = (entity: DeviceT) => {
         const warnings: JSX.Element[] = [];
 
+        /*
+        TODO: fix this up.
         const s = entity.habThing.statusInfo.status;
         if (s !== "ONLINE") {
             warnings.push(<Badge variant="danger">{ s }</Badge>);
@@ -208,6 +214,7 @@ export const List = () => {
         if (sd !== "NONE") {
             warnings.push(<Badge variant="secondary">{ sd }</Badge>);
         }
+        */
 
         return warnings;
     };

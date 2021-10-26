@@ -107,7 +107,7 @@ func List(ctx context.Context) ([]shared.Device, error) {
 	}
 
 	sort.Slice(items, func(i, j int) bool {
-		return items[i].HABThing.Label < items[j].HABThing.Label
+		return items[i].RawDevice.Name < items[j].RawDevice.Name
 	})
 
 	return items, nil

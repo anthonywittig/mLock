@@ -94,7 +94,7 @@ function render(props: Props, state: State) {
                         <option></option>
                         {props.devices.map(device =>
                             <option value={device.id} selected={device.id === state.entityId}>
-                                {device.habThing.label}
+                                {device.rawDevice.name}
                             </option>
                         )}
                     </select>
@@ -108,7 +108,7 @@ function render(props: Props, state: State) {
         <tr key={props.id}>
             <th scope="row">
                 <Button variant="link" onClick={evt => labelClick(state, props.id)}>
-                    { props.devices.find(e => e.id === props.id)?.habThing.label }
+                    { props.devices.find(e => e.id === props.id)?.rawDevice.name}
                 </Button>
             </th>
             <td><Button variant="secondary" onClick={evt => removeClick(props, props.id)}>Remove</Button></td>

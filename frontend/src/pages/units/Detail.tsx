@@ -177,7 +177,7 @@ export const Detail = () => {
                 <tbody>
                     {devices.map(device =>
                         <tr>
-                            <th scope="row">{device.habThing.label}</th>
+                            <th scope="row">{device.rawDevice.name}</th>
                         </tr>
                     )}
                 </tbody>

@@ -24,48 +24,12 @@ export const Detail = () => {
             lastUpdatedAt: null,
             level: "",
         },
-        habThing: {
-            configuration: {
-                usercode_code_1: "",
-                usercode_code_10: "",
-                usercode_code_11: "",
-                usercode_code_12: "",
-                usercode_code_13: "",
-                usercode_code_14: "",
-                usercode_code_15: "",
-                usercode_code_16: "",
-                usercode_code_17: "",
-                usercode_code_18: "",
-                usercode_code_19: "",
-                usercode_code_2: "",
-                usercode_code_20: "",
-                usercode_code_21: "",
-                usercode_code_22: "",
-                usercode_code_23: "",
-                usercode_code_24: "",
-                usercode_code_25: "",
-                usercode_code_26: "",
-                usercode_code_27: "",
-                usercode_code_28: "",
-                usercode_code_29: "",
-                usercode_code_3: "",
-                usercode_code_30: "",
-                usercode_code_4: "",
-                usercode_code_5: "",
-                usercode_code_6: "",
-                usercode_code_7: "",
-                usercode_code_8: "",
-                usercode_code_9: "",
-            },
-            label: "",
-            statusInfo: {
-                status: "",
-                statusDetail: "",
-            },
-            uid: "",
-        },
         lastRefreshedAt: "",
         lastWentOfflineAt: null,
+        rawDevice: {
+            categoryId: "",
+            name: "",
+        }
     });
     const [loading, setLoading] = React.useState<boolean>(true);
     const [properties, setProperties] = React.useState<Property[]>([]);
@@ -146,7 +110,7 @@ export const Detail = () => {
             <Form onSubmit={evt => formSubmit(evt)}>
                 <Form.Group>
                     <Form.Label>Name</Form.Label>
-                    <Form.Control type="text" value={entity.habThing.label} disabled={true} />
+                    <Form.Control type="text" value={entity.rawDevice.name} disabled={true} />
                 </Form.Group>
 
                 <Form.Group>
@@ -156,7 +120,7 @@ export const Detail = () => {
 
                 <Form.Group>
                     <Form.Label>Status</Form.Label>
-                    <Form.Control type="text" value={entity.habThing.statusInfo.status} disabled={true}/>
+                    <Form.Control type="text" value="unknown" disabled={true}/>
                 </Form.Group>
 
                 <Form.Group controlId="property">
@@ -187,36 +151,36 @@ export const Detail = () => {
                 {
                     // Don't look :(
                     [
-                        ["code 1", entity.habThing.configuration.usercode_code_1],
-                        ["code 2", entity.habThing.configuration.usercode_code_2],
-                        ["code 3", entity.habThing.configuration.usercode_code_3],
-                        ["code 4", entity.habThing.configuration.usercode_code_4],
-                        ["code 5", entity.habThing.configuration.usercode_code_5],
-                        ["code 6", entity.habThing.configuration.usercode_code_6],
-                        ["code 7", entity.habThing.configuration.usercode_code_7],
-                        ["code 8", entity.habThing.configuration.usercode_code_8],
-                        ["code 9", entity.habThing.configuration.usercode_code_9],
-                        ["code 10", entity.habThing.configuration.usercode_code_10],
-                        ["code 11", entity.habThing.configuration.usercode_code_11],
-                        ["code 12", entity.habThing.configuration.usercode_code_12],
-                        ["code 13", entity.habThing.configuration.usercode_code_13],
-                        ["code 14", entity.habThing.configuration.usercode_code_14],
-                        ["code 15", entity.habThing.configuration.usercode_code_15],
-                        ["code 16", entity.habThing.configuration.usercode_code_16],
-                        ["code 17", entity.habThing.configuration.usercode_code_17],
-                        ["code 18", entity.habThing.configuration.usercode_code_18],
-                        ["code 19", entity.habThing.configuration.usercode_code_19],
-                        ["code 20", entity.habThing.configuration.usercode_code_20],
-                        ["code 21", entity.habThing.configuration.usercode_code_21],
-                        ["code 22", entity.habThing.configuration.usercode_code_22],
-                        ["code 23", entity.habThing.configuration.usercode_code_23],
-                        ["code 24", entity.habThing.configuration.usercode_code_24],
-                        ["code 25", entity.habThing.configuration.usercode_code_25],
-                        ["code 26", entity.habThing.configuration.usercode_code_26],
-                        ["code 27", entity.habThing.configuration.usercode_code_27],
-                        ["code 28", entity.habThing.configuration.usercode_code_28],
-                        ["code 29", entity.habThing.configuration.usercode_code_29],
-                        ["code 30", entity.habThing.configuration.usercode_code_30],
+                        ["code 1", "unknown"],
+                        ["code 2", "unknown"],
+                        ["code 3", "unknown"],
+                        ["code 4", "unknown"],
+                        ["code 5", "unknown"],
+                        ["code 6", "unknown"],
+                        ["code 7", "unknown"],
+                        ["code 8", "unknown"],
+                        ["code 9", "unknown"],
+                        ["code 10", "unknown"],
+                        ["code 11", "unknown"],
+                        ["code 12", "unknown"],
+                        ["code 13", "unknown"],
+                        ["code 14", "unknown"],
+                        ["code 15", "unknown"],
+                        ["code 16", "unknown"],
+                        ["code 17", "unknown"],
+                        ["code 18", "unknown"],
+                        ["code 19", "unknown"],
+                        ["code 20", "unknown"],
+                        ["code 21", "unknown"],
+                        ["code 22", "unknown"],
+                        ["code 23", "unknown"],
+                        ["code 24", "unknown"],
+                        ["code 25", "unknown"],
+                        ["code 26", "unknown"],
+                        ["code 27", "unknown"],
+                        ["code 28", "unknown"],
+                        ["code 29", "unknown"],
+                        ["code 30", "unknown"],
                     ].map((u) => {
                         return (
                             <Form.Group style={u[1] ? {} : {display: "none"}}>
