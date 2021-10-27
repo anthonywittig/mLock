@@ -137,6 +137,28 @@ type wsDeviceListResponseResultSender struct {
 	Type   string `json:"type"`
 }
 
+type wsItem struct {
+	DeviceID string      `json:"deviceId"`
+	Name     string      `json:"name"`
+	Value    interface{} `json:"value"`
+}
+
+type wsItemsListResponse struct {
+	API   string `json:"api"`
+	Error *struct {
+		Code        int    `json:"code"`
+		Data        string `json:"data"`
+		Description string `json:"description"`
+	} `json:"error"`
+	ID     string                    `json:"id"`
+	Method string                    `json:"method"`
+	Result wsItemsListResponseResult `json:"result"`
+}
+
+type wsItemsListResponseResult struct {
+	Devices []wsItem `json:"items"`
+}
+
 type wsLogInRequest struct {
 	Method string               `json:"method"`
 	ID     string               `json:"id"`
@@ -229,20 +251,44 @@ func GetDevices(ctx context.Context, prop shared.Property) ([]shared.RawDevice, 
 		return []shared.RawDevice{}, fmt.Errorf("register: %s", err.Error())
 	}
 
-	resp, err := wsDeviceList(ws)
+	devices, err := getRawDevices(ws)
 	if err != nil {
-		return []shared.RawDevice{}, fmt.Errorf("device list: %s", err.Error())
+		return []shared.RawDevice{}, fmt.Errorf("error getting raw devices: %s", err.Error())
+	}
+
+	return devices, nil
+}
+
+func getRawDevices(ws *websocket.Conn) ([]shared.RawDevice, error) {
+	deviceListResp, err := wsDeviceList(ws)
+	if err != nil {
+		return []shared.RawDevice{}, fmt.Errorf("error getting device list: %s", err.Error())
+	}
+
+	itemsByDevice, err := wsItemsByDevice(ws)
+	if err != nil {
+		return []shared.RawDevice{}, fmt.Errorf("error getting items by device: %s", err.Error())
 	}
 
 	result := []shared.RawDevice{}
-	for _, d := range resp.Result.Devices {
-		/*if d.Category != "door_lock" {
-			continue
-		}*/
+	for _, d := range deviceListResp.Result.Devices {
+		status := "offline"
+		if d.Reachable {
+			status = "online"
+		}
+
+		lockCodes := []wsItem{}
+		for _, item := range itemsByDevice[d.ID] {
+			if item.Name == "user_codes" {
+				item.Value
+			}
+		}
+
 		result = append(result, shared.RawDevice{
 			Category: d.Category,
 			ID:       d.ID,
 			Name:     d.Name,
+			Status:   status,
 		})
 	}
 
@@ -497,474 +543,31 @@ func wsDeviceList(ws *websocket.Conn) (wsDeviceListResponse, error) {
 	return resp, nil
 }
 
-/*
+func wsItemsByDevice(ws *websocket.Conn) (map[string][]wsItem, error) {
+	itemsByDevice := map[string][]wsItem{}
 
-	Sends:
-	{"method":"hub.devices.list","id":"1634235234608","params":{}}
-
-	Receives:
-	{
-		"api": "1.0",
-		"error": null,
-		"id": "1634235234608",
-		"method": "hub.devices.list",
-		"result": {
-			"devices": [
-				{
-					"_id": "606704e200000015eb0782eb",
-					"batteryPowered": false,
-					"category": "siren",
-					"deviceTypeId": "e550_siren",
-					"gatewayId": "606704e200000015eb0782ea",
-					"info": {},
-					"name": "Controller Siren",
-					"parentDeviceId": "",
-					"persistent": true,
-					"reachable": true,
-					"ready": true,
-					"roomId": "",
-					"security": "high",
-					"status": "idle",
-					"subcategory": "",
-					"type": "siren"
-				},
-				{
-					"_id": "61576aad939a9313ca42350c",
-					"batteryPowered": true,
-					"category": "door_lock",
-					"deviceTypeId": "59_25409_20548",
-					"firmware": [
-						{
-							"id": "us.59.28950.0",
-							"version": "113.22"
-						}
-					],
-					"gatewayId": "606704e8939a9315eb0782f3",
-					"info": {
-						"firmware.stack": "3.42",
-						"hardware": "0",
-						"manufacturer": "Schlage",
-						"model": "BE469NX",
-						"protocol": "zwave",
-						"zwave.node": "13",
-						"zwave.smartstart": "no"
-					},
-					"name": "1A",
-					"parentDeviceId": "",
-					"persistent": false,
-					"reachable": false,
-					"ready": true,
-					"roomId": "",
-					"security": "middle",
-					"status": "idle",
-					"subcategory": "",
-					"type": "doorlock"
-				},
-				{
-					"_id": "61576f2f939a9313ca423533",
-					"batteryPowered": true,
-					"category": "door_lock",
-					"deviceTypeId": "59_1_1128",
-					"firmware": [
-						{
-							"id": "us.59.18064.0",
-							"version": "3.3"
-						},
-						{
-							"id": "us.59.18065.1",
-							"version": "11.0"
-						}
-					],
-					"gatewayId": "606704e8939a9315eb0782f3",
-					"info": {
-						"firmware.stack": "6.3",
-						"hardware": "3",
-						"manufacturer": "Schlage",
-						"model": "Unknown",
-						"protocol": "zwave",
-						"zwave.node": "17",
-						"zwave.smartstart": "no"
-					},
-					"name": "1B",
-					"parentDeviceId": "",
-					"persistent": false,
-					"reachable": false,
-					"ready": true,
-					"roomId": "",
-					"security": "high",
-					"status": "idle",
-					"subcategory": "",
-					"type": "device"
-				},
-				{
-					"_id": "6159fc8e939a9313ca423558",
-					"batteryPowered": true,
-					"category": "door_lock",
-					"deviceTypeId": "59_1_1128",
-					"firmware": [
-						{
-							"id": "us.59.18064.0",
-							"version": "3.3"
-						},
-						{
-							"id": "us.59.18065.1",
-							"version": "11.0"
-						}
-					],
-					"gatewayId": "606704e8939a9315eb0782f3",
-					"info": {
-						"firmware.stack": "6.3",
-						"hardware": "3",
-						"manufacturer": "Schlage",
-						"model": "Unknown",
-						"protocol": "zwave",
-						"zwave.node": "22",
-						"zwave.smartstart": "no"
-					},
-					"name": "ZC3 (In Box)",
-					"parentDeviceId": "",
-					"persistent": false,
-					"reachable": true,
-					"ready": true,
-					"roomId": "",
-					"security": "high",
-					"status": "idle",
-					"subcategory": "",
-					"type": "device"
-				},
-				{
-					"_id": "6159ff37939a9313ca42356c",
-					"batteryPowered": true,
-					"category": "door_lock",
-					"deviceTypeId": "59_1_1128",
-					"firmware": [
-						{
-							"id": "us.59.18064.0",
-							"version": "3.3"
-						},
-						{
-							"id": "us.59.18065.1",
-							"version": "11.0"
-						}
-					],
-					"gatewayId": "606704e8939a9315eb0782f3",
-					"info": {
-						"firmware.stack": "6.3",
-						"hardware": "3",
-						"manufacturer": "Schlage",
-						"model": "Unknown",
-						"protocol": "zwave",
-						"zwave.node": "24",
-						"zwave.smartstart": "no"
-					},
-					"name": "ZC2 (In Box)",
-					"parentDeviceId": "",
-					"persistent": false,
-					"reachable": true,
-					"ready": true,
-					"roomId": "",
-					"security": "high",
-					"status": "idle",
-					"subcategory": "",
-					"type": "device"
-				},
-				{
-					"_id": "615a01ce939a9313ca423580",
-					"batteryPowered": true,
-					"category": "door_lock",
-					"deviceTypeId": "59_25409_20548",
-					"firmware": [
-						{
-							"id": "us.59.28950.0",
-							"version": "113.22"
-						}
-					],
-					"gatewayId": "606704e8939a9315eb0782f3",
-					"info": {
-						"firmware.stack": "3.42",
-						"hardware": "0",
-						"manufacturer": "Schlage",
-						"model": "BE469NX",
-						"protocol": "zwave",
-						"zwave.node": "25",
-						"zwave.smartstart": "no"
-					},
-					"name": "LV4 (In Box)",
-					"parentDeviceId": "",
-					"persistent": false,
-					"reachable": true,
-					"ready": true,
-					"roomId": "",
-					"security": "middle",
-					"status": "idle",
-					"subcategory": "",
-					"type": "doorlock"
-				},
-				{
-					"_id": "6165d1b8939a9313e502a895",
-					"batteryPowered": true,
-					"category": "door_lock",
-					"deviceTypeId": "59_25409_20548",
-					"firmware": [
-						{
-							"id": "us.59.28950.0",
-							"version": "113.22"
-						}
-					],
-					"gatewayId": "606704e8939a9315eb0782f3",
-					"info": {
-						"firmware.stack": "3.42",
-						"hardware": "0",
-						"manufacturer": "Schlage",
-						"model": "BE469NX",
-						"protocol": "zwave",
-						"zwave.node": "32",
-						"zwave.smartstart": "no"
-					},
-					"name": "2A",
-					"parentDeviceId": "",
-					"persistent": false,
-					"reachable": false,
-					"ready": true,
-					"roomId": "",
-					"security": "middle",
-					"status": "idle",
-					"subcategory": "",
-					"type": "doorlock"
-				},
-				{
-					"_id": "6165d271939a9313e502a8b3",
-					"batteryPowered": true,
-					"category": "door_lock",
-					"deviceTypeId": "59_25409_20548",
-					"firmware": [
-						{
-							"id": "us.59.28950.0",
-							"version": "113.22"
-						}
-					],
-					"gatewayId": "606704e8939a9315eb0782f3",
-					"info": {
-						"firmware.stack": "3.42",
-						"hardware": "0",
-						"manufacturer": "Schlage",
-						"model": "BE469NX",
-						"protocol": "zwave",
-						"zwave.node": "33",
-						"zwave.smartstart": "no"
-					},
-					"name": "2B",
-					"parentDeviceId": "",
-					"persistent": false,
-					"reachable": false,
-					"ready": true,
-					"roomId": "",
-					"security": "middle",
-					"status": "idle",
-					"subcategory": "",
-					"type": "doorlock"
-				},
-				{
-					"_id": "6165d418939a9313e502a8d1",
-					"batteryPowered": true,
-					"category": "door_lock",
-					"deviceTypeId": "59_25409_20548",
-					"firmware": [
-						{
-							"id": "us.59.28950.0",
-							"version": "113.22"
-						}
-					],
-					"gatewayId": "606704e8939a9315eb0782f3",
-					"info": {
-						"firmware.stack": "3.42",
-						"hardware": "0",
-						"manufacturer": "Schlage",
-						"model": "BE469NX",
-						"protocol": "zwave",
-						"zwave.node": "34",
-						"zwave.smartstart": "no"
-					},
-					"name": "4B",
-					"parentDeviceId": "",
-					"persistent": false,
-					"reachable": false,
-					"ready": true,
-					"roomId": "",
-					"security": "middle",
-					"status": "idle",
-					"subcategory": "",
-					"type": "doorlock"
-				},
-				{
-					"_id": "6165d546939a9313e502a8ef",
-					"batteryPowered": true,
-					"category": "door_lock",
-					"deviceTypeId": "59_25409_20548",
-					"firmware": [
-						{
-							"id": "us.59.28950.0",
-							"version": "113.22"
-						}
-					],
-					"gatewayId": "606704e8939a9315eb0782f3",
-					"info": {
-						"firmware.stack": "3.42",
-						"hardware": "0",
-						"manufacturer": "Schlage",
-						"model": "BE469NX",
-						"protocol": "zwave",
-						"zwave.node": "35",
-						"zwave.smartstart": "no"
-					},
-					"name": "3A",
-					"parentDeviceId": "",
-					"persistent": false,
-					"reachable": false,
-					"ready": true,
-					"roomId": "",
-					"security": "middle",
-					"status": "idle",
-					"subcategory": "",
-					"type": "doorlock"
-				},
-				{
-					"_id": "6165d5f7939a9313e502a90d",
-					"batteryPowered": true,
-					"category": "door_lock",
-					"deviceTypeId": "59_25409_20548",
-					"firmware": [
-						{
-							"id": "us.59.28950.0",
-							"version": "113.22"
-						}
-					],
-					"gatewayId": "606704e8939a9315eb0782f3",
-					"info": {
-						"firmware.stack": "3.42",
-						"hardware": "0",
-						"manufacturer": "Schlage",
-						"model": "BE469NX",
-						"protocol": "zwave",
-						"zwave.node": "36",
-						"zwave.smartstart": "no"
-					},
-					"name": "3B",
-					"parentDeviceId": "",
-					"persistent": false,
-					"reachable": false,
-					"ready": true,
-					"roomId": "",
-					"security": "middle",
-					"status": "idle",
-					"subcategory": "",
-					"type": "doorlock"
-				},
-				{
-					"_id": "6165d7b3939a9313e502a92b",
-					"batteryPowered": true,
-					"category": "door_lock",
-					"deviceTypeId": "59_25409_20548",
-					"firmware": [
-						{
-							"id": "us.59.28950.0",
-							"version": "113.22"
-						}
-					],
-					"gatewayId": "606704e8939a9315eb0782f3",
-					"info": {
-						"firmware.stack": "3.42",
-						"hardware": "0",
-						"manufacturer": "Schlage",
-						"model": "BE469NX",
-						"protocol": "zwave",
-						"zwave.node": "37",
-						"zwave.smartstart": "no"
-					},
-					"name": "5B",
-					"parentDeviceId": "",
-					"persistent": false,
-					"reachable": false,
-					"ready": true,
-					"roomId": "",
-					"security": "middle",
-					"status": "idle",
-					"subcategory": "",
-					"type": "doorlock"
-				},
-				{
-					"_id": "6165d8d8939a9313e502a949",
-					"batteryPowered": true,
-					"category": "door_lock",
-					"deviceTypeId": "59_1_1128",
-					"firmware": [
-						{
-							"id": "us.59.18064.0",
-							"version": "3.3"
-						},
-						{
-							"id": "us.59.18065.1",
-							"version": "11.0"
-						}
-					],
-					"gatewayId": "606704e8939a9315eb0782f3",
-					"info": {
-						"firmware.stack": "6.3",
-						"hardware": "3",
-						"manufacturer": "Schlage",
-						"model": "Unknown",
-						"protocol": "zwave",
-						"zwave.node": "38",
-						"zwave.smartstart": "no"
-					},
-					"name": "5A",
-					"parentDeviceId": "",
-					"persistent": false,
-					"reachable": false,
-					"ready": true,
-					"roomId": "",
-					"security": "high",
-					"status": "idle",
-					"subcategory": "",
-					"type": "device"
-				},
-				{
-					"_id": "6165da82939a9313e502a95d",
-					"batteryPowered": true,
-					"category": "door_lock",
-					"deviceTypeId": "59_25409_20548",
-					"firmware": [
-						{
-							"id": "us.59.28950.0",
-							"version": "113.22"
-						}
-					],
-					"gatewayId": "606704e8939a9315eb0782f3",
-					"info": {
-						"firmware.stack": "3.42",
-						"hardware": "0",
-						"manufacturer": "Schlage",
-						"model": "BE469NX",
-						"protocol": "zwave",
-						"zwave.node": "39",
-						"zwave.smartstart": "no"
-					},
-					"name": "6B",
-					"parentDeviceId": "",
-					"persistent": false,
-					"reachable": false,
-					"ready": true,
-					"roomId": "",
-					"security": "middle",
-					"status": "idle",
-					"subcategory": "",
-					"type": "doorlock"
-				}
-			]
+	id := fmt.Sprintf("hub.items.list.%s", uuid.New())
+	resp := wsItemsListResponse{}
+	err := wsSendCommand(
+		ws,
+		id,
+		struct {
+			Method string   `json:"method"`
+			ID     string   `json:"id"`
+			Params struct{} `json:"params"`
+		}{
+			Method: "hub.items.list",
+			ID:     id,
 		},
-		"sender": {
-			"conn_id": "2aab83bc-c2c8-4dd8-9a1e-ff7858753a4a",
-			"type": "ui"
-		}
+		&resp,
+	)
+	if err != nil {
+		return itemsByDevice, fmt.Errorf("error sending command: %s", err.Error())
 	}
-*/
+
+	for _, item := range resp.Result.Devices {
+		itemsByDevice[item.DeviceID] = append(itemsByDevice[item.DeviceID], item)
+	}
+
+	return itemsByDevice, nil
+}

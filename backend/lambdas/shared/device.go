@@ -32,6 +32,7 @@ type RawDevice struct {
 	Category string `json:"category"`
 	ID       string `json:"id"`
 	Name     string `json:"name"`
+	Status   string `json:"status"`
 }
 
 func (d *Device) UpdateBatteryLevel(itemByName map[string]HABItem) bool {

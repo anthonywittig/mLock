@@ -29,6 +29,7 @@ export const Detail = () => {
         rawDevice: {
             categoryId: "",
             name: "",
+            status: "",
         }
     });
     const [loading, setLoading] = React.useState<boolean>(true);
@@ -120,7 +121,7 @@ export const Detail = () => {
 
                 <Form.Group>
                     <Form.Label>Status</Form.Label>
-                    <Form.Control type="text" value="unknown" disabled={true}/>
+                    <Form.Control type="text" value={entity.rawDevice.status} disabled={true}/>
                 </Form.Group>
 
                 <Form.Group controlId="property">

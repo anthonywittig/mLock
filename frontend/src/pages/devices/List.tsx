@@ -171,7 +171,7 @@ export const List = () => {
         const warnings: JSX.Element[] = [];
 
         const lr = Date.parse(entity.lastRefreshedAt);
-        const recently = sub(new Date(), {minutes: 10});
+        const recently = sub(new Date(), {minutes: 20});
 
         if (isBefore(lr, recently)) {
             const distance = formatDistance(lr, new Date(), { addSuffix: true });
@@ -192,7 +192,7 @@ export const List = () => {
         const lwod = Date.parse(entity.lastWentOfflineAt!);
         const recently = sub(new Date(), {days: 1});
 
-        if (/*entity.habThing.statusInfo.status !== "ONLINE"*/ true || isAfter(lwod, recently)) {
+        if (entity.rawDevice.status !== "online" || isAfter(lwod, recently)) {
             const distance = formatDistance(lwod, new Date(), { addSuffix: true });
             warnings.push(<Badge variant="danger">Was Offline: { distance }</Badge>);
         }
@@ -203,13 +203,13 @@ export const List = () => {
     const getStatusInfoWarning = (entity: DeviceT) => {
         const warnings: JSX.Element[] = [];
 
-        /*
-        TODO: fix this up.
-        const s = entity.habThing.statusInfo.status;
-        if (s !== "ONLINE") {
-            warnings.push(<Badge variant="danger">{ s }</Badge>);
+        const s = entity.rawDevice.status;
+        if (s !== "online") {
+            warnings.push(<Badge variant="danger">{ s[0].toUpperCase() + s.slice(1) }</Badge>);
         }
 
+        /*
+        TODO: fix this up.
         const sd = entity.habThing.statusInfo.statusDetail;
         if (sd !== "NONE") {
             warnings.push(<Badge variant="secondary">{ sd }</Badge>);

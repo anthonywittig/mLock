@@ -11,6 +11,7 @@ type DeviceT = {
     rawDevice: {
         categoryId: string,
         name: string,
+        status: string,
     }
 }
 
