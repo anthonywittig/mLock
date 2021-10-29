@@ -137,12 +137,6 @@ type wsDeviceListResponseResultSender struct {
 	Type   string `json:"type"`
 }
 
-type wsItem struct {
-	DeviceID string      `json:"deviceId"`
-	Name     string      `json:"name"`
-	Value    interface{} `json:"value"`
-}
-
 type wsItemsListResponse struct {
 	API   string `json:"api"`
 	Error *struct {
@@ -277,19 +271,29 @@ func getRawDevices(ws *websocket.Conn) ([]shared.RawDevice, error) {
 			status = "online"
 		}
 
-		lockCodes := []wsItem{}
-		for _, item := range itemsByDevice[d.ID] {
-			if item.Name == "user_codes" {
-				item.Value
-			}
-		}
-
-		result = append(result, shared.RawDevice{
+		rd := shared.RawDevice{
+			Battery: shared.RawDeviceBattery{
+				BatteryPowered: d.Reachable && d.BatteryPowered,
+			},
 			Category: d.Category,
 			ID:       d.ID,
 			Name:     d.Name,
 			Status:   status,
-		})
+		}
+
+		for _, item := range itemsByDevice[d.ID] {
+			if item.Name == "battery" {
+				if rd.Battery.Level, err = item.getBatteryLevel(); err != nil {
+					return []shared.RawDevice{}, fmt.Errorf("error getting battery: %s", err.Error())
+				}
+			} else if item.Name == "user_codes" {
+				if rd.LockCodes, err = item.getLockCodes(); err != nil {
+					return []shared.RawDevice{}, fmt.Errorf("error getting lock codes: %s", err.Error())
+				}
+			}
+		}
+
+		result = append(result, rd)
 	}
 
 	return result, nil
@@ -379,7 +383,7 @@ func getDevice(ctx context.Context, ad authData, d device) (deviceResponse, erro
 
 	body := deviceResponse{}
 	if err := json.Unmarshal(respBody, &body); err != nil {
-		return deviceResponse{}, fmt.Errorf("error unmarshalling body: %s", err.Error())
+		return deviceResponse{}, fmt.Errorf("error unmarshalling body: %s; error: %s", string(respBody), err.Error())
 	}
 
 	return body, nil

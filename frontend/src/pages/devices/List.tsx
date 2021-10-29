@@ -141,22 +141,16 @@ export const List = () => {
     };
 
     const renderEntityBatteryLevel = (entity : DeviceT) => {
-
-        const lu = entity.battery.lastUpdatedAt;
-        if (lu === null) {
+        if (!entity.rawDevice.battery.batteryPowered) {
             return <></>;
         }
 
+        const lu = entity.lastRefreshedAt;
         const lud = Date.parse(lu);
         const recently = sub(new Date(), {days: 1, hours: 12});
+        const level = entity.rawDevice.battery.level;
 
-        if (isBefore(lud, recently)) {
-            const distance = formatDistance(lud, new Date(), { addSuffix: true });
-            return <Badge variant="danger">Last battery level taken over { distance }</Badge>;
-        }
-
-        const level = parseFloat(entity.battery.level);
-        if (isNaN(level)) {
+        if (isBefore(lud, recently) || level === null) {
             return <Badge variant="danger">Unknown</Badge>;
         }
 
@@ -207,14 +201,6 @@ export const List = () => {
         if (s !== "online") {
             warnings.push(<Badge variant="danger">{ s[0].toUpperCase() + s.slice(1) }</Badge>);
         }
-
-        /*
-        TODO: fix this up.
-        const sd = entity.habThing.statusInfo.statusDetail;
-        if (sd !== "NONE") {
-            warnings.push(<Badge variant="secondary">{ sd }</Badge>);
-        }
-        */
 
         return warnings;
     };

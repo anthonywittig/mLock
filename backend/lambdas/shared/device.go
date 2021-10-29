@@ -29,10 +29,23 @@ type DeviceHistory struct {
 }
 
 type RawDevice struct {
-	Category string `json:"category"`
-	ID       string `json:"id"`
-	Name     string `json:"name"`
-	Status   string `json:"status"`
+	Battery   RawDeviceBattery    `json:"battery"`
+	Category  string              `json:"category"`
+	ID        string              `json:"id"`
+	LockCodes []RawDeviceLockCode `json:"lockCodes"`
+	Name      string              `json:"name"`
+	Status    string              `json:"status"`
+}
+
+type RawDeviceBattery struct {
+	BatteryPowered bool `json:"batteryPowered"`
+	Level          int  `json:"level"`
+}
+type RawDeviceLockCode struct {
+	Code string `json:"code"`
+	Mode string `json:"mode"`
+	Name string `json:"name"`
+	Slot int    `json:"slot"`
 }
 
 func (d *Device) UpdateBatteryLevel(itemByName map[string]HABItem) bool {

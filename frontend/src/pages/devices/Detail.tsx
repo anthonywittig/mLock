@@ -20,14 +20,15 @@ export const Detail = () => {
         id: "",
         propertyId: "",
         unitId: "",
-        battery: {
-            lastUpdatedAt: null,
-            level: "",
-        },
         lastRefreshedAt: "",
         lastWentOfflineAt: null,
         rawDevice: {
+            battery: {
+                batteryPowered: false,
+                level: 0,
+            },
             categoryId: "",
+            lockCodes: null,
             name: "",
             status: "",
         }
@@ -150,43 +151,11 @@ export const Detail = () => {
                 </Form.Group>
 
                 {
-                    // Don't look :(
-                    [
-                        ["code 1", "unknown"],
-                        ["code 2", "unknown"],
-                        ["code 3", "unknown"],
-                        ["code 4", "unknown"],
-                        ["code 5", "unknown"],
-                        ["code 6", "unknown"],
-                        ["code 7", "unknown"],
-                        ["code 8", "unknown"],
-                        ["code 9", "unknown"],
-                        ["code 10", "unknown"],
-                        ["code 11", "unknown"],
-                        ["code 12", "unknown"],
-                        ["code 13", "unknown"],
-                        ["code 14", "unknown"],
-                        ["code 15", "unknown"],
-                        ["code 16", "unknown"],
-                        ["code 17", "unknown"],
-                        ["code 18", "unknown"],
-                        ["code 19", "unknown"],
-                        ["code 20", "unknown"],
-                        ["code 21", "unknown"],
-                        ["code 22", "unknown"],
-                        ["code 23", "unknown"],
-                        ["code 24", "unknown"],
-                        ["code 25", "unknown"],
-                        ["code 26", "unknown"],
-                        ["code 27", "unknown"],
-                        ["code 28", "unknown"],
-                        ["code 29", "unknown"],
-                        ["code 30", "unknown"],
-                    ].map((u) => {
+                    entity.rawDevice.lockCodes?.map((lc) => {
                         return (
-                            <Form.Group style={u[1] ? {} : {display: "none"}}>
-                                <Form.Label>{u[0]}</Form.Label>
-                                <Form.Control type="text" value={u[1]} disabled={true}/>
+                            <Form.Group>
+                                <Form.Label>{lc.name}</Form.Label>
+                                <Form.Control type="text" value={lc.code} disabled={true}/>
                             </Form.Group>
                         );
                     })

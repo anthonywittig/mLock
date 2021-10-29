@@ -16,12 +16,12 @@ func Test_GetDevices(t *testing.T) {
 	ds, err := GetDevices(context.Background(), shared.Property{ControllerID: "92001809"})
 	assert.Nil(t, err)
 
-	// Uncomment to see everything in an error
-	//assert.Equal(t, "ahh", ds)
-
 	// Just check that we have one device (fragile).
 	assert.Greater(t, len(ds), 1)
 	assert.Equal(t, ds[0].Category, "siren")
+
+	// Uncomment to see everything in an error
+	//assert.Nil(t, ds)
 }
 
 func loadConfig() error {

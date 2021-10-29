@@ -2,14 +2,22 @@ type DeviceT = {
     id: string,
     propertyId: string,
     unitId: string | null,
-    battery: {
-        lastUpdatedAt: string | null,
-        level: string,
-    },
     lastRefreshedAt: string,
     lastWentOfflineAt: string | null,
     rawDevice: {
+        battery: {
+            batteryPowered: boolean,
+            level: number,
+        },
         categoryId: string,
+        lockCodes: [
+            {
+                code: string,
+                mode: string,
+                name: string,
+                slot: number,
+            }
+        ] | null,
         name: string,
         status: string,
     }
