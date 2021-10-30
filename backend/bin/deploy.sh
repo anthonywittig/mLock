@@ -17,18 +17,14 @@ handleLambda () {
         --zip-file fileb://${buildDir}/function.zip
 }
 
-handleDb () {
+handleData () {
     cd $scriptDir
     cd ../lambdas/db
 
     rm -rf build
     mkdir build
 
-    #mkdir -p build/migrations/goosemigrations
-    #cp -r migrations/goosemigrations/ build/migrations/goosemigrations
-
     handleLambda migrations
-    # TODO: execute lambda with "forward" option to run the migrations forward.
 }
 
 handleJobs () {
@@ -66,4 +62,4 @@ go test ../...
 
 handleJobs
 handleApis
-handleDb
+handleData

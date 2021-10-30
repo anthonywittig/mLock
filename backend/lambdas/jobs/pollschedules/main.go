@@ -44,13 +44,14 @@ func HandleRequest(ctx context.Context, event MyEvent) (Response, error) {
 	}
 
 	// TODO: This should really move somewhere else.
-
 	ps, err := property.List(ctx)
 	if err != nil {
 		return Response{}, fmt.Errorf("error getting properties: %s", err.Error())
 	}
 	for _, p := range ps {
-		updateDevices(ctx, p)
+		if err := updateDevices(ctx, p); err != nil {
+			return Response{}, fmt.Errorf("error updating devices for property: %s, error: %s", p.Name, err.Error())
+		}
 	}
 
 	// get all units
