@@ -300,7 +300,7 @@ func getRawDevices(ws *websocket.Conn) ([]shared.RawDevice, error) {
 }
 
 func authenticate(ctx context.Context, username string, password string) (authData, error) {
-	// TODO: get a list of the endpoints and use a random one.
+	// TODO: get a list of the endpoints and use a random one?
 	// "vera-us-oem-account12.mios.com"
 	url := fmt.Sprintf("https://vera-us-oem-account11.mios.com/autha/auth/username/%s", username)
 

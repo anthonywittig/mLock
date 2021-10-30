@@ -166,9 +166,8 @@ func updateDevices(ctx context.Context, property shared.Property) error {
 				// We found a match.
 				d = ed
 
-				// TODO: fix these.
-				wasOffline := false //t.StatusInfo.Status == shared.DeviceStatusOffline
-				isOffline := false  //d.HABThing.StatusInfo.Status == shared.DeviceStatusOffline
+				wasOffline := d.RawDevice.Status == shared.DeviceStatusOffline
+				isOffline := rd.Status == shared.DeviceStatusOffline
 				if isOffline {
 					offlineDevices = append(offlineDevices, d)
 					if !wasOffline {
@@ -178,8 +177,7 @@ func updateDevices(ctx context.Context, property shared.Property) error {
 					}
 				}
 
-				// TODO: fix this.
-				statusChanged := false //(t.StatusInfo.Status != d.HABThing.StatusInfo.Status) || (t.StatusInfo.StatusDetail != d.HABThing.StatusInfo.StatusDetail)
+				statusChanged := d.RawDevice.Status != rd.Status
 				if statusChanged {
 					d.History = append(d.History, shared.DeviceHistory{
 						Description: "Status Changed",

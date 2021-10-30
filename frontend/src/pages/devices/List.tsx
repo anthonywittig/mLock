@@ -111,11 +111,11 @@ export const List = () => {
 
     const renderDeleteButton = (entity: DeviceT) => {
         const lr = Date.parse(entity.lastRefreshedAt);
-        const recently = sub(new Date(), {hours: 2});
+        const recently = sub(new Date(), {minutes: 20});
 
-        if (isAfter(lr, recently) && entity.rawDevice.status === "ONLINE") {
+        if (isAfter(lr, recently)) {
             return (
-                <OverlayTrigger overlay={<Tooltip id="tooltip-disabled">Must be offline or not refreshed in the last two hours.</Tooltip>}>
+                <OverlayTrigger overlay={<Tooltip id="tooltip-disabled">The device was recently pulled from the controller.</Tooltip>}>
                     <span className="d-inline-block">
                         <Button variant="secondary" disabled style={{ pointerEvents: 'none' }}>Delete</Button>
                     </span>
