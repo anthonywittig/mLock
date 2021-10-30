@@ -113,7 +113,7 @@ export const List = () => {
         const lr = Date.parse(entity.lastRefreshedAt);
         const recently = sub(new Date(), {hours: 2});
 
-        if (isAfter(lr, recently) && true /*entity.habThing.statusInfo.status === "ONLINE"*/) {
+        if (isAfter(lr, recently) && entity.rawDevice.status === "ONLINE") {
             return (
                 <OverlayTrigger overlay={<Tooltip id="tooltip-disabled">Must be offline or not refreshed in the last two hours.</Tooltip>}>
                     <span className="d-inline-block">
@@ -186,7 +186,7 @@ export const List = () => {
         const lwod = Date.parse(entity.lastWentOfflineAt!);
         const recently = sub(new Date(), {days: 1});
 
-        if (entity.rawDevice.status !== "online" || isAfter(lwod, recently)) {
+        if (entity.rawDevice.status !== "ONLINE" || isAfter(lwod, recently)) {
             const distance = formatDistance(lwod, new Date(), { addSuffix: true });
             warnings.push(<Badge variant="danger">Was Offline: { distance }</Badge>);
         }
@@ -198,7 +198,7 @@ export const List = () => {
         const warnings: JSX.Element[] = [];
 
         const s = entity.rawDevice.status;
-        if (s !== "online") {
+        if (s !== "ONLINE") {
             warnings.push(<Badge variant="danger">{ s[0].toUpperCase() + s.slice(1) }</Badge>);
         }
 

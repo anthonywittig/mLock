@@ -34,7 +34,7 @@ handleJobs () {
     rm -rf build
     mkdir build
 
-    lambdas=('messagehandler' 'devicebatterylevelworkflow' 'pollschedules')
+    lambdas=('pollschedules')
     for lambda in "${lambdas[@]}" ; do
         handleLambda $lambda
     done

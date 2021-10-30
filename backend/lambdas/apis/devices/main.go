@@ -91,7 +91,7 @@ func delete(ctx context.Context, req events.APIGatewayProxyRequest) (*shared.API
 
 	if !ok {
 		for _, s := range []string{shared.DeviceStatusOffline} {
-			if s == entity.HABThing.StatusInfo.Status {
+			if s == entity.RawDevice.Status {
 				ok = true
 			}
 		}

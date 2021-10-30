@@ -222,14 +222,14 @@ func sendOfflineDeviceEmail(ctx context.Context, transitioningToOfflineDevices [
 	sb.WriteString("<h1>Devices That Recently Went Offline</h1>")
 	sb.WriteString("<ul>")
 	for _, d := range transitioningToOfflineDevices {
-		sb.WriteString(fmt.Sprintf("<li>Device: %s</li>", d.HABThing.Label))
+		sb.WriteString(fmt.Sprintf("<li>Device: %s</li>", d.RawDevice.Name))
 	}
 	sb.WriteString("</ul>")
 
 	sb.WriteString("<h1>Devices That Are Currently Offline</h1>")
 	sb.WriteString("<ul>")
 	for _, d := range offlineDevices {
-		sb.WriteString(fmt.Sprintf("<li>Device: %s</li>", d.HABThing.Label))
+		sb.WriteString(fmt.Sprintf("<li>Device: %s</li>", d.RawDevice.Name))
 	}
 	sb.WriteString("</ul>")
 

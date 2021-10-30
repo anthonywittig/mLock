@@ -266,9 +266,9 @@ func getRawDevices(ws *websocket.Conn) ([]shared.RawDevice, error) {
 
 	result := []shared.RawDevice{}
 	for _, d := range deviceListResp.Result.Devices {
-		status := "offline"
+		status := shared.DeviceStatusOffline
 		if d.Reachable {
-			status = "online"
+			status = shared.DeviceStatusOnline
 		}
 
 		rd := shared.RawDevice{
