@@ -22,6 +22,7 @@ export const Detail = () => {
         unitId: "",
         lastRefreshedAt: "",
         lastWentOfflineAt: null,
+        lastWentOnlineAt: null,
         rawDevice: {
             battery: {
                 batteryPowered: false,

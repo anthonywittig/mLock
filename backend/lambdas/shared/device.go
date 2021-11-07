@@ -15,6 +15,7 @@ type Device struct {
 	ID                uuid.UUID       `json:"id"`
 	LastRefreshedAt   time.Time       `json:"lastRefreshedAt"`
 	LastWentOfflineAt *time.Time      `json:"lastWentOfflineAt"`
+	LastWentOnlineAt  *time.Time      `json:"lastWentOnlineAt"`
 	PropertyID        uuid.UUID       `json:"propertyId"`
 	RawDevice         RawDevice       `json:"rawDevice"`
 	UnitID            *uuid.UUID      `json:"unitId"`

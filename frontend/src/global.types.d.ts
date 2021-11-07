@@ -4,6 +4,7 @@ type DeviceT = {
     unitId: string | null,
     lastRefreshedAt: string,
     lastWentOfflineAt: string | null,
+    lastWentOnlineAt: string | null,
     rawDevice: {
         battery: {
             batteryPowered: boolean,

@@ -168,6 +168,12 @@ func updateDevices(ctx context.Context, property shared.Property) error {
 
 				wasOffline := d.RawDevice.Status == shared.DeviceStatusOffline
 				isOffline := rd.Status == shared.DeviceStatusOffline
+
+				if wasOffline && !isOffline {
+					now := time.Now()
+					d.LastWentOnlineAt = &now
+				}
+
 				if isOffline {
 					offlineDevices = append(offlineDevices, d)
 					if !wasOffline {

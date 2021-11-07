@@ -183,12 +183,16 @@ export const List = () => {
             return warnings;
         }
 
-        const lwod = Date.parse(entity.lastWentOfflineAt!);
         const recently = sub(new Date(), {days: 1});
+        const lwond = Date.parse(entity.lastWentOnlineAt!);
+        const lwoffd = Date.parse(entity.lastWentOfflineAt!);
 
-        if (entity.rawDevice.status !== "ONLINE" || isAfter(lwod, recently)) {
-            const distance = formatDistance(lwod, new Date(), { addSuffix: true });
-            warnings.push(<Badge variant="danger">Was Offline: { distance }</Badge>);
+        if (entity.rawDevice.status !== "ONLINE") {
+            const distance = formatDistance(lwoffd, new Date(), { addSuffix: true });
+            warnings.push(<Badge variant="danger">Went Offline: { distance }</Badge>);
+        } else if (isAfter(lwond, recently)) {
+            const distance = formatDistance(lwond, new Date(), { addSuffix: true });
+            warnings.push(<Badge variant="danger">Went Online: { distance }</Badge>);
         }
 
         return warnings;
