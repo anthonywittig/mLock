@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"mlock/lambdas/apis/devices/lockcodes"
 	"mlock/lambdas/helpers"
 	"mlock/lambdas/shared"
 	"mlock/lambdas/shared/dynamo/device"
@@ -53,6 +54,10 @@ func main() {
 }
 
 func HandleRequest(ctx context.Context, req events.APIGatewayProxyRequest) (*shared.APIResponse, error) {
+	if strings.HasPrefix(req.Path, "/devices/lock-codes/") {
+		return lockcodes.HandleRequest(ctx, req)
+	}
+
 	switch req.HTTPMethod {
 	case "DELETE":
 		return delete(ctx, req)
