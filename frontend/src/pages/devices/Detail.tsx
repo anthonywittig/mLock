@@ -100,8 +100,66 @@ export const Detail = () => {
                         <h2 className="card-title">Details</h2>
                         {renderEntity()}
                     </div>
+                    <div className="card-body">
+                        <h2 className="card-title">Current Lock Codes</h2>
+                        {renderCurrentLockCodes()}
+                    </div>
+                    <div className="card-body">
+                        <h2 className="card-title">Add Lock Code</h2>
+                        {renderAddLockCode()}
+                    </div>
                 </div>
             </>
+        );
+    };
+
+    const renderAddLockCode = () => {
+        if (loading) {
+            return <Loading />;
+        }
+        return (
+            <Form onSubmit={evt => formSubmit(evt)}>
+
+                <Form.Group>
+                    <Form.Label>Code</Form.Label>
+                    <Form.Control type="text" />
+                </Form.Group>
+
+                <Form.Group>
+                    <Form.Label>Enable At</Form.Label>
+                    <Form.Control type="text" />
+                </Form.Group>
+
+                <Form.Group>
+                    <Form.Label>Disable At</Form.Label>
+                    <Form.Control type="text" />
+                </Form.Group>
+
+                <Button variant="secondary" type="submit">
+                    Add Lock Code
+                </Button>
+
+            </Form>
+        );
+    };
+
+    const renderCurrentLockCodes = () => {
+        if (loading) {
+            return <Loading />;
+        }
+        return (
+            <Form>
+                {
+                    entity.rawDevice.lockCodes?.map((lc) => {
+                        return (
+                            <Form.Group>
+                                <Form.Label>{lc.name}</Form.Label>
+                                <Form.Control type="text" value={lc.code} disabled={true}/>
+                            </Form.Group>
+                        );
+                    })
+                }
+            </Form>
         );
     };
 
@@ -151,21 +209,9 @@ export const Detail = () => {
                     </Form.Control>
                 </Form.Group>
 
-                {
-                    entity.rawDevice.lockCodes?.map((lc) => {
-                        return (
-                            <Form.Group>
-                                <Form.Label>{lc.name}</Form.Label>
-                                <Form.Control type="text" value={lc.code} disabled={true}/>
-                            </Form.Group>
-                        );
-                    })
-                }
-
                 <Button variant="secondary" type="submit">
                     Update
                 </Button>
-
             </Form>
         );
     };

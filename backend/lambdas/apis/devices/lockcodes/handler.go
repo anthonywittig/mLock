@@ -5,20 +5,23 @@ import (
 	"encoding/json"
 	"fmt"
 	"mlock/lambdas/shared"
+	"mlock/lambdas/shared/dynamo/device"
 	"net/http"
 	"time"
 
 	"github.com/aws/aws-lambda-go/events"
+	"github.com/google/uuid"
 )
 
 type CreateRequest struct {
-	Code    string    `json:"code"`
-	EndAt   time.Time `json:"endAt"`
-	StartAt time.Time `json:"startAt"`
+	DeviceID uuid.UUID `json:"deviceId"`
+	Code     string    `json:"code"`
+	EndAt    time.Time `json:"endAt"`
+	StartAt  time.Time `json:"startAt"`
 }
 
 type CreateResponse struct {
-	//Entity shared.Property `json:"entity"`
+	Entity shared.Device `json:"entity"`
 }
 
 func HandleRequest(ctx context.Context, req events.APIGatewayProxyRequest) (*shared.APIResponse, error) {
@@ -36,27 +39,33 @@ func create(ctx context.Context, req events.APIGatewayProxyRequest) (*shared.API
 		return nil, fmt.Errorf("error unmarshalling body: %s", err.Error())
 	}
 
-	// Package up the lock code.
+	mlc := shared.DeviceManagedLockCode{
+		Code:    body.Code,
+		EndAt:   body.EndAt,
+		ID:      uuid.New(),
+		Status:  shared.DeviceManagedLockCodeStatusScheduled,
+		StartAt: body.StartAt,
+	}
 
-	// Get the device.
+	d, ok, err := device.Get(ctx, body.DeviceID)
+	if err != nil {
+		return nil, fmt.Errorf("error getting entity: %s", err.Error())
+	}
+	if !ok {
+		return nil, fmt.Errorf("unable to find entity: %s", body.DeviceID)
+	}
 
-	// Check for conflicting entry (same code with overlapping time ranges).
-	//device.HasConflictingManagedLockCode
+	if d.HasConflictingManagedLockCode(mlc) {
+		return nil, fmt.Errorf("conflicting lock code already exists")
+	}
 
-	// Save.
+	d.ManagedLockCodes = append(d.ManagedLockCodes, mlc)
+	d, err = device.Put(ctx, d)
+	if err != nil {
+		return nil, fmt.Errorf("error updating device: %s", err.Error())
+	}
 
 	// If timestamp is close kick off a request to update the locks? We probably want to keep it single threaded for now.
 
-	/*
-		entity, err := property.Put(ctx, shared.Property{
-			ID: uuid.New(),
-			Name: body.Name,
-		})
-		if err != nil {
-			return nil, fmt.Errorf("error inserting entity: %s", err.Error())
-		}
-	*/
-
-	//return shared.NewAPIResponse(http.StatusOK, CreateResponse{Entity: entity})
-	return shared.NewAPIResponse(http.StatusOK, CreateResponse{})
+	return shared.NewAPIResponse(http.StatusOK, CreateResponse{Entity: d})
 }

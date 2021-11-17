@@ -29,12 +29,14 @@ type DeviceHistory struct {
 }
 
 type DeviceManagedLockCode struct {
-	Code    string    `json:"code"`
-	EndAt   time.Time `json:"endAt"`
-	ID      uuid.UUID `json:"id"`
-	Status  string    `json:"status"`
-	StartAt time.Time `json:"startAt"`
+	Code    string                      `json:"code"`
+	EndAt   time.Time                   `json:"endAt"`
+	ID      uuid.UUID                   `json:"id"`
+	Status  DeviceManagedLockCodeStatus `json:"status"`
+	StartAt time.Time                   `json:"startAt"`
 }
+
+type DeviceManagedLockCodeStatus string
 
 type RawDevice struct {
 	Battery   RawDeviceBattery    `json:"battery"`
@@ -57,8 +59,9 @@ type RawDeviceLockCode struct {
 }
 
 const (
-	DeviceStatusOffline = "OFFLINE"
-	DeviceStatusOnline  = "ONLINE"
+	DeviceStatusOffline                                              = "OFFLINE"
+	DeviceStatusOnline                                               = "ONLINE"
+	DeviceManagedLockCodeStatusScheduled DeviceManagedLockCodeStatus = "Scheduled"
 )
 
 func (d *Device) HasConflictingManagedLockCode(lc DeviceManagedLockCode) bool {
