@@ -24,6 +24,13 @@ type DeviceT = {
     }
 }
 
+type DeviceManagedLockCode = {
+    id: string,
+    deviceId: string,
+    startAt: Date,
+    endAt: Date,
+}
+
 type UnitT = {
     id: string,
     name: string,

@@ -2,6 +2,7 @@ import React from 'react';
 import { Button, Form} from 'react-bootstrap';
 import { formatDistance } from 'date-fns';
 import { useHistory, useRouteMatch } from 'react-router-dom';
+import { LockCode } from './components/LockCode';
 import { Loading } from '../utils/Loading';
 import { StandardFetch } from '../utils/FetchHelper';
 
@@ -37,6 +38,8 @@ export const Detail = () => {
     const [loading, setLoading] = React.useState<boolean>(true);
     const [properties, setProperties] = React.useState<Property[]>([]);
     const [units, setUnits] = React.useState<UnitT[]>([]);
+    const [newLockCodeStartAt, setNewLockCodeStartAt] = React.useState<string>("");
+    const [newLockCodeEndAt, setNewLockCodeEndAt] = React.useState<string>("");
 
     const m = useRouteMatch('/' + Endpoint + '/:id');
     const mp = m?.params as MatchParams;
@@ -102,7 +105,7 @@ export const Detail = () => {
                     </div>
                     <div className="card-body">
                         <h2 className="card-title">Current Lock Codes</h2>
-                        {renderCurrentLockCodes()}
+                        <LockCode />
                     </div>
                     <div className="card-body">
                         <h2 className="card-title">Add Lock Code</h2>
@@ -127,12 +130,12 @@ export const Detail = () => {
 
                 <Form.Group>
                     <Form.Label>Enable At</Form.Label>
-                    <Form.Control type="text" />
+                    <Form.Control type="datetime-local" defaultValue={newLockCodeStartAt} onChange={(evt) => setNewLockCodeStartAt(evt.target.value)}/>
                 </Form.Group>
 
                 <Form.Group>
                     <Form.Label>Disable At</Form.Label>
-                    <Form.Control type="text" />
+                    <Form.Control type="datetime-local" defaultValue={newLockCodeEndAt} onChange={(evt) => setNewLockCodeEndAt(evt.target.value)}/>
                 </Form.Group>
 
                 <Button variant="secondary" type="submit">
@@ -143,6 +146,7 @@ export const Detail = () => {
         );
     };
 
+    /*
     const renderCurrentLockCodes = () => {
         if (loading) {
             return <Loading />;
@@ -162,6 +166,7 @@ export const Detail = () => {
             </Form>
         );
     };
+    */
 
     const renderEntity = () => {
         if (loading) {
