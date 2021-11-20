@@ -47,7 +47,7 @@ handleApis () {
     rm -rf build
     mkdir build
 
-    lambdas=('units' 'devices' 'users' 'signin' 'properties')
+    lambdas=('devices' 'units' 'users' 'signin' 'properties')
     for lambda in "${lambdas[@]}" ; do
         handleLambda $lambda
     done
@@ -60,6 +60,6 @@ scriptDir=$(pwd)
 go vet ../...
 go test ../...
 
-handleJobs
 handleApis
+handleJobs
 handleData

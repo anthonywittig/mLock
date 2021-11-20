@@ -4,32 +4,35 @@ import { addDays, parseISO } from 'date-fns';
 import { Loading } from '../../utils/Loading';
 import { StandardFetch } from '../../utils/FetchHelper';
 
-const Endpoint = "devices";
+interface Props{
+    deviceId: string;
+    code: DeviceManagedLockCode | null;
+}
 
-export const LockCode = (someArgsHere) => {
-    const [entity, setEntity] = React.useState<DeviceManagedLockCode>({
-        id: "",
-        deviceId: "",
-        startAt: new Date(),
-        endAt: addDays(new Date(), 1),
-    });
-    const [loading, setLoading] = React.useState<boolean>(true);
+export const LockCode = (props:Props) => {
+    const [loading, setLoading] = React.useState<boolean>(false);
+    const [code, setCode] = React.useState<string>("");
     const [startAt, setStartAt] = React.useState<Date>(new Date());
-    const [endAt, setEndAt] = React.useState<Date>(new Date());
+    const [endAt, setEndAt] = React.useState<Date>(addDays(new Date(), 1));
 
     const formSubmit = (evt: React.FormEvent<HTMLFormElement>) => {
         evt.preventDefault();
 
         setLoading(true);
 
-        StandardFetch("asdfasfsadfdasfsa" + Endpoint + "/", {
-            method: "asfaPUT",
-            body: JSON.stringify(entity)
+        StandardFetch("devices/" + props.deviceId + "/lock-codes/", {
+            method: "POST",
+            body: JSON.stringify({
+                deviceId: props.deviceId,
+                code: code,
+                startAt: startAt,
+                endAt: endAt,
+            })
         })
         .then(response => response.json())
         .then(response => {
-            setEntity(response.entity);
-            setLoading(false);
+            // TODO: tell parent component the device has changed...
+            // setLoading(false);
         })
         .catch(err => {
             // TODO: indicate error.
@@ -50,8 +53,8 @@ export const LockCode = (someArgsHere) => {
             <Form onSubmit={evt => formSubmit(evt)}>
 
                 <Form.Group>
-                    <Form.Label>Code!!!</Form.Label>
-                    <Form.Control type="text" />
+                    <Form.Label>Code</Form.Label>
+                    <Form.Control type="text" defaultValue={code} onChange={(evt) => setCode(evt.target.value)}/>
                 </Form.Group>
 
                 <Form.Group>

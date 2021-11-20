@@ -28,6 +28,10 @@ type DetailResponse struct {
 	Extra  ExtraEntities `json:"extra"`
 }
 
+type ErrorResponse struct {
+	Error string `json:"error"`
+}
+
 type ListResponse struct {
 	Entities []shared.Device `json:"entities"`
 	Extra    ExtraEntities   `json:"extra"`
@@ -54,7 +58,11 @@ func main() {
 }
 
 func HandleRequest(ctx context.Context, req events.APIGatewayProxyRequest) (*shared.APIResponse, error) {
-	if strings.HasPrefix(req.Path, "/devices/lock-codes/") {
+	match, err := regexp.MatchString(`^/devices/[0-9a-fA-F]{8}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{12}/lock-codes/`, req.Path)
+	if err != nil {
+		return shared.NewAPIResponse(http.StatusBadRequest, ErrorResponse{Error: "unable to url"})
+	}
+	if match {
 		return lockcodes.HandleRequest(ctx, req)
 	}
 
