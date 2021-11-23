@@ -59,8 +59,10 @@ type RawDeviceLockCode struct {
 }
 
 const (
+	DeviceCodeModeEnabled                                            = "enabled"
 	DeviceStatusOffline                                              = "OFFLINE"
 	DeviceStatusOnline                                               = "ONLINE"
+	DeviceManagedLockCodeStatusEnabled   DeviceManagedLockCodeStatus = "Enabled"
 	DeviceManagedLockCodeStatusScheduled DeviceManagedLockCodeStatus = "Scheduled"
 )
 
@@ -81,4 +83,36 @@ func (d *Device) HasConflictingManagedLockCode(lc DeviceManagedLockCode) bool {
 	}
 
 	return false
+}
+
+func (d *Device) PopulateTemporaryManagedLockCodes() {
+	// For any code that doesn't have a corresponding managed lock code, we'll add one.
+
+	// TODO: we only want to do this for supported devices.
+
+	for _, c := range d.RawDevice.LockCodes {
+		if c.Mode != DeviceCodeModeEnabled {
+			continue
+		}
+
+		lcFound := false
+		for _, lc := range d.ManagedLockCodes {
+			if lc.Code == c.Code && lc.Status == DeviceManagedLockCodeStatusEnabled {
+				lcFound = true
+			}
+		}
+
+		if !lcFound {
+			d.ManagedLockCodes = append(
+				d.ManagedLockCodes,
+				DeviceManagedLockCode{
+					Code:    c.Code,
+					EndAt:   time.Now().AddDate(15, 0, 0),
+					ID:      [16]byte{},
+					Status:  DeviceManagedLockCodeStatusEnabled,
+					StartAt: time.Time{},
+				},
+			)
+		}
+	}
 }

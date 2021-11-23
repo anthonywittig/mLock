@@ -5,6 +5,7 @@ type DeviceT = {
     lastRefreshedAt: string,
     lastWentOfflineAt: string | null,
     lastWentOnlineAt: string | null,
+    managedLockCodes: DeviceManagedLockCode[],
     rawDevice: {
         battery: {
             batteryPowered: boolean,
@@ -27,6 +28,7 @@ type DeviceT = {
 type DeviceManagedLockCode = {
     id: string,
     deviceId: string,
+    code: string,
     startAt: Date,
     endAt: Date,
 }

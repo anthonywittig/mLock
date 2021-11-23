@@ -169,6 +169,7 @@ func detail(ctx context.Context, req events.APIGatewayProxyRequest, id string) (
 	if !ok {
 		return nil, fmt.Errorf("entity not found: %s", parsedID)
 	}
+	entity.PopulateTemporaryManagedLockCodes()
 
 	properties, err := property.List(ctx)
 	if err != nil {

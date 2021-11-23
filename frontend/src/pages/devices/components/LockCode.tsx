@@ -6,13 +6,15 @@ import { StandardFetch } from '../../utils/FetchHelper';
 
 interface Props{
     deviceId: string;
-    code: DeviceManagedLockCode | null;
+    managedLockCode: DeviceManagedLockCode | null;
 }
 
 export const LockCode = (props:Props) => {
     const [loading, setLoading] = React.useState<boolean>(false);
-    const [code, setCode] = React.useState<string>("");
+    const [code, setCode] = React.useState<string>(props.managedLockCode ? props.managedLockCode.code : "");
+    //const [startAt, setStartAt] = React.useState<Date>(props.managedLockCode ? props.managedLockCode.startAt : new Date());
     const [startAt, setStartAt] = React.useState<Date>(new Date());
+    //const [endAt, setEndAt] = React.useState<Date>(props.managedLockCode ? props.managedLockCode.endAt : addDays(new Date(), 1));
     const [endAt, setEndAt] = React.useState<Date>(addDays(new Date(), 1));
 
     const formSubmit = (evt: React.FormEvent<HTMLFormElement>) => {
@@ -20,7 +22,7 @@ export const LockCode = (props:Props) => {
 
         setLoading(true);
 
-        StandardFetch("devices/" + props.deviceId + "/lock-codes/", {
+        StandardFetch("xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxdevices/" + props.deviceId + "/lock-codes/", {
             method: "POST",
             body: JSON.stringify({
                 deviceId: props.deviceId,
@@ -54,12 +56,12 @@ export const LockCode = (props:Props) => {
 
                 <Form.Group>
                     <Form.Label>Code</Form.Label>
-                    <Form.Control type="text" defaultValue={code} onChange={(evt) => setCode(evt.target.value)}/>
+                    <Form.Control type="text" defaultValue={code} onChange={(evt) => setCode(evt.target.value)} disabled={!!props.managedLockCode}/>
                 </Form.Group>
 
                 <Form.Group>
                     <Form.Label>Enable At</Form.Label>
-                    <Form.Control type="datetime-local" defaultValue={startAt.toISOString().slice(0, 16)} onChange={(evt) => setStartAt(parseISO(evt.target.value))}/>
+                    <Form.Control type="datetime-local" defaultValue={startAt.toISOString().slice(0, 16)} onChange={(evt) => setStartAt(parseISO(evt.target.value))} disabled={!!props.managedLockCode}/>
                 </Form.Group>
 
                 <Form.Group>
@@ -68,7 +70,7 @@ export const LockCode = (props:Props) => {
                 </Form.Group>
 
                 <Button variant="secondary" type="submit">
-                    Add Lock Code
+                    {props.managedLockCode ? "Update" : "Add"} Lock Code
                 </Button>
 
             </Form>

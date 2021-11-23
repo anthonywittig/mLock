@@ -24,6 +24,7 @@ export const Detail = () => {
         lastRefreshedAt: "",
         lastWentOfflineAt: null,
         lastWentOnlineAt: null,
+        managedLockCodes: [],
         rawDevice: {
             battery: {
                 batteryPowered: false,
@@ -107,7 +108,7 @@ export const Detail = () => {
                     </div>
                     <div className="card-body">
                         <h2 className="card-title">Add Lock Code</h2>
-                        <LockCode deviceId={entity.id} code={null}/>
+                        <LockCode deviceId={entity.id} managedLockCode={null}/>
                     </div>
                 </div>
             </>
@@ -119,18 +120,15 @@ export const Detail = () => {
             return <Loading />;
         }
         return (
-            <Form>
+            <>
                 {
-                    entity.rawDevice.lockCodes?.map((lc) => {
+                    entity.managedLockCodes.map((lc) => {
                         return (
-                            <Form.Group>
-                                <Form.Label>{lc.name}</Form.Label>
-                                <Form.Control type="text" value={lc.code} disabled={true}/>
-                            </Form.Group>
+                            <div><LockCode deviceId={entity.id} managedLockCode={lc}/><br/></div>
                         );
                     })
                 }
-            </Form>
+            </>
         );
     };
 
