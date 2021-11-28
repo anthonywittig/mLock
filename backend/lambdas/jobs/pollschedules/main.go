@@ -203,6 +203,7 @@ func updateDevices(ctx context.Context, property shared.Property) error {
 		d.PropertyID = property.ID
 		d.RawDevice = rd
 		d.LastRefreshedAt = time.Now()
+		d.AddManagedLockCodesForLockCodes()
 
 		if _, err := device.Put(ctx, d); err != nil {
 			return fmt.Errorf("error putting device: %s", err.Error())

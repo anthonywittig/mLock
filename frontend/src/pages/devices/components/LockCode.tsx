@@ -7,32 +7,53 @@ import { StandardFetch } from '../../utils/FetchHelper';
 interface Props{
     deviceId: string;
     managedLockCode: DeviceManagedLockCode | null;
+    managedLockCodesUpdated: () => void;
 }
 
 export const LockCode = (props:Props) => {
     const [loading, setLoading] = React.useState<boolean>(false);
-    const [code, setCode] = React.useState<string>(props.managedLockCode ? props.managedLockCode.code : "");
+    const [code, setCode] = React.useState<string>(
+        props.managedLockCode ? props.managedLockCode.code + " - " + props.managedLockCode.status + " - " + props.managedLockCode.note : ""
+    );
     const [startAt, setStartAt] = React.useState<Date>(props.managedLockCode ? parseISO(props.managedLockCode.startAt) : new Date());
     const [endAt, setEndAt] = React.useState<Date>(props.managedLockCode ? parseISO(props.managedLockCode.endAt) : addDays(set(new Date(), {minutes: 0}), 1));
 
     const formSubmit = (evt: React.FormEvent<HTMLFormElement>) => {
         evt.preventDefault();
-
         setLoading(true);
 
-        StandardFetch("devices/" + props.deviceId + "/lock-codes/", {
-            method: "POST",
+        if (props.managedLockCode === null) {
+            StandardFetch("devices/" + props.deviceId + "/lock-codes/", {
+                method: "POST",
+                body: JSON.stringify({
+                    code: code,
+                    startAt: startAt,
+                    endAt: endAt,
+                })
+            })
+            .then(response => response.json())
+            .then(response => {
+                setCode("");
+                props.managedLockCodesUpdated();
+                setLoading(false);
+            })
+            .catch(err => {
+                // TODO: indicate error.
+                console.log(err);
+            });
+            return;
+        }
+
+        StandardFetch("devices/" + props.deviceId + "/lock-codes/" + props.managedLockCode?.id, {
+            method: "PUT",
             body: JSON.stringify({
-                deviceId: props.deviceId,
-                code: code,
-                startAt: startAt,
                 endAt: endAt,
             })
         })
         .then(response => response.json())
         .then(response => {
-            // TODO: tell parent component the device has changed...
-            // setLoading(false);
+            props.managedLockCodesUpdated();
+            setLoading(false);
         })
         .catch(err => {
             // TODO: indicate error.
@@ -74,28 +95,6 @@ export const LockCode = (props:Props) => {
             </Form>
         );
     };
-
-    /*
-    const renderCurrentLockCodes = () => {
-        if (loading) {
-            return <Loading />;
-        }
-        return (
-            <Form>
-                {
-                    entity.rawDevice.lockCodes?.map((lc) => {
-                        return (
-                            <Form.Group>
-                                <Form.Label>{lc.name}</Form.Label>
-                                <Form.Control type="text" value={lc.code} disabled={true}/>
-                            </Form.Group>
-                        );
-                    })
-                }
-            </Form>
-        );
-    };
-    */
 
     return render();
 };

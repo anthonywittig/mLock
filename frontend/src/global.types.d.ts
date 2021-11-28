@@ -29,6 +29,8 @@ type DeviceManagedLockCode = {
     id: string,
     deviceId: string,
     code: string,
+    note: string,
+    status: string,
     startAt: string,
     endAt: string,
 }

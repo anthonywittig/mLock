@@ -40,6 +40,10 @@ export const Detail = () => {
     const [properties, setProperties] = React.useState<Property[]>([]);
     const [units, setUnits] = React.useState<UnitT[]>([]);
 
+    // `revision` is just to tell us when to pull the latest from the API.
+    const [revision, setRevision] = React.useState<number>(0);
+    const incrementRevision = () => {setRevision(revision + 1);};
+
     const m = useRouteMatch('/' + Endpoint + '/:id');
     const mp = m?.params as MatchParams;
     const id = mp.id;
@@ -60,7 +64,7 @@ export const Detail = () => {
             // TODO: indicate error.
             console.log(err);
         });
-    }, [id]);
+    }, [id, revision]);
 
     const detailFormUnitChange = (evt: React.ChangeEvent<HTMLSelectElement>) => {
         let val: (string | null) = evt.target.value;
@@ -108,7 +112,7 @@ export const Detail = () => {
                     </div>
                     <div className="card-body">
                         <h2 className="card-title">Add Lock Code</h2>
-                        <LockCode deviceId={entity.id} managedLockCode={null}/>
+                        <LockCode deviceId={entity.id} managedLockCode={null} managedLockCodesUpdated={incrementRevision}/>
                     </div>
                 </div>
             </>
@@ -124,7 +128,7 @@ export const Detail = () => {
                 {
                     entity.managedLockCodes.map((lc) => {
                         return (
-                            <div><LockCode deviceId={entity.id} managedLockCode={lc}/><br/></div>
+                            <div><LockCode deviceId={entity.id} managedLockCode={lc} managedLockCodesUpdated={incrementRevision}/><br/></div>
                         );
                     })
                 }
