@@ -51,7 +51,11 @@ func HandleRequest(ctx context.Context, event MyEvent) (Response, error) {
 		}
 
 		if err := unit.Migrate(ctx); err != nil {
-			return Response{}, fmt.Errorf("error migrating dynamo properties: %s", err.Error())
+			return Response{}, fmt.Errorf("error migrating dynamo units: %s", err.Error())
+		}
+
+		if err := auditlog.Migrate(ctx); err != nil {
+			return Response{}, fmt.Errorf("error migrating dynamo audit log: %s", err.Error())
 		}
 
 	*/

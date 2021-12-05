@@ -1,4 +1,4 @@
-package device
+package auditlog
 
 import (
 	"context"
@@ -6,9 +6,6 @@ import (
 	"log"
 	"mlock/lambdas/shared"
 	"mlock/lambdas/shared/dynamo"
-	"mlock/lambdas/shared/dynamo/auditlog"
-	"sort"
-	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
@@ -17,38 +14,8 @@ import (
 )
 
 const (
-	tableName = "Device_v1"
+	tableName = "AuditLog_v1"
 )
-
-func AppendToAuditLog(ctx context.Context, device shared.Device, managedLockCodes []*shared.DeviceManagedLockCode) error {
-	if len(managedLockCodes) > 0 {
-		al, exists, err := auditlog.Get(ctx, device.ID)
-		if err != nil {
-			return fmt.Errorf("error getting audit log: %s", err.Error())
-		}
-
-		if !exists {
-			al = shared.AuditLog{ID: device.ID}
-		}
-
-		for _, mlc := range managedLockCodes {
-			al.Entries = append(
-				al.Entries,
-				shared.AuditLogEntry{
-					CreatedAt: time.Now(),
-					Log:       fmt.Sprintf("Code: %s; Start: %s; End: %s; Note: %s.", mlc.Code, mlc.StartAt.Format(time.RFC3339), mlc.EndAt.Format(time.RFC3339), mlc.Note),
-				},
-			)
-		}
-
-		// It'd be nice to tie this to the `device.Put`.
-		if _, err := auditlog.Put(ctx, al); err != nil {
-			return fmt.Errorf("error putting audit log: %s", err.Error())
-		}
-	}
-
-	return nil
-}
 
 func Delete(ctx context.Context, id uuid.UUID) error {
 	dy, err := dynamo.GetClient(ctx)
@@ -72,10 +39,10 @@ func Delete(ctx context.Context, id uuid.UUID) error {
 	return nil
 }
 
-func Get(ctx context.Context, id uuid.UUID) (shared.Device, bool, error) {
+func Get(ctx context.Context, id uuid.UUID) (shared.AuditLog, bool, error) {
 	dy, err := dynamo.GetClient(ctx)
 	if err != nil {
-		return shared.Device{}, false, fmt.Errorf("error getting client: %s", err.Error())
+		return shared.AuditLog{}, false, fmt.Errorf("error getting client: %s", err.Error())
 	}
 
 	result, err := dy.GetItemWithContext(ctx, &dynamodb.GetItemInput{
@@ -85,42 +52,42 @@ func Get(ctx context.Context, id uuid.UUID) (shared.Device, bool, error) {
 		},
 	})
 	if err != nil {
-		return shared.Device{}, false, fmt.Errorf("error getting item: %s", err.Error())
+		return shared.AuditLog{}, false, fmt.Errorf("error getting item: %s", err.Error())
 	}
 	if result.Item == nil {
-		return shared.Device{}, false, nil
+		return shared.AuditLog{}, false, nil
 	}
 
-	item := &shared.Device{}
+	item := &shared.AuditLog{}
 	err = dynamodbattribute.UnmarshalMap(result.Item, item)
 	if err != nil {
-		return shared.Device{}, false, fmt.Errorf("error unmarshalling: %s", err.Error())
+		return shared.AuditLog{}, false, fmt.Errorf("error unmarshalling: %s", err.Error())
 	}
 
 	return *item, true, nil
 }
 
-func List(ctx context.Context) ([]shared.Device, error) {
+func List(ctx context.Context) ([]shared.AuditLog, error) {
 	dy, err := dynamo.GetClient(ctx)
 	if err != nil {
-		return []shared.Device{}, fmt.Errorf("error getting client: %s", err.Error())
+		return []shared.AuditLog{}, fmt.Errorf("error getting client: %s", err.Error())
 	}
 
 	input := &dynamodb.ScanInput{
 		TableName: aws.String(tableName),
 	}
 
-	items := []shared.Device{}
+	items := []shared.AuditLog{}
 	for {
 		result, err := dy.ScanWithContext(ctx, input)
 		if err != nil {
-			return []shared.Device{}, fmt.Errorf("error calling dynamo: %s", err.Error())
+			return []shared.AuditLog{}, fmt.Errorf("error calling dynamo: %s", err.Error())
 		}
 
 		for _, i := range result.Items {
-			item := shared.Device{}
+			item := shared.AuditLog{}
 			if err = dynamodbattribute.UnmarshalMap(i, &item); err != nil {
-				return []shared.Device{}, fmt.Errorf("error unmarshaling: %s", err.Error())
+				return []shared.AuditLog{}, fmt.Errorf("error unmarshaling: %s", err.Error())
 			}
 			items = append(items, item)
 		}
@@ -131,42 +98,23 @@ func List(ctx context.Context) ([]shared.Device, error) {
 		}
 	}
 
-	sort.Slice(items, func(i, j int) bool {
-		return items[i].RawDevice.Name < items[j].RawDevice.Name
-	})
-
 	return items, nil
 }
 
-func ListForUnit(ctx context.Context, unit shared.Unit) ([]shared.Device, error) {
-	all, err := List(ctx)
-	if err != nil {
-		return []shared.Device{}, fmt.Errorf("error getting devices: %s", err.Error())
-	}
-
-	forU := []shared.Device{}
-	for _, d := range all {
-		if d.UnitID != nil && *d.UnitID == unit.ID {
-			forU = append(forU, d)
-		}
-	}
-	return forU, nil
-}
-
-func Put(ctx context.Context, item shared.Device) (shared.Device, error) {
+func Put(ctx context.Context, item shared.AuditLog) (shared.AuditLog, error) {
 	dy, err := dynamo.GetClient(ctx)
 	if err != nil {
-		return shared.Device{}, fmt.Errorf("error getting client: %s", err.Error())
+		return shared.AuditLog{}, fmt.Errorf("error getting client: %s", err.Error())
 	}
 
 	if item.ID == uuid.Nil {
 		// Since an ID can easily be forgotten, let's never assume we need to create one.
-		return shared.Device{}, fmt.Errorf("an ID is required")
+		return shared.AuditLog{}, fmt.Errorf("an ID is required")
 	}
 
 	av, err := dynamodbattribute.MarshalMap(item)
 	if err != nil {
-		return shared.Device{}, fmt.Errorf("error marshalling map: %s", err.Error())
+		return shared.AuditLog{}, fmt.Errorf("error marshalling map: %s", err.Error())
 	}
 
 	input := &dynamodb.PutItemInput{
@@ -176,15 +124,15 @@ func Put(ctx context.Context, item shared.Device) (shared.Device, error) {
 
 	_, err = dy.PutItemWithContext(ctx, input)
 	if err != nil {
-		return shared.Device{}, fmt.Errorf("error putting item: %s", err.Error())
+		return shared.AuditLog{}, fmt.Errorf("error putting item: %s", err.Error())
 	}
 
 	entity, ok, err := Get(ctx, item.ID)
 	if err != nil {
-		return shared.Device{}, err
+		return shared.AuditLog{}, err
 	}
 	if !ok {
-		return shared.Device{}, fmt.Errorf("couldn't find entity after insert")
+		return shared.AuditLog{}, fmt.Errorf("couldn't find entity after insert")
 	}
 
 	return entity, nil

@@ -60,6 +60,6 @@ scriptDir=$(pwd)
 go vet ../...
 go test ../...
 
-handleApis
 handleJobs
+handleApis
 handleData

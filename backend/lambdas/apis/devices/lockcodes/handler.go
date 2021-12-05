@@ -108,6 +108,11 @@ func create(ctx context.Context, req events.APIGatewayProxyRequest, d shared.Dev
 	}
 
 	d.ManagedLockCodes = append(d.ManagedLockCodes, mlc)
+
+	if err := device.AppendToAuditLog(ctx, d, []*shared.DeviceManagedLockCode{mlc}); err != nil {
+		return nil, fmt.Errorf("error appending to audit log: %s", err.Error())
+	}
+
 	d, err = device.Put(ctx, d)
 	if err != nil {
 		return nil, fmt.Errorf("error updating device: %s", err.Error())
@@ -141,7 +146,9 @@ func update(ctx context.Context, req events.APIGatewayProxyRequest, d shared.Dev
 
 	mlc.Note = fmt.Sprintf("Edited by %s.", currentUser.Email)
 
-	// TODO: audit log
+	if device.AppendToAuditLog(ctx, d, []*shared.DeviceManagedLockCode{mlc}); err != nil {
+		return nil, fmt.Errorf("error appending to audit log: %s", err.Error())
+	}
 
 	d, err = device.Put(ctx, d)
 	if err != nil {

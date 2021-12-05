@@ -105,6 +105,10 @@ func HandleRequest(ctx context.Context, event MyEvent) (Response, error) {
 		return Response{}, fmt.Errorf("error sending email: %s", err.Error())
 	}
 
+	if err := updateLockCodes(ctx); err != nil {
+		return Response{}, fmt.Errorf("error updating lock codes: %s", err.Error())
+	}
+
 	return Response{
 		Messages: []string{message},
 	}, nil
@@ -203,7 +207,11 @@ func updateDevices(ctx context.Context, property shared.Property) error {
 		d.PropertyID = property.ID
 		d.RawDevice = rd
 		d.LastRefreshedAt = time.Now()
-		d.AddManagedLockCodesForLockCodes()
+		mlcs := addManagedLockCodesForLockCodes(&d)
+
+		if err := device.AppendToAuditLog(ctx, d, mlcs); err != nil {
+			return fmt.Errorf("error appending to audit log: %s", err.Error())
+		}
 
 		if _, err := device.Put(ctx, d); err != nil {
 			return fmt.Errorf("error putting device: %s", err.Error())
@@ -214,6 +222,45 @@ func updateDevices(ctx context.Context, property shared.Property) error {
 		return fmt.Errorf("error sending offline device email: %s", err.Error())
 	}
 
+	return nil
+}
+
+func addManagedLockCodesForLockCodes(d *shared.Device) []*shared.DeviceManagedLockCode {
+	mlcs := []*shared.DeviceManagedLockCode{}
+
+	for _, c := range d.RawDevice.LockCodes {
+		if c.Mode != shared.DeviceCodeModeEnabled {
+			continue
+		}
+
+		lcFound := false
+		for _, lc := range d.ManagedLockCodes {
+			if lc.Code == c.Code && lc.Status == shared.DeviceManagedLockCodeStatusEnabled {
+				lcFound = true
+			}
+		}
+
+		if !lcFound {
+			mlc := &shared.DeviceManagedLockCode{
+				Code:    c.Code,
+				EndAt:   time.Now().AddDate(15, 0, 0),
+				ID:      uuid.New(),
+				Note:    "Added by another system.",
+				Status:  shared.DeviceManagedLockCodeStatusEnabled,
+				StartAt: time.Time{},
+			}
+			d.ManagedLockCodes = append(d.ManagedLockCodes, mlc)
+			mlcs = append(mlcs, mlc)
+		}
+	}
+
+	return mlcs
+}
+
+func updateLockCodes(ctx context.Context) error {
+	// TODO:
+	// Grab all the devices.
+	// Look at each mlc to decide if we should: do nothing, add the code, remove the code.
 	return nil
 }
 

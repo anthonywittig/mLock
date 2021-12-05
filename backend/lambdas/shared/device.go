@@ -68,36 +68,6 @@ const (
 	DeviceManagedLockCodeStatusScheduled DeviceManagedLockCodeStatus = "Scheduled"
 )
 
-func (d *Device) AddManagedLockCodesForLockCodes() {
-	// Create managed lock codes for codes without one.
-	for _, c := range d.RawDevice.LockCodes {
-		if c.Mode != DeviceCodeModeEnabled {
-			continue
-		}
-
-		lcFound := false
-		for _, lc := range d.ManagedLockCodes {
-			if lc.Code == c.Code && lc.Status == DeviceManagedLockCodeStatusEnabled {
-				lcFound = true
-			}
-		}
-
-		if !lcFound {
-			d.ManagedLockCodes = append(
-				d.ManagedLockCodes,
-				&DeviceManagedLockCode{
-					Code:    c.Code,
-					EndAt:   time.Now().AddDate(15, 0, 0),
-					ID:      uuid.New(),
-					Note:    "Added by another system.",
-					Status:  DeviceManagedLockCodeStatusEnabled,
-					StartAt: time.Time{},
-				},
-			)
-		}
-	}
-}
-
 func (d *Device) GetManagedLockCode(id uuid.UUID) *DeviceManagedLockCode {
 	for _, mlc := range d.ManagedLockCodes {
 		if mlc.ID == id {
