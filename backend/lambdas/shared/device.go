@@ -57,7 +57,7 @@ type RawDeviceLockCode struct {
 	Code string `json:"code"`
 	Mode string `json:"mode"`
 	Name string `json:"name"`
-	Slot int    `json:"slot"`
+	Slot int    `json:"slot"` // TODO: change json to `-` if we're not using it.
 }
 
 const (

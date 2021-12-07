@@ -1,3 +1,13 @@
+type AuditLogT = {
+    id: string,
+    entries: AuditLogEntriesT[],
+}
+
+type AuditLogEntriesT = {
+    createdAt: string,
+    log: string,
+}
+
 type DeviceT = {
     id: string,
     propertyId: string,

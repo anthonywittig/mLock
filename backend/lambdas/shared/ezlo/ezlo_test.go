@@ -24,6 +24,40 @@ func Test_GetDevices(t *testing.T) {
 	//assert.Nil(t, ds)
 }
 
+func Test_AddLockCode(t *testing.T) {
+	assert.Nil(t, loadConfig())
+
+	/*
+		// We should really do some audit logging here... :(
+		err := AddLockCode(
+			context.Background(),
+			shared.Property{ControllerID: "92001809"},
+			shared.Device{RawDevice: shared.RawDevice{ID: "6159fc8e939a9313ca423558"}}, // "ZC3 (In Box)"
+			"3001",
+		)
+		assert.Nil(t, err)
+		assert.NotNil(t, err)
+	*/
+}
+
+func Test_RemoveLockCode(t *testing.T) {
+	assert.Nil(t, loadConfig())
+
+	/*
+		// We should really do some audit logging here... :(
+		err := RemoveLockCode(
+			context.Background(),
+			shared.Property{ControllerID: "92001809"},
+			shared.Device{RawDevice: shared.RawDevice{ID: "6159fc8e939a9313ca423558"}}, // "ZC3 (In Box)"
+			shared.DeviceManagedLockCode{
+				Code: "3001",
+			},
+		)
+		assert.Nil(t, err)
+		assert.NotNil(t, err)
+	*/
+}
+
 func loadConfig() error {
 	if err := godotenv.Load(".env.test"); err != nil {
 		return fmt.Errorf("error loading .env file: %s", err.Error())

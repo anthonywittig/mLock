@@ -150,7 +150,7 @@ type wsItemsListResponse struct {
 }
 
 type wsItemsListResponseResult struct {
-	Devices []wsItem `json:"items"`
+	Items []wsItem `json:"items"`
 }
 
 type wsLogInRequest struct {
@@ -186,64 +186,11 @@ type wsRegisterRequestParams struct {
 }
 
 func GetDevices(ctx context.Context, prop shared.Property) ([]shared.RawDevice, error) {
-	if prop.ControllerID == "" {
-		return []shared.RawDevice{}, nil
-	}
-
-	username, err := mshared.GetConfig("EZLO_USERNAME")
+	ws, err := getConnection(ctx, prop)
 	if err != nil {
-		return []shared.RawDevice{}, fmt.Errorf("error getting username: %s", err.Error())
-	}
-
-	password, err := mshared.GetConfig("EZLO_PASSWORD")
-	if err != nil {
-		return []shared.RawDevice{}, fmt.Errorf("error getting password: %s", err.Error())
-	}
-
-	authData, err := authenticate(ctx, username, password)
-	if err != nil {
-		return []shared.RawDevice{}, fmt.Errorf("error authenticating: %s", err.Error())
-	}
-
-	device, err := getDevices(ctx, authData, prop)
-	if err != nil {
-		return []shared.RawDevice{}, fmt.Errorf("error getting devices: %s", err.Error())
-	}
-
-	deviceResponse, err := getDevice(ctx, authData, device)
-	if err != nil {
-		return []shared.RawDevice{}, fmt.Errorf("error getting device: %s", err.Error())
-	}
-
-	r, err := regexp.Compile("wss://(.*):443")
-	if err != nil {
-		return []shared.RawDevice{}, fmt.Errorf("error compiling regex: %s", err.Error())
-	}
-
-	wsURLs := r.FindStringSubmatch(deviceResponse.ServerRelay)
-	if c := len(wsURLs); c != 2 {
-		return []shared.RawDevice{}, fmt.Errorf("unexpected match count: %d", c)
-	}
-
-	u := url.URL{Scheme: "wss", Host: wsURLs[1], Path: ""}
-
-	ws, _, err := websocket.DefaultDialer.Dial(u.String(), nil)
-	if err != nil {
-		return []shared.RawDevice{}, fmt.Errorf("dial: %s", err.Error())
+		return []shared.RawDevice{}, fmt.Errorf("error getting websocket: %s", err.Error())
 	}
 	defer ws.Close()
-
-	if err := ws.SetReadDeadline(time.Now().Add(30 * time.Second)); err != nil {
-		return []shared.RawDevice{}, fmt.Errorf("setting read deadline: %s", err.Error())
-	}
-
-	if err := wsLogIn(ws, authData.Response); err != nil {
-		return []shared.RawDevice{}, fmt.Errorf("login: %s", err.Error())
-	}
-
-	if err := wsRegisterHub(ws, device.PKDevice); err != nil {
-		return []shared.RawDevice{}, fmt.Errorf("register: %s", err.Error())
-	}
 
 	devices, err := getRawDevices(ws)
 	if err != nil {
@@ -251,6 +198,68 @@ func GetDevices(ctx context.Context, prop shared.Property) ([]shared.RawDevice, 
 	}
 
 	return devices, nil
+}
+
+func getConnection(ctx context.Context, prop shared.Property) (*websocket.Conn, error) {
+	if prop.ControllerID == "" {
+		return nil, nil
+	}
+
+	username, err := mshared.GetConfig("EZLO_USERNAME")
+	if err != nil {
+		return nil, fmt.Errorf("error getting username: %s", err.Error())
+	}
+
+	password, err := mshared.GetConfig("EZLO_PASSWORD")
+	if err != nil {
+		return nil, fmt.Errorf("error getting password: %s", err.Error())
+	}
+
+	authData, err := authenticate(ctx, username, password)
+	if err != nil {
+		return nil, fmt.Errorf("error authenticating: %s", err.Error())
+	}
+
+	device, err := getDevices(ctx, authData, prop)
+	if err != nil {
+		return nil, fmt.Errorf("error getting devices: %s", err.Error())
+	}
+
+	deviceResponse, err := getDevice(ctx, authData, device)
+	if err != nil {
+		return nil, fmt.Errorf("error getting device: %s", err.Error())
+	}
+
+	r, err := regexp.Compile("wss://(.*):443")
+	if err != nil {
+		return nil, fmt.Errorf("error compiling regex: %s", err.Error())
+	}
+
+	wsURLs := r.FindStringSubmatch(deviceResponse.ServerRelay)
+	if c := len(wsURLs); c != 2 {
+		return nil, fmt.Errorf("unexpected match count: %d", c)
+	}
+
+	u := url.URL{Scheme: "wss", Host: wsURLs[1], Path: ""}
+
+	ws, _, err := websocket.DefaultDialer.Dial(u.String(), nil)
+	if err != nil {
+		return nil, fmt.Errorf("dial: %s", err.Error())
+	}
+
+	if err := ws.SetReadDeadline(time.Now().Add(30 * time.Second)); err != nil {
+		return nil, fmt.Errorf("setting read deadline: %s", err.Error())
+	}
+
+	if err := wsLogIn(ws, authData.Response); err != nil {
+		return nil, fmt.Errorf("login: %s", err.Error())
+	}
+
+	if err := wsRegisterHub(ws, device.PKDevice); err != nil {
+		return nil, fmt.Errorf("register: %s", err.Error())
+	}
+
+	return ws, nil
 }
 
 func getRawDevices(ws *websocket.Conn) ([]shared.RawDevice, error) {
@@ -569,7 +578,7 @@ func wsItemsByDevice(ws *websocket.Conn) (map[string][]wsItem, error) {
 		return itemsByDevice, fmt.Errorf("error sending command: %s", err.Error())
 	}
 
-	for _, item := range resp.Result.Devices {
+	for _, item := range resp.Result.Items {
 		itemsByDevice[item.DeviceID] = append(itemsByDevice[item.DeviceID], item)
 	}
 

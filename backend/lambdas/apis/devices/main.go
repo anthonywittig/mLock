@@ -7,6 +7,7 @@ import (
 	"mlock/lambdas/apis/devices/lockcodes"
 	"mlock/lambdas/helpers"
 	"mlock/lambdas/shared"
+	"mlock/lambdas/shared/dynamo/auditlog"
 	"mlock/lambdas/shared/dynamo/device"
 	"mlock/lambdas/shared/dynamo/property"
 	"mlock/lambdas/shared/dynamo/unit"
@@ -47,6 +48,7 @@ type UpdateResponse struct {
 }
 
 type ExtraEntities struct {
+	AuditLog   shared.AuditLog   `json:"auditLog"`
 	Properties []shared.Property `json:"properties"`
 	Units      []shared.Unit     `json:"units"`
 }
@@ -171,6 +173,14 @@ func detail(ctx context.Context, req events.APIGatewayProxyRequest, id string) (
 	}
 	entity.SortManagedLockCodes()
 
+	auditLog, found, err := auditlog.Get(ctx, entity.ID)
+	if err != nil {
+		return nil, fmt.Errorf("error getting audit logs: %s", err.Error())
+	}
+	if !found {
+		auditLog = shared.AuditLog{Entries: []shared.AuditLogEntry{}}
+	}
+
 	properties, err := property.List(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("error getting properties: %s", err.Error())
@@ -184,6 +194,7 @@ func detail(ctx context.Context, req events.APIGatewayProxyRequest, id string) (
 	return shared.NewAPIResponse(http.StatusOK, DetailResponse{
 		Entity: entity,
 		Extra: ExtraEntities{
+			AuditLog:   auditLog,
 			Properties: properties,
 			Units:      units,
 		},

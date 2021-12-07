@@ -1,6 +1,6 @@
 import React from 'react';
 import { Button, Form} from 'react-bootstrap';
-import { formatDistance } from 'date-fns';
+import { format, formatDistance, parseISO } from 'date-fns';
 import { useHistory, useRouteMatch } from 'react-router-dom';
 import { LockCode } from './components/LockCode';
 import { Loading } from '../utils/Loading';
@@ -37,6 +37,7 @@ export const Detail = () => {
         }
     });
     const [loading, setLoading] = React.useState<boolean>(true);
+    const [auditLog, setAuditLog] = React.useState<AuditLogT>({id: "", entries: []});
     const [properties, setProperties] = React.useState<Property[]>([]);
     const [units, setUnits] = React.useState<UnitT[]>([]);
 
@@ -57,6 +58,7 @@ export const Detail = () => {
         .then(response => {
             setEntity(response.entity);
             setLoading(false);
+            setAuditLog(response.extra.auditLog);
             setProperties(response.extra.properties);
             setUnits(response.extra.units);
         })
@@ -113,6 +115,14 @@ export const Detail = () => {
                     <div className="card-body">
                         <h2 className="card-title">Add Lock Code</h2>
                         <LockCode deviceId={entity.id} managedLockCode={null} managedLockCodesUpdated={incrementRevision}/>
+                    </div>
+                    <div className="card-body">
+                        <h2 className="card-title">Audit Log</h2>
+                        <ul>
+                            {auditLog.entries.map(entry=>
+                                <li>{format(parseISO(entry.createdAt), "L/d/yy h:mm aaa")} --- {entry.log}</li>
+                            )}
+                        </ul>
                     </div>
                 </div>
             </>

@@ -13,9 +13,11 @@ import (
 // Most of this was taken from https://stackoverflow.com/questions/33436730/unmarshal-json-with-some-known-and-some-unknown-field-names
 
 type wsItem struct {
+	ID       string                 `json:"_id"`
 	DeviceID string                 `json:"deviceId"`
 	Name     string                 `json:"name"`
 	Extra    map[string]interface{} `json:"-"`
+	// `value` can take on a few different formats:
 	// "value": 1,
 	/* "value": {
 			"1": {
@@ -24,7 +26,9 @@ type wsItem struct {
 	          }
 	        },
 	*/
-	//value:map[1:map[code:********** mode:enabled name:Code 1]
+	// value:map[1:map[code:********** mode:enabled name:Code 1]
+	// These are values that are only present on some items and hopefully have the same type for all items they are present on.
+	ElementsMaxNumber int `json:"elementsMaxNumber"`
 }
 
 /*
