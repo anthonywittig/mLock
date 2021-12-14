@@ -64,9 +64,38 @@ const (
 	DeviceCodeModeEnabled                                            = "enabled"
 	DeviceStatusOffline                                              = "OFFLINE"
 	DeviceStatusOnline                                               = "ONLINE"
+	DeviceManagedLockCodeStatusAdding    DeviceManagedLockCodeStatus = "Adding"
+	DeviceManagedLockCodeStatusComplete  DeviceManagedLockCodeStatus = "Complete"
 	DeviceManagedLockCodeStatusEnabled   DeviceManagedLockCodeStatus = "Enabled"
+	DeviceManagedLockCodeStatusRemoving  DeviceManagedLockCodeStatus = "Removing"
 	DeviceManagedLockCodeStatusScheduled DeviceManagedLockCodeStatus = "Scheduled"
 )
+
+func (d *Device) GenerateUnmanagedLockCodes() []RawDeviceLockCode {
+	umlcs := []RawDeviceLockCode{}
+
+	for _, c := range d.RawDevice.LockCodes {
+		found := false
+		for _, mlc := range d.ManagedLockCodes {
+			if c.Code == mlc.Code {
+				found = true
+				break
+			}
+		}
+		if !found {
+			umlcs = append(umlcs, c)
+		}
+	}
+
+	sort.Slice(
+		umlcs,
+		func(a, b int) bool {
+			return umlcs[a].Code < umlcs[b].Code
+		},
+	)
+
+	return umlcs
+}
 
 func (d *Device) GetManagedLockCode(id uuid.UUID) *DeviceManagedLockCode {
 	for _, mlc := range d.ManagedLockCodes {

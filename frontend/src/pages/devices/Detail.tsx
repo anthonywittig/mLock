@@ -1,5 +1,5 @@
 import React from 'react';
-import { Button, Form} from 'react-bootstrap';
+import { Alert, Button, Form} from 'react-bootstrap';
 import { format, formatDistance, parseISO } from 'date-fns';
 import { useHistory, useRouteMatch } from 'react-router-dom';
 import { LockCode } from './components/LockCode';
@@ -40,6 +40,7 @@ export const Detail = () => {
     const [auditLog, setAuditLog] = React.useState<AuditLogT>({id: "", entries: []});
     const [properties, setProperties] = React.useState<Property[]>([]);
     const [units, setUnits] = React.useState<UnitT[]>([]);
+    const [unmanagedLockCodes, setUnmanagedLockCodes] = React.useState<DeviceLockCodeT[]>([]);
 
     // `revision` is just to tell us when to pull the latest from the API.
     const [revision, setRevision] = React.useState<number>(0);
@@ -61,6 +62,7 @@ export const Detail = () => {
             setAuditLog(response.extra.auditLog);
             setProperties(response.extra.properties);
             setUnits(response.extra.units);
+            setUnmanagedLockCodes(response.extra.unmanagedLockCodes);
         })
         .catch(err => {
             // TODO: indicate error.
@@ -108,6 +110,21 @@ export const Detail = () => {
                         <h2 className="card-title">Details</h2>
                         {renderEntity()}
                     </div>
+                    {
+                        unmanagedLockCodes?.length ? (
+                            <div className="card-body">
+                                <h2 className="card-title">Unmanaged Lock Codes</h2>
+                                <Alert variant={'danger'}>These codes were added by another system.</Alert>
+                                <ul>
+                                    {unmanagedLockCodes?.map(entry=>
+                                        <li>{entry.name} - {entry.code}</li>
+                                    )}
+                                </ul>
+                            </div>
+                        ) : (
+                            <></>
+                        )
+                    }
                     <div className="card-body">
                         <h2 className="card-title">Current Lock Codes</h2>
                         {renderCurrentLockCodes()}
@@ -119,9 +136,15 @@ export const Detail = () => {
                     <div className="card-body">
                         <h2 className="card-title">Audit Log</h2>
                         <ul>
-                            {auditLog.entries.map(entry=>
-                                <li>{format(parseISO(entry.createdAt), "L/d/yy h:mm aaa")} --- {entry.log}</li>
-                            )}
+                            {
+                                auditLog.entries.length ? (
+                                    auditLog.entries.map(entry=>
+                                        <li>{format(parseISO(entry.createdAt), "L/d/yy h:mm aaa")} --- {entry.log}</li>
+                                    )
+                                ) : (
+                                    <li>no entries yet</li>
+                                )
+                            }
                         </ul>
                     </div>
                 </div>
@@ -133,6 +156,11 @@ export const Detail = () => {
         if (loading) {
             return <Loading />;
         }
+
+        if (entity.managedLockCodes.length === 0) {
+            return <p>There are no lock codes currently set.</p>;
+        }
+
         return (
             <>
                 {

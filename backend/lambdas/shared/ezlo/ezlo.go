@@ -186,7 +186,11 @@ type wsRegisterRequestParams struct {
 }
 
 func GetDevices(ctx context.Context, prop shared.Property) ([]shared.RawDevice, error) {
-	ws, err := getConnection(ctx, prop)
+	if prop.ControllerID == "" {
+		return nil, nil
+	}
+
+	ws, err := getConnection(ctx, prop.ControllerID)
 	if err != nil {
 		return []shared.RawDevice{}, fmt.Errorf("error getting websocket: %s", err.Error())
 	}
@@ -200,11 +204,7 @@ func GetDevices(ctx context.Context, prop shared.Property) ([]shared.RawDevice, 
 	return devices, nil
 }
 
-func getConnection(ctx context.Context, prop shared.Property) (*websocket.Conn, error) {
-	if prop.ControllerID == "" {
-		return nil, nil
-	}
-
+func getConnection(ctx context.Context, controllerID string) (*websocket.Conn, error) {
 	username, err := mshared.GetConfig("EZLO_USERNAME")
 	if err != nil {
 		return nil, fmt.Errorf("error getting username: %s", err.Error())
@@ -220,7 +220,7 @@ func getConnection(ctx context.Context, prop shared.Property) (*websocket.Conn, 
 		return nil, fmt.Errorf("error authenticating: %s", err.Error())
 	}
 
-	device, err := getDevices(ctx, authData, prop)
+	device, err := getDevices(ctx, authData, controllerID)
 	if err != nil {
 		return nil, fmt.Errorf("error getting devices: %s", err.Error())
 	}
@@ -398,7 +398,7 @@ func getDevice(ctx context.Context, ad authData, d device) (deviceResponse, erro
 	return body, nil
 }
 
-func getDevices(ctx context.Context, ad authData, prop shared.Property) (device, error) {
+func getDevices(ctx context.Context, ad authData, controllerID string) (device, error) {
 	// TODO: we probably need to use the same domain that we used to auth.
 	url := fmt.Sprintf("https://vera-us-oem-account11.mios.com/account/account/account/%d/devices", ad.Identity.PKAccount)
 
@@ -437,7 +437,7 @@ func getDevices(ctx context.Context, ad authData, prop shared.Property) (device,
 
 	d := body.Devices[0]
 
-	if d.PKDevice != prop.ControllerID {
+	if d.PKDevice != controllerID {
 		return device{}, fmt.Errorf("unexpected PK: %s", d.PKDevice)
 	}
 

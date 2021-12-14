@@ -8,6 +8,13 @@ type AuditLogEntriesT = {
     log: string,
 }
 
+type DeviceLockCodeT = {
+    code: string,
+    mode: string,
+    name: string,
+    slot: number,
+}
+
 type DeviceT = {
     id: string,
     propertyId: string,
@@ -22,20 +29,13 @@ type DeviceT = {
             level: number,
         },
         categoryId: string,
-        lockCodes: [
-            {
-                code: string,
-                mode: string,
-                name: string,
-                slot: number,
-            }
-        ] | null,
+        lockCodes: [DeviceLockCode] | null,
         name: string,
         status: string,
     }
 }
 
-type DeviceManagedLockCode = {
+type DeviceManagedLockCodeT = {
     id: string,
     deviceId: string,
     code: string,

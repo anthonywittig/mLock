@@ -10,6 +10,14 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func Test_GetDevicesNoController(t *testing.T) {
+	assert.Nil(t, loadConfig())
+
+	ds, err := GetDevices(context.Background(), shared.Property{})
+	assert.Nil(t, err)
+	assert.Empty(t, ds)
+}
+
 func Test_GetDevices(t *testing.T) {
 	assert.Nil(t, loadConfig())
 

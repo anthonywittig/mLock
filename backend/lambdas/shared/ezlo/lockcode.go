@@ -10,7 +10,11 @@ import (
 )
 
 func AddLockCode(ctx context.Context, prop shared.Property, device shared.Device, code string) error {
-	ws, err := getConnection(ctx, prop)
+	if prop.ControllerID == "" {
+		return fmt.Errorf("property doesn't have a controller ID")
+	}
+
+	ws, err := getConnection(ctx, prop.ControllerID)
 	if err != nil {
 		return fmt.Errorf("error getting websocket: %s", err.Error())
 	}
@@ -46,8 +50,12 @@ func AddLockCode(ctx context.Context, prop shared.Property, device shared.Device
 	return nil
 }
 
-func RemoveLockCode(ctx context.Context, prop shared.Property, device shared.Device, managedLockCode shared.DeviceManagedLockCode) error {
-	ws, err := getConnection(ctx, prop)
+func RemoveLockCode(ctx context.Context, prop shared.Property, device shared.Device, managedLockCode *shared.DeviceManagedLockCode) error {
+	if prop.ControllerID == "" {
+		return fmt.Errorf("property doesn't have a controller ID")
+	}
+
+	ws, err := getConnection(ctx, prop.ControllerID)
 	if err != nil {
 		return fmt.Errorf("error getting websocket: %s", err.Error())
 	}

@@ -48,9 +48,10 @@ type UpdateResponse struct {
 }
 
 type ExtraEntities struct {
-	AuditLog   shared.AuditLog   `json:"auditLog"`
-	Properties []shared.Property `json:"properties"`
-	Units      []shared.Unit     `json:"units"`
+	AuditLog           shared.AuditLog            `json:"auditLog"`
+	Properties         []shared.Property          `json:"properties"`
+	Units              []shared.Unit              `json:"units"`
+	UnmanagedLockCodes []shared.RawDeviceLockCode `json:"unmanagedLockCodes"`
 }
 
 var entityRegex = regexp.MustCompile(`/devices/?`)
@@ -194,9 +195,10 @@ func detail(ctx context.Context, req events.APIGatewayProxyRequest, id string) (
 	return shared.NewAPIResponse(http.StatusOK, DetailResponse{
 		Entity: entity,
 		Extra: ExtraEntities{
-			AuditLog:   auditLog,
-			Properties: properties,
-			Units:      units,
+			AuditLog:           auditLog,
+			Properties:         properties,
+			Units:              units,
+			UnmanagedLockCodes: entity.GenerateUnmanagedLockCodes(),
 		},
 	})
 }

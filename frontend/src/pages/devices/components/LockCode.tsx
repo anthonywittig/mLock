@@ -6,7 +6,7 @@ import { StandardFetch } from '../../utils/FetchHelper';
 
 interface Props{
     deviceId: string;
-    managedLockCode: DeviceManagedLockCode | null;
+    managedLockCode: DeviceManagedLockCodeT | null;
     managedLockCodesUpdated: () => void;
 }
 
