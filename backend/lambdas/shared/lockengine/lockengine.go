@@ -9,13 +9,15 @@ import (
 	"github.com/google/uuid"
 )
 
+type DeviceController interface {
+	AddLockCode(ctx context.Context, prop shared.Property, device shared.Device, code string) error
+	RemoveLockCode(ctx context.Context, prop shared.Property, device shared.Device, code string) error
+}
+
 type DeviceRepository interface {
 	AppendToAuditLog(ctx context.Context, device shared.Device, managedLockCodes []*shared.DeviceManagedLockCode) error
 	List(ctx context.Context) ([]shared.Device, error)
-}
-
-type DeviceController interface {
-	RemoveLockCode(ctx context.Context, prop shared.Property, device shared.Device, managedLockCode *shared.DeviceManagedLockCode) error
+	Put(ctx context.Context, item shared.Device) (shared.Device, error)
 }
 
 type PropertyRepository interface {
@@ -57,7 +59,7 @@ func (l *LockEngine) UpdateLocks(ctx context.Context) error {
 			return fmt.Errorf("error getting lock states for device: %s, error: %s", d.ID, err.Error())
 		}
 
-		for _, ls := range lockStates {
+		for code, ls := range lockStates {
 			prop, ok, err := l.PropertyRepository.GetCached(ctx, d.PropertyID)
 			if err != nil {
 				return fmt.Errorf("error getting property: %s", err.Error())
@@ -85,16 +87,16 @@ func (l *LockEngine) UpdateLocks(ctx context.Context) error {
 						}
 					}
 				} else if len(ls.RequestToRemove) > 0 {
-					if err := l.DeviceController.RemoveLockCode(ctx, prop, d, ls.RequestToRemove[0]); err != nil {
+					if err := l.DeviceController.RemoveLockCode(ctx, prop, d, code); err != nil {
 						return fmt.Errorf("error removing lock code: %s", err.Error())
 					}
 
 					for _, mlc := range ls.RequestToRemove {
-						if mlc.Status == shared.DeviceManagedLockCodeStatus3Enabled {
+						if mlc.Status == shared.DeviceManagedLockCodeStatus3Enabled || mlc.Status == shared.DeviceManagedLockCodeStatus5Complete {
 							mlc.Status = shared.DeviceManagedLockCodeStatus4Removing
 							mlc.Note = "Attempting to remove lock code."
 							needToSave = append(needToSave, mlc)
-						} else if mlc.Status == shared.DeviceManagedLockCodeStatus4Removing || mlc.Status == shared.DeviceManagedLockCodeStatus5Complete {
+						} else if mlc.Status == shared.DeviceManagedLockCodeStatus4Removing {
 							// Assume this is a retry, do nothing.
 						} else {
 							return fmt.Errorf("unexpected status for existing remove without add, device: %s, id: %s, state: %s", d.ID, mlc.ID, mlc.Status)
@@ -102,7 +104,30 @@ func (l *LockEngine) UpdateLocks(ctx context.Context) error {
 					}
 				}
 			} else { // !ls.Exists
-				fmt.Println("hiiiiiiiiiii")
+				if len(ls.RequestToAdd) > 0 {
+					if err := l.DeviceController.AddLockCode(ctx, prop, d, code); err != nil {
+						return fmt.Errorf("error removing lock code: %s", err.Error())
+					}
+
+					for _, mlc := range ls.RequestToAdd {
+						if mlc.Status == shared.DeviceManagedLockCodeStatus1Scheduled || mlc.Status == shared.DeviceManagedLockCodeStatus3Enabled {
+							mlc.Status = shared.DeviceManagedLockCodeStatus2Adding
+							mlc.Note = "Attempting to add lock code."
+							needToSave = append(needToSave, mlc)
+						} else if mlc.Status == shared.DeviceManagedLockCodeStatus2Adding {
+							// Assume this is a retry, do nothing.
+						} else {
+							return fmt.Errorf("unexpected status for existing remove without add, device: %s, id: %s, state: %s", d.ID, mlc.ID, mlc.Status)
+						}
+					}
+
+					if len(ls.RequestToRemove) > 1 {
+						return fmt.Errorf("need to implement!")
+					}
+				} else {
+					return fmt.Errorf("need to implement!")
+				}
+
 				/*
 					for _, mlc := range ls.RequestToRemove {
 						// tell them good job
@@ -118,16 +143,22 @@ func (l *LockEngine) UpdateLocks(ctx context.Context) error {
 			}
 		}
 
-		if err := l.DeviceRepository.AppendToAuditLog(ctx, d, needToSave); err != nil {
-			return fmt.Errorf("error appending to audit log: %s", err.Error())
-		}
+		if len(needToSave) > 0 {
+			if err := l.DeviceRepository.AppendToAuditLog(ctx, d, needToSave); err != nil {
+				return fmt.Errorf("error appending to audit log: %s", err.Error())
+			}
 
+			if _, err := l.DeviceRepository.Put(ctx, d); err != nil {
+				return fmt.Errorf("error putting device: %s", err.Error())
+			}
+		}
 	}
+
 	return nil
 }
 
-func (l *LockEngine) getLockStates(now time.Time, d shared.Device) (map[string]lockState, error) {
-	lockStates := map[string]lockState{}
+func (l *LockEngine) getLockStates(now time.Time, d shared.Device) (map[string]*lockState, error) {
+	lockStates := map[string]*lockState{}
 
 	for _, mlc := range d.ManagedLockCodes {
 		if !mlc.HasStarted(now) {
@@ -136,6 +167,7 @@ func (l *LockEngine) getLockStates(now time.Time, d shared.Device) (map[string]l
 
 		ls, ok := lockStates[mlc.Code]
 		if !ok {
+			ls = &lockState{}
 			lockStates[mlc.Code] = ls
 			for _, lc := range d.RawDevice.LockCodes {
 				if lc.Code == mlc.Code {
