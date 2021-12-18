@@ -114,7 +114,7 @@ func list(ctx context.Context, req events.APIGatewayProxyRequest) (*shared.APIRe
 		return nil, fmt.Errorf("error getting entities: %s", err.Error())
 	}
 
-	properties, err := property.List(ctx)
+	properties, err := property.NewRepository().List(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("error getting properties: %s", err.Error())
 	}
@@ -150,12 +150,12 @@ func detail(ctx context.Context, req events.APIGatewayProxyRequest, id string) (
 		}
 	}
 
-	properties, err := property.List(ctx)
+	properties, err := property.NewRepository().List(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("error getting properties: %s", err.Error())
 	}
 
-	devices, err := device.ListForUnit(ctx, entity)
+	devices, err := device.NewRepository().ListForUnit(ctx, entity)
 	if err != nil {
 		return nil, fmt.Errorf("error getting devices: %s", err.Error())
 	}

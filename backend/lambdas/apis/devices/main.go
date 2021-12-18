@@ -88,7 +88,7 @@ func delete(ctx context.Context, req events.APIGatewayProxyRequest) (*shared.API
 		return shared.NewAPIResponse(http.StatusBadRequest, DeleteResponse{Error: "unable to parse id"})
 	}
 
-	entity, ok, err := device.Get(ctx, parsedID)
+	entity, ok, err := device.NewRepository().Get(ctx, parsedID)
 	if err != nil {
 		return nil, fmt.Errorf("error getting entity: %s", err.Error())
 	}
@@ -119,7 +119,7 @@ func delete(ctx context.Context, req events.APIGatewayProxyRequest) (*shared.API
 		})
 	}
 
-	if err := device.Delete(ctx, entity.ID); err != nil {
+	if err := device.NewRepository().Delete(ctx, entity.ID); err != nil {
 		return nil, fmt.Errorf("error deleting entity: %s", err.Error())
 	}
 
@@ -135,12 +135,12 @@ func get(ctx context.Context, req events.APIGatewayProxyRequest) (*shared.APIRes
 }
 
 func list(ctx context.Context, req events.APIGatewayProxyRequest) (*shared.APIResponse, error) {
-	entities, err := device.List(ctx)
+	entities, err := device.NewRepository().List(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("error getting entities: %s", err.Error())
 	}
 
-	properties, err := property.List(ctx)
+	properties, err := property.NewRepository().List(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("error getting properties: %s", err.Error())
 	}
@@ -165,7 +165,7 @@ func detail(ctx context.Context, req events.APIGatewayProxyRequest, id string) (
 		return nil, fmt.Errorf("error parsing id: %s", err.Error())
 	}
 
-	entity, ok, err := device.Get(ctx, parsedID)
+	entity, ok, err := device.NewRepository().Get(ctx, parsedID)
 	if err != nil {
 		return nil, fmt.Errorf("error getting entity: %s", err.Error())
 	}
@@ -182,7 +182,7 @@ func detail(ctx context.Context, req events.APIGatewayProxyRequest, id string) (
 		auditLog = shared.AuditLog{Entries: []shared.AuditLogEntry{}}
 	}
 
-	properties, err := property.List(ctx)
+	properties, err := property.NewRepository().List(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("error getting properties: %s", err.Error())
 	}
@@ -215,7 +215,7 @@ func update(ctx context.Context, req events.APIGatewayProxyRequest) (*shared.API
 		return nil, fmt.Errorf("error unmarshalling body: %s", err.Error())
 	}
 
-	entity, ok, err := device.Get(ctx, parsedID)
+	entity, ok, err := device.NewRepository().Get(ctx, parsedID)
 	if err != nil {
 		return nil, fmt.Errorf("error getting entity: %s", err.Error())
 	}
@@ -240,7 +240,7 @@ func update(ctx context.Context, req events.APIGatewayProxyRequest) (*shared.API
 
 	entity.UnitID = body.UnitID
 
-	entity, err = device.Put(ctx, entity)
+	entity, err = device.NewRepository().Put(ctx, entity)
 	if err != nil {
 		return nil, fmt.Errorf("error updating entity: %s", err.Error())
 	}

@@ -54,7 +54,7 @@ func delete(ctx context.Context, req events.APIGatewayProxyRequest) (*shared.API
 		return shared.NewAPIResponse(http.StatusBadRequest, DeleteResponse{Error: "unable to parse id"})
 	}
 
-	entity, ok, err := property.Get(ctx, parsedID)
+	entity, ok, err := property.NewRepository().Get(ctx, parsedID)
 	if err != nil {
 		return nil, fmt.Errorf("error getting entity: %s", err.Error())
 	}
@@ -64,7 +64,7 @@ func delete(ctx context.Context, req events.APIGatewayProxyRequest) (*shared.API
 
 	// TODO: Can't delete a property with existing units.
 
-	if err := property.Delete(ctx, entity.ID); err != nil {
+	if err := property.NewRepository().Delete(ctx, entity.ID); err != nil {
 		return nil, fmt.Errorf("error deleting entity: %s", err.Error())
 	}
 
@@ -72,7 +72,7 @@ func delete(ctx context.Context, req events.APIGatewayProxyRequest) (*shared.API
 }
 
 func list(ctx context.Context, req events.APIGatewayProxyRequest) (*shared.APIResponse, error) {
-	entities, err := property.List(ctx)
+	entities, err := property.NewRepository().List(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("error getting entities: %s", err.Error())
 	}
@@ -86,7 +86,7 @@ func create(ctx context.Context, req events.APIGatewayProxyRequest) (*shared.API
 		return nil, fmt.Errorf("error unmarshalling body: %s", err.Error())
 	}
 
-	entity, err := property.Put(ctx, shared.Property{
+	entity, err := property.NewRepository().Put(ctx, shared.Property{
 		ID:   uuid.New(),
 		Name: body.Name,
 	})

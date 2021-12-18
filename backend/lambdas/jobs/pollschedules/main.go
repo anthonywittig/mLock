@@ -10,6 +10,7 @@ import (
 	"mlock/lambdas/shared/dynamo/unit"
 	"mlock/lambdas/shared/ezlo"
 	"mlock/lambdas/shared/ical"
+	"mlock/lambdas/shared/lockengine"
 	"mlock/lambdas/shared/ses"
 	mshared "mlock/shared"
 	"strings"
@@ -44,7 +45,7 @@ func HandleRequest(ctx context.Context, event MyEvent) (Response, error) {
 	}
 
 	// TODO: This should really move somewhere else.
-	ps, err := property.List(ctx)
+	ps, err := property.NewRepository().List(ctx)
 	if err != nil {
 		return Response{}, fmt.Errorf("error getting properties: %s", err.Error())
 	}
@@ -52,9 +53,6 @@ func HandleRequest(ctx context.Context, event MyEvent) (Response, error) {
 		if err := updateDevices(ctx, p); err != nil {
 			return Response{}, fmt.Errorf("error updating devices for property: %s, error: %s", p.Name, err.Error())
 		}
-	}
-	if err := updateLockCodes(ctx); err != nil {
-		return Response{}, fmt.Errorf("error updating lock codes: %s", err.Error())
 	}
 
 	// get all units
@@ -108,7 +106,7 @@ func HandleRequest(ctx context.Context, event MyEvent) (Response, error) {
 		return Response{}, fmt.Errorf("error sending email: %s", err.Error())
 	}
 
-	if err := updateLockCodes(ctx); err != nil {
+	if err := lockengine.NewLockEngine(ezlo.NewLockCodeRepository(), device.NewRepository(), property.NewRepository()).UpdateLocks(ctx); err != nil {
 		return Response{}, fmt.Errorf("error updating lock codes: %s", err.Error())
 	}
 
@@ -148,7 +146,7 @@ func updateDevices(ctx context.Context, property shared.Property) error {
 		return fmt.Errorf("error getting devices: %s", err.Error())
 	}
 
-	eds, err := device.List(ctx)
+	eds, err := device.NewRepository().List(ctx)
 	if err != nil {
 		return fmt.Errorf("error getting devices: %s", err.Error())
 	}
@@ -211,7 +209,7 @@ func updateDevices(ctx context.Context, property shared.Property) error {
 		d.RawDevice = rd
 		d.LastRefreshedAt = time.Now()
 
-		if _, err := device.Put(ctx, d); err != nil {
+		if _, err := device.NewRepository().Put(ctx, d); err != nil {
 			return fmt.Errorf("error putting device: %s", err.Error())
 		}
 	}
@@ -220,103 +218,6 @@ func updateDevices(ctx context.Context, property shared.Property) error {
 		return fmt.Errorf("error sending offline device email: %s", err.Error())
 	}
 
-	return nil
-}
-
-func updateLockCodes(ctx context.Context) error {
-	ds, err := device.List(ctx)
-	if err != nil {
-		return fmt.Errorf("error getting devices: %s", err.Error())
-	}
-
-	type lockState struct {
-		Exists          bool
-		RequestToAdd    bool
-		RequestToRemove bool
-	}
-
-	for _, d := range ds {
-		lockStates := map[string]lockState{}
-
-		for _, mlc := range d.ManagedLockCodes {
-			if mlc.HasNotStarted() {
-				continue
-			}
-
-			ls := lockStates[mlc.Code]
-			ls.RequestToRemove = mlc.RemoveCode() || ls.RequestToRemove
-			ls.RequestToAdd = mlc.RequestToAdd() || ls.RequestToAdd
-
-			for _, lc := range d.RawDevice.LockCodes {
-				if lc.Code == mlc.Code {
-					ls.Exists = true
-					break
-				}
-			}
-
-			lockStates[mlc.Code] = ls
-		}
-
-		for _, mlc := range d.ManagedLockCodes {
-			if mlc.HasNotStarted() {
-				continue
-			}
-
-			prop, ok, err := property.Get(ctx, d.PropertyID)
-			if err != nil {
-				return error
-			}
-			if !ok {
-				return error
-			}
-
-			ls := lockStates[mlc.Code]
-
-			if mlc.RemoveCode() {
-				if ls.RequestToAdd() {
-					mlc.Note = "Not removing because another lock code is requesting that it stay."
-					mlc.Status = shared.DeviceManagedLockCodeStatusComplete
-				} else if !ls.Exists {
-					mlc.Note = "The lock code was already removed."
-					mlc.Status = shared.DeviceManagedLockCodeStatusComplete
-				} else {
-					mlc.Note = "Removing lock code."
-					mlc.Status = shared.DeviceManagedLockCodeStatusRemoving
-					if err := ezlo.RemoveLockCode(ctx, prop, d, mlc); err != nil {
-						return error
-					}
-				}
-			}
-
-			if mlc.RequestToAdd() {
-				if ls.Exists {
-					mlc.Note = "The lock code was already added."
-					mlc.Status = shared.DeviceManagedLockCodeStatusEnabled
-				} else {
-					mlc.Note = "Adding lock code."
-					mlc.Status = shared.DeviceManagedLockCodeStatusAdding
-					if err := ezlo.AddLockCode(ctx, prop, d, mlc.Code); err != nil {
-						return error
-					}
-				}
-			}
-
-			if err := device.AppendToAuditLog(ctx, d, []*shared.DeviceManagedLockCode{mlc}); err != nil {
-				return nil, fmt.Errorf("error appending to audit log: %s", err.Error())
-			}
-		}
-
-		// TODO: save the device to save all the managed lock code updates.
-
-		/*
-			for code, ls := range lockStates {
-				needToAdd := !ls.Exists && ls.RequestToAdd
-				needToRemove := ls.Exists && ls.RequestToRemove
-				if ls.Exists && ls.RequestToRemove
-			}
-		*/
-
-	}
 	return nil
 }
 

@@ -49,7 +49,7 @@ func HandleRequest(ctx context.Context, req events.APIGatewayProxyRequest) (*sha
 		return nil, fmt.Errorf("error parsing device id: %s", err.Error())
 	}
 
-	d, ok, err := device.Get(ctx, deviceID)
+	d, ok, err := device.NewRepository().Get(ctx, deviceID)
 	if err != nil {
 		return nil, fmt.Errorf("error getting entity: %s", err.Error())
 	}
@@ -99,7 +99,7 @@ func create(ctx context.Context, req events.APIGatewayProxyRequest, d shared.Dev
 		EndAt:   body.EndAt,
 		ID:      uuid.New(),
 		Note:    fmt.Sprintf("Added by %s.", currentUser.Email),
-		Status:  shared.DeviceManagedLockCodeStatusScheduled,
+		Status:  shared.DeviceManagedLockCodeStatus1Scheduled,
 		StartAt: body.StartAt,
 	}
 
@@ -109,11 +109,11 @@ func create(ctx context.Context, req events.APIGatewayProxyRequest, d shared.Dev
 
 	d.ManagedLockCodes = append(d.ManagedLockCodes, mlc)
 
-	if err := device.AppendToAuditLog(ctx, d, []*shared.DeviceManagedLockCode{mlc}); err != nil {
+	if err := device.NewRepository().AppendToAuditLog(ctx, d, []*shared.DeviceManagedLockCode{mlc}); err != nil {
 		return nil, fmt.Errorf("error appending to audit log: %s", err.Error())
 	}
 
-	d, err = device.Put(ctx, d)
+	d, err = device.NewRepository().Put(ctx, d)
 	if err != nil {
 		return nil, fmt.Errorf("error updating device: %s", err.Error())
 	}
@@ -146,11 +146,11 @@ func update(ctx context.Context, req events.APIGatewayProxyRequest, d shared.Dev
 
 	mlc.Note = fmt.Sprintf("Edited by %s.", currentUser.Email)
 
-	if device.AppendToAuditLog(ctx, d, []*shared.DeviceManagedLockCode{mlc}); err != nil {
+	if device.NewRepository().AppendToAuditLog(ctx, d, []*shared.DeviceManagedLockCode{mlc}); err != nil {
 		return nil, fmt.Errorf("error appending to audit log: %s", err.Error())
 	}
 
-	d, err = device.Put(ctx, d)
+	d, err = device.NewRepository().Put(ctx, d)
 	if err != nil {
 		return nil, fmt.Errorf("error updating device: %s", err.Error())
 	}

@@ -16,11 +16,17 @@ import (
 	"github.com/google/uuid"
 )
 
+type Repository struct{}
+
 const (
 	tableName = "Device_v1"
 )
 
-func AppendToAuditLog(ctx context.Context, device shared.Device, managedLockCodes []*shared.DeviceManagedLockCode) error {
+func NewRepository() *Repository {
+	return &Repository{}
+}
+
+func (r *Repository) AppendToAuditLog(ctx context.Context, device shared.Device, managedLockCodes []*shared.DeviceManagedLockCode) error {
 	if len(managedLockCodes) > 0 {
 		al, exists, err := auditlog.Get(ctx, device.ID)
 		if err != nil {
@@ -50,7 +56,7 @@ func AppendToAuditLog(ctx context.Context, device shared.Device, managedLockCode
 	return nil
 }
 
-func Delete(ctx context.Context, id uuid.UUID) error {
+func (r *Repository) Delete(ctx context.Context, id uuid.UUID) error {
 	dy, err := dynamo.GetClient(ctx)
 	if err != nil {
 		return fmt.Errorf("error getting client: %s", err.Error())
@@ -72,7 +78,7 @@ func Delete(ctx context.Context, id uuid.UUID) error {
 	return nil
 }
 
-func Get(ctx context.Context, id uuid.UUID) (shared.Device, bool, error) {
+func (r *Repository) Get(ctx context.Context, id uuid.UUID) (shared.Device, bool, error) {
 	dy, err := dynamo.GetClient(ctx)
 	if err != nil {
 		return shared.Device{}, false, fmt.Errorf("error getting client: %s", err.Error())
@@ -100,7 +106,7 @@ func Get(ctx context.Context, id uuid.UUID) (shared.Device, bool, error) {
 	return *item, true, nil
 }
 
-func List(ctx context.Context) ([]shared.Device, error) {
+func (r *Repository) List(ctx context.Context) ([]shared.Device, error) {
 	dy, err := dynamo.GetClient(ctx)
 	if err != nil {
 		return []shared.Device{}, fmt.Errorf("error getting client: %s", err.Error())
@@ -138,8 +144,8 @@ func List(ctx context.Context) ([]shared.Device, error) {
 	return items, nil
 }
 
-func ListForUnit(ctx context.Context, unit shared.Unit) ([]shared.Device, error) {
-	all, err := List(ctx)
+func (r *Repository) ListForUnit(ctx context.Context, unit shared.Unit) ([]shared.Device, error) {
+	all, err := r.List(ctx)
 	if err != nil {
 		return []shared.Device{}, fmt.Errorf("error getting devices: %s", err.Error())
 	}
@@ -153,7 +159,7 @@ func ListForUnit(ctx context.Context, unit shared.Unit) ([]shared.Device, error)
 	return forU, nil
 }
 
-func Put(ctx context.Context, item shared.Device) (shared.Device, error) {
+func (r *Repository) Put(ctx context.Context, item shared.Device) (shared.Device, error) {
 	dy, err := dynamo.GetClient(ctx)
 	if err != nil {
 		return shared.Device{}, fmt.Errorf("error getting client: %s", err.Error())
@@ -179,7 +185,7 @@ func Put(ctx context.Context, item shared.Device) (shared.Device, error) {
 		return shared.Device{}, fmt.Errorf("error putting item: %s", err.Error())
 	}
 
-	entity, ok, err := Get(ctx, item.ID)
+	entity, ok, err := r.Get(ctx, item.ID)
 	if err != nil {
 		return shared.Device{}, err
 	}

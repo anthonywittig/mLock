@@ -14,11 +14,19 @@ import (
 	"github.com/google/uuid"
 )
 
+type Repository struct {
+	cachedGet map[uuid.UUID]shared.Property
+}
+
 const (
 	tableName = "Property_v2"
 )
 
-func Delete(ctx context.Context, id uuid.UUID) error {
+func NewRepository() *Repository {
+	return &Repository{}
+}
+
+func (r *Repository) Delete(ctx context.Context, id uuid.UUID) error {
 	dy, err := dynamo.GetClient(ctx)
 	if err != nil {
 		return fmt.Errorf("error getting client: %s", err.Error())
@@ -40,7 +48,7 @@ func Delete(ctx context.Context, id uuid.UUID) error {
 	return nil
 }
 
-func Get(ctx context.Context, id uuid.UUID) (shared.Property, bool, error) {
+func (r *Repository) Get(ctx context.Context, id uuid.UUID) (shared.Property, bool, error) {
 	dy, err := dynamo.GetClient(ctx)
 	if err != nil {
 		return shared.Property{}, false, fmt.Errorf("error getting client: %s", err.Error())
@@ -68,7 +76,21 @@ func Get(ctx context.Context, id uuid.UUID) (shared.Property, bool, error) {
 	return item, true, nil
 }
 
-func List(ctx context.Context) ([]shared.Property, error) {
+func (r *Repository) GetCached(ctx context.Context, id uuid.UUID) (shared.Property, bool, error) {
+	if d, ok := r.cachedGet[id]; ok {
+		return d, true, nil
+	}
+
+	d, ok, err := r.Get(ctx, id)
+
+	if ok {
+		r.cachedGet[id] = d
+	}
+
+	return d, ok, err
+}
+
+func (r *Repository) List(ctx context.Context) ([]shared.Property, error) {
 	dy, err := dynamo.GetClient(ctx)
 	if err != nil {
 		return []shared.Property{}, fmt.Errorf("error getting client: %s", err.Error())
@@ -106,7 +128,7 @@ func List(ctx context.Context) ([]shared.Property, error) {
 	return items, nil
 }
 
-func Put(ctx context.Context, item shared.Property) (shared.Property, error) {
+func (r *Repository) Put(ctx context.Context, item shared.Property) (shared.Property, error) {
 	dy, err := dynamo.GetClient(ctx)
 	if err != nil {
 		return shared.Property{}, fmt.Errorf("error getting client: %s", err.Error())
@@ -143,7 +165,7 @@ func Put(ctx context.Context, item shared.Property) (shared.Property, error) {
 		return shared.Property{}, fmt.Errorf("error putting item: %s", err.Error())
 	}
 
-	entity, ok, err := Get(ctx, item.ID)
+	entity, ok, err := r.Get(ctx, item.ID)
 	if err != nil {
 		return shared.Property{}, err
 	}

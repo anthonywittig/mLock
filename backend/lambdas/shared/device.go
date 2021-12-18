@@ -29,17 +29,6 @@ type DeviceHistory struct {
 	RecordedAt  time.Time `json:"recordedAt"`
 }
 
-type DeviceManagedLockCode struct {
-	Code    string                      `json:"code"`
-	EndAt   time.Time                   `json:"endAt"`
-	ID      uuid.UUID                   `json:"id"`
-	Note    string                      `json:"note"`
-	Status  DeviceManagedLockCodeStatus `json:"status"`
-	StartAt time.Time                   `json:"startAt"`
-}
-
-type DeviceManagedLockCodeStatus string
-
 type RawDevice struct {
 	Battery   RawDeviceBattery    `json:"battery"`
 	Category  string              `json:"category"`
@@ -61,14 +50,9 @@ type RawDeviceLockCode struct {
 }
 
 const (
-	DeviceCodeModeEnabled                                            = "enabled"
-	DeviceStatusOffline                                              = "OFFLINE"
-	DeviceStatusOnline                                               = "ONLINE"
-	DeviceManagedLockCodeStatusAdding    DeviceManagedLockCodeStatus = "Adding"
-	DeviceManagedLockCodeStatusComplete  DeviceManagedLockCodeStatus = "Complete"
-	DeviceManagedLockCodeStatusEnabled   DeviceManagedLockCodeStatus = "Enabled"
-	DeviceManagedLockCodeStatusRemoving  DeviceManagedLockCodeStatus = "Removing"
-	DeviceManagedLockCodeStatusScheduled DeviceManagedLockCodeStatus = "Scheduled"
+	DeviceCodeModeEnabled = "enabled"
+	DeviceStatusOffline   = "OFFLINE"
+	DeviceStatusOnline    = "ONLINE"
 )
 
 func (d *Device) GenerateUnmanagedLockCodes() []RawDeviceLockCode {
