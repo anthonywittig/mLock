@@ -1,8 +1,11 @@
-package lockengine
+package lockengine_test
+
+//go:generate mockgen -source=lockengine.go -destination mocks/mock_lockengine/lockengine.go
 
 import (
 	"context"
 	"mlock/lambdas/shared"
+	"mlock/lambdas/shared/lockengine"
 	"mlock/lambdas/shared/lockengine/mocks/mock_lockengine"
 	"testing"
 	"time"
@@ -12,8 +15,8 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-//go:generate mockgen -source=lockengine.go -destination mocks/mock_lockengine/lockengine.go
-
+// The organization of these tests is not good, consider breaking them out into separate files.
+//
 // Some tests to consider:
 // * do nothing
 //   * no managed lock codes
@@ -25,6 +28,7 @@ import (
 // * add and remove lock codes
 // * MLC is "active" but the code doesn't exist
 //   * Should really add tests for all lock code states and verify when adding/removing.
+
 func Test_AddLockCode(t *testing.T) {
 	// We'll have a single device and managed lock code, and we'll add the lock code.
 
@@ -225,12 +229,12 @@ func Test_RemoveLockCode(t *testing.T) {
 	assert.Equal(t, shared.DeviceManagedLockCodeStatus4Removing, managedLockCode.Status)
 }
 
-func newLockEngine(t *testing.T) (*LockEngine, *mock_lockengine.MockDeviceController, *mock_lockengine.MockDeviceRepository, *mock_lockengine.MockPropertyRepository) {
+func newLockEngine(t *testing.T) (*lockengine.LockEngine, *mock_lockengine.MockDeviceController, *mock_lockengine.MockDeviceRepository, *mock_lockengine.MockPropertyRepository) {
 	ctrl := gomock.NewController(t)
 
 	dc := mock_lockengine.NewMockDeviceController(ctrl)
 	dr := mock_lockengine.NewMockDeviceRepository(ctrl)
 	pr := mock_lockengine.NewMockPropertyRepository(ctrl)
-	le := NewLockEngine(dc, dr, pr)
+	le := lockengine.NewLockEngine(dc, dr, pr)
 	return le, dc, dr, pr
 }
