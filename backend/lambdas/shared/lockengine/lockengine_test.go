@@ -234,7 +234,12 @@ func newLockEngine(t *testing.T) (*lockengine.LockEngine, *mock_lockengine.MockD
 
 	dc := mock_lockengine.NewMockDeviceController(ctrl)
 	dr := mock_lockengine.NewMockDeviceRepository(ctrl)
+	es := mock_lockengine.NewMockEmailService(ctrl)
 	pr := mock_lockengine.NewMockPropertyRepository(ctrl)
-	le := lockengine.NewLockEngine(dc, dr, pr)
+
+	// This is probably temporary so we'll just completely mock it out all the way for now.
+	es.EXPECT().SendEamil(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes()
+
+	le := lockengine.NewLockEngine(dc, dr, es, pr)
 	return le, dc, dr, pr
 }

@@ -23,7 +23,9 @@ const (
 )
 
 func NewRepository() *Repository {
-	return &Repository{}
+	return &Repository{
+		cachedGet: map[uuid.UUID]shared.Property{},
+	}
 }
 
 func (r *Repository) Delete(ctx context.Context, id uuid.UUID) error {

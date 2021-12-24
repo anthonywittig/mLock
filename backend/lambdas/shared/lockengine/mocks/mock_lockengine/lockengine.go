@@ -131,6 +131,43 @@ func (mr *MockDeviceRepositoryMockRecorder) Put(ctx, item interface{}) *gomock.C
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Put", reflect.TypeOf((*MockDeviceRepository)(nil).Put), ctx, item)
 }
 
+// MockEmailService is a mock of EmailService interface.
+type MockEmailService struct {
+	ctrl     *gomock.Controller
+	recorder *MockEmailServiceMockRecorder
+}
+
+// MockEmailServiceMockRecorder is the mock recorder for MockEmailService.
+type MockEmailServiceMockRecorder struct {
+	mock *MockEmailService
+}
+
+// NewMockEmailService creates a new mock instance.
+func NewMockEmailService(ctrl *gomock.Controller) *MockEmailService {
+	mock := &MockEmailService{ctrl: ctrl}
+	mock.recorder = &MockEmailServiceMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockEmailService) EXPECT() *MockEmailServiceMockRecorder {
+	return m.recorder
+}
+
+// SendEamil mocks base method.
+func (m *MockEmailService) SendEamil(ctx context.Context, subject, body string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SendEamil", ctx, subject, body)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// SendEamil indicates an expected call of SendEamil.
+func (mr *MockEmailServiceMockRecorder) SendEamil(ctx, subject, body interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SendEamil", reflect.TypeOf((*MockEmailService)(nil).SendEamil), ctx, subject, body)
+}
+
 // MockPropertyRepository is a mock of PropertyRepository interface.
 type MockPropertyRepository struct {
 	ctrl     *gomock.Controller

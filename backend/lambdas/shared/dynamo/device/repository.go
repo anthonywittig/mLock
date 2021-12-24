@@ -42,7 +42,7 @@ func (r *Repository) AppendToAuditLog(ctx context.Context, device shared.Device,
 				al.Entries,
 				shared.AuditLogEntry{
 					CreatedAt: time.Now(),
-					Log:       fmt.Sprintf("Code: %s; Start: %s; End: %s; Note: %s.", mlc.Code, mlc.StartAt.Format(time.RFC3339), mlc.EndAt.Format(time.RFC3339), mlc.Note),
+					Log:       fmt.Sprintf("Code: %s; Start: %s; End: %s; Note: %s", mlc.Code, mlc.StartAt.Format(time.RFC3339), mlc.EndAt.Format(time.RFC3339), mlc.Note),
 				},
 			)
 		}

@@ -44,15 +44,31 @@ func HandleRequest(ctx context.Context, event MyEvent) (Response, error) {
 		return Response{}, fmt.Errorf("error loading config: %s", err.Error())
 	}
 
+	emailService, err := ses.NewEmailService(ctx)
+	if err != nil {
+		return Response{}, fmt.Errorf("error getting email service: %s", err.Error())
+	}
+
 	// TODO: This should really move somewhere else.
 	ps, err := property.NewRepository().List(ctx)
 	if err != nil {
 		return Response{}, fmt.Errorf("error getting properties: %s", err.Error())
 	}
 	for _, p := range ps {
-		if err := updateDevices(ctx, p); err != nil {
+		if err := updateDevices(ctx, emailService, p); err != nil {
 			return Response{}, fmt.Errorf("error updating devices for property: %s, error: %s", p.Name, err.Error())
 		}
+	}
+
+	// TODO: Should eventually go after we've processed the reservations.
+	// TODO: if there are updates, should we do another poll of ezlo data?
+	if err := lockengine.NewLockEngine(
+		ezlo.NewLockCodeRepository(),
+		device.NewRepository(),
+		emailService,
+		property.NewRepository(),
+	).UpdateLocks(ctx); err != nil {
+		return Response{}, fmt.Errorf("error updating lock codes: %s", err.Error())
 	}
 
 	// get all units
@@ -102,12 +118,8 @@ func HandleRequest(ctx context.Context, event MyEvent) (Response, error) {
 		}, nil
 	}
 
-	if err := ses.SendEamil(ctx, "Upcoming Reservations", message); err != nil {
+	if err := emailService.SendEamil(ctx, "Upcoming Reservations", message); err != nil {
 		return Response{}, fmt.Errorf("error sending email: %s", err.Error())
-	}
-
-	if err := lockengine.NewLockEngine(ezlo.NewLockCodeRepository(), device.NewRepository(), property.NewRepository()).UpdateLocks(ctx); err != nil {
-		return Response{}, fmt.Errorf("error updating lock codes: %s", err.Error())
 	}
 
 	return Response{
@@ -140,7 +152,7 @@ func getReservations(ctx context.Context, units []shared.Unit) ([][]shared.Reser
 	return reservations, nil
 }
 
-func updateDevices(ctx context.Context, property shared.Property) error {
+func updateDevices(ctx context.Context, emailService *ses.EmailService, property shared.Property) error {
 	rds, err := ezlo.GetDevices(ctx, property)
 	if err != nil {
 		return fmt.Errorf("error getting devices: %s", err.Error())
@@ -214,14 +226,14 @@ func updateDevices(ctx context.Context, property shared.Property) error {
 		}
 	}
 
-	if err := sendOfflineDeviceEmail(ctx, transitioningToOfflineDevices, offlineDevices); err != nil {
+	if err := sendOfflineDeviceEmail(ctx, emailService, transitioningToOfflineDevices, offlineDevices); err != nil {
 		return fmt.Errorf("error sending offline device email: %s", err.Error())
 	}
 
 	return nil
 }
 
-func sendOfflineDeviceEmail(ctx context.Context, transitioningToOfflineDevices []shared.Device, offlineDevices []shared.Device) error {
+func sendOfflineDeviceEmail(ctx context.Context, emailService *ses.EmailService, transitioningToOfflineDevices []shared.Device, offlineDevices []shared.Device) error {
 	if len(transitioningToOfflineDevices) == 0 {
 		return nil
 	}
@@ -242,7 +254,7 @@ func sendOfflineDeviceEmail(ctx context.Context, transitioningToOfflineDevices [
 	}
 	sb.WriteString("</ul>")
 
-	if err := ses.SendEamil(ctx, "MursetLock - Devices That Recently Went Offline", sb.String()); err != nil {
+	if err := emailService.SendEamil(ctx, "MursetLock - Devices That Recently Went Offline", sb.String()); err != nil {
 		return fmt.Errorf("error sending email: %s", err.Error())
 	}
 

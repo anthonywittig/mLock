@@ -12,7 +12,23 @@ import (
 	"github.com/aws/aws-sdk-go/service/ses"
 )
 
-func GetClient(ctx context.Context) (*ses.SES, error) {
+type EmailService struct {
+	c *ses.SES
+}
+
+func NewEmailService(ctx context.Context) (*EmailService, error) {
+	c, err := getClient(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("error getting client: %s", err.Error())
+	}
+
+	return &EmailService{
+		c: c,
+	}, nil
+}
+
+func getClient(ctx context.Context) (*ses.SES, error) {
+	// Might want to refactor this more to store the `EmailService` in the context (if we need to store anything in there).
 	cd, err := shared.GetContextData(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("error getting context data: %s", err.Error())
@@ -33,12 +49,7 @@ func GetClient(ctx context.Context) (*ses.SES, error) {
 	return cd.SES, nil
 }
 
-func SendEamil(ctx context.Context, subject string, body string) error {
-	s, err := GetClient(ctx)
-	if err != nil {
-		return fmt.Errorf("error getting client: %s", err.Error())
-	}
-
+func (s *EmailService) SendEamil(ctx context.Context, subject string, body string) error {
 	from, err := mshared.GetConfig("EMAIL_FROM_ADDRESS")
 	if err != nil {
 		return fmt.Errorf("empty from address")
@@ -51,7 +62,7 @@ func SendEamil(ctx context.Context, subject string, body string) error {
 
 	characterSet := "UTF-8"
 
-	_, err = s.SendEmailWithContext(ctx, &ses.SendEmailInput{
+	_, err = s.c.SendEmailWithContext(ctx, &ses.SendEmailInput{
 		Source: &from,
 		Destination: &ses.Destination{
 			ToAddresses: tos,

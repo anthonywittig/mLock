@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"mlock/lambdas/shared"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -20,6 +21,10 @@ type DeviceRepository interface {
 	Put(ctx context.Context, item shared.Device) (shared.Device, error)
 }
 
+type EmailService interface {
+	SendEamil(ctx context.Context, subject string, body string) error
+}
+
 type PropertyRepository interface {
 	GetCached(ctx context.Context, id uuid.UUID) (shared.Property, bool, error)
 }
@@ -27,6 +32,7 @@ type PropertyRepository interface {
 type LockEngine struct {
 	DeviceController   DeviceController
 	DeviceRepository   DeviceRepository
+	EmailService       EmailService
 	PropertyRepository PropertyRepository
 }
 
@@ -36,10 +42,11 @@ type lockState struct {
 	RequestToRemove []*shared.DeviceManagedLockCode
 }
 
-func NewLockEngine(dc DeviceController, dr DeviceRepository, pr PropertyRepository) *LockEngine {
+func NewLockEngine(dc DeviceController, dr DeviceRepository, es EmailService, pr PropertyRepository) *LockEngine {
 	return &LockEngine{
 		DeviceController:   dc,
 		DeviceRepository:   dr,
+		EmailService:       es,
 		PropertyRepository: pr,
 	}
 }
@@ -67,6 +74,10 @@ func (l *LockEngine) UpdateLocks(ctx context.Context) error {
 
 			if _, err := l.DeviceRepository.Put(ctx, d); err != nil {
 				return fmt.Errorf("error putting device: %s", err.Error())
+			}
+
+			if err := l.sendEmailForAuditLogs(ctx, d, needToSave); err != nil {
+				return fmt.Errorf("error sending email: %s", err.Error())
 			}
 		}
 	}
@@ -167,4 +178,21 @@ func (l *LockEngine) getLockStates(now time.Time, d shared.Device) map[string]*l
 	}
 
 	return lockStates
+}
+
+func (l *LockEngine) sendEmailForAuditLogs(ctx context.Context, d shared.Device, needToSave []*shared.DeviceManagedLockCode) error {
+	var sb strings.Builder
+
+	sb.WriteString(fmt.Sprintf("<h1>New Audit Logs For Device: %s</h1>", d.RawDevice.Name))
+	sb.WriteString("<ul>")
+	for _, m := range needToSave {
+		sb.WriteString(fmt.Sprintf("<li>Code: %s, Status: %s</li>", m.Code, m.Status))
+	}
+	sb.WriteString("</ul>")
+
+	if err := l.EmailService.SendEamil(ctx, "MursetLock - Added Audit Log Entries", sb.String()); err != nil {
+		return fmt.Errorf("error sending email: %s", err.Error())
+	}
+
+	return nil
 }

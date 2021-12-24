@@ -1,5 +1,5 @@
 import React from 'react';
-import { Button, Form } from 'react-bootstrap';
+import { Badge, Button, Form } from 'react-bootstrap';
 import { addDays, format, parseISO, set } from 'date-fns';
 import { Loading } from '../../utils/Loading';
 import { StandardFetch } from '../../utils/FetchHelper';
@@ -70,11 +70,35 @@ export const LockCode = (props:Props) => {
         if (loading) {
             return <Loading />;
         }
+
+        let statusBadge = <></>;
+        const status = props.managedLockCode?.status;
+        if (status) {
+            const variant = (() => {
+                switch(status) {
+                    case "Scheduled":
+                        return "warning";
+                    case "Adding":
+                        return "danger";
+                    case "Enabled":
+                        return "success";
+                    case "Removing":
+                        return "danger";
+                    case "Complete":
+                        return "secondary";
+                    default:
+                        return "danger";
+                }
+            })();
+
+            statusBadge = <Badge pill variant={variant}>{status}</Badge>;
+        }
+
         return (
             <Form onSubmit={evt => formSubmit(evt)}>
 
                 <Form.Group>
-                    <Form.Label>Code</Form.Label>
+                    <Form.Label>Code {statusBadge}</Form.Label>
                     <Form.Control type="text" defaultValue={code} onChange={(evt) => setCode(evt.target.value)} disabled={!!props.managedLockCode}/>
                 </Form.Group>
 

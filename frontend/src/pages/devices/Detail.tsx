@@ -126,11 +126,11 @@ export const Detail = () => {
                         )
                     }
                     <div className="card-body">
-                        <h2 className="card-title">Current Lock Codes</h2>
+                        <h2 className="card-title">Managed Lock Codes</h2>
                         {renderCurrentLockCodes()}
                     </div>
                     <div className="card-body">
-                        <h2 className="card-title">Add Lock Code</h2>
+                        <h2 className="card-title">Add Managed Lock Code</h2>
                         <LockCode deviceId={entity.id} managedLockCode={null} managedLockCodesUpdated={incrementRevision}/>
                     </div>
                     <div className="card-body">
