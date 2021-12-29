@@ -95,8 +95,7 @@ export const LockCode = (props:Props) => {
         }
 
         return (
-            <Form onSubmit={evt => formSubmit(evt)}>
-
+            <Form onSubmit={evt => formSubmit(evt)} style={ {"marginBottom": "2em"} } >
                 <Form.Group>
                     <Form.Label>Code {statusBadge}</Form.Label>
                     <Form.Control type="text" defaultValue={code} onChange={(evt) => setCode(evt.target.value)} disabled={!!props.managedLockCode}/>
@@ -115,7 +114,6 @@ export const LockCode = (props:Props) => {
                 <Button variant="secondary" type="submit">
                     {props.managedLockCode ? "Update" : "Add"} Lock Code
                 </Button>
-
             </Form>
         );
     };

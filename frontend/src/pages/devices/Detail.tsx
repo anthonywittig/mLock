@@ -218,6 +218,9 @@ export const Detail = () => {
                             </option>
                         )}
                     </Form.Control>
+                    <Form.Text className="text-muted">
+                        Lock codes will be created from the unit's reservations.
+                    </Form.Text>
                 </Form.Group>
 
                 <Button variant="secondary" type="submit">

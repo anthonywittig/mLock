@@ -86,8 +86,9 @@ func HandleRequest(ctx context.Context, event MyEvent) (Response, error) {
 	var sb strings.Builder
 	for i, ress := range reservations {
 		// Start/End dates are UTC but they're really naive and just the day. Check-in is at 4 pm and check-out is at 11 am.
+		// The events go away when they're close to the end date (in one experiment it went away between 1 hour and 10 minutes and 10 minutes before it ended).
 		now := time.Now()
-		notTooFarAway := now.Add(5 * time.Minute)
+		notTooFarAway := now.Add(15 * time.Minute)
 		if len(ress) != 0 {
 			upcomingRess := []string{}
 			for _, r := range ress {

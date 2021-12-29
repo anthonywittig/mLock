@@ -181,6 +181,9 @@ func detail(ctx context.Context, req events.APIGatewayProxyRequest, id string) (
 	if !found {
 		auditLog = shared.AuditLog{Entries: []shared.AuditLogEntry{}}
 	}
+	if len(auditLog.Entries) > 30 {
+		auditLog.Entries = auditLog.Entries[len(auditLog.Entries)-30:]
+	}
 
 	properties, err := property.NewRepository().List(ctx)
 	if err != nil {

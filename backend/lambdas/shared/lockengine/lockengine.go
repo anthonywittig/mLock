@@ -140,7 +140,12 @@ func (l *LockEngine) calculateAndSendLockCommands(ctx context.Context, device sh
 			for _, mlc := range ls.RequestToRemove {
 				if mlc.Status != shared.DeviceManagedLockCodeStatus5Complete {
 					mlc.Status = shared.DeviceManagedLockCodeStatus5Complete
-					mlc.Note = "Code was removed (or is in use)."
+
+					mlc.Note = "Code was removed."
+					if len(ls.RequestToAdd) > 0 {
+						mlc.Note = "Code is currently in use; nothing more to do."
+					}
+
 					needToSave = append(needToSave, mlc)
 				}
 			}
