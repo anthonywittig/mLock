@@ -145,7 +145,7 @@ func list(ctx context.Context, req events.APIGatewayProxyRequest) (*shared.APIRe
 		return nil, fmt.Errorf("error getting properties: %s", err.Error())
 	}
 
-	units, err := unit.List(ctx)
+	units, err := unit.NewRepository().List(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("error getting units: %s", err.Error())
 	}
@@ -190,7 +190,7 @@ func detail(ctx context.Context, req events.APIGatewayProxyRequest, id string) (
 		return nil, fmt.Errorf("error getting properties: %s", err.Error())
 	}
 
-	units, err := unit.List(ctx)
+	units, err := unit.NewRepository().List(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("error getting units: %s", err.Error())
 	}
@@ -228,7 +228,7 @@ func update(ctx context.Context, req events.APIGatewayProxyRequest) (*shared.API
 
 	if body.UnitID != nil {
 		// Just verify that it exists and has the right property ID (TODO: don't allow a unit to change its property ID if a device is assigned to it).
-		unit, ok, err := unit.Get(ctx, *body.UnitID)
+		unit, ok, err := unit.NewRepository().Get(ctx, *body.UnitID)
 		if err != nil {
 			return nil, fmt.Errorf("error getting unit: %s", err.Error())
 		}

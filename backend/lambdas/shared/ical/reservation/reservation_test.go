@@ -1,4 +1,4 @@
-package ical
+package reservation
 
 import (
 	"testing"

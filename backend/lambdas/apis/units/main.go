@@ -9,7 +9,6 @@ import (
 	"mlock/lambdas/shared/dynamo/device"
 	"mlock/lambdas/shared/dynamo/property"
 	"mlock/lambdas/shared/dynamo/unit"
-	"mlock/lambdas/shared/ical"
 	"net/http"
 	"regexp"
 
@@ -85,7 +84,7 @@ func delete(ctx context.Context, req events.APIGatewayProxyRequest) (*shared.API
 		return shared.NewAPIResponse(http.StatusBadRequest, DeleteResponse{Error: "unable to parse id"})
 	}
 
-	entity, ok, err := unit.Get(ctx, parsedID)
+	entity, ok, err := unit.NewRepository().Get(ctx, parsedID)
 	if err != nil {
 		return nil, fmt.Errorf("error getting entity: %s", err.Error())
 	}
@@ -93,7 +92,7 @@ func delete(ctx context.Context, req events.APIGatewayProxyRequest) (*shared.API
 		return nil, fmt.Errorf("unable to find entity")
 	}
 
-	if err := unit.Delete(ctx, entity.ID); err != nil {
+	if err := unit.NewRepository().Delete(ctx, entity.ID); err != nil {
 		return nil, fmt.Errorf("error deleting entity: %s", err.Error())
 	}
 
@@ -109,7 +108,7 @@ func get(ctx context.Context, req events.APIGatewayProxyRequest) (*shared.APIRes
 }
 
 func list(ctx context.Context, req events.APIGatewayProxyRequest) (*shared.APIResponse, error) {
-	entities, err := unit.List(ctx)
+	entities, err := unit.NewRepository().List(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("error getting entities: %s", err.Error())
 	}
@@ -133,7 +132,7 @@ func detail(ctx context.Context, req events.APIGatewayProxyRequest, id string) (
 		return nil, fmt.Errorf("error parsing id: %s", err.Error())
 	}
 
-	entity, ok, err := unit.Get(ctx, parsedID)
+	entity, ok, err := unit.NewRepository().Get(ctx, parsedID)
 	if err != nil {
 		return nil, fmt.Errorf("error getting entity: %s", err.Error())
 	}
@@ -142,13 +141,14 @@ func detail(ctx context.Context, req events.APIGatewayProxyRequest, id string) (
 	}
 
 	reservations := []shared.Reservation{}
-	if entity.CalendarURL != "" {
-		var err error
-		reservations, err = ical.Get(ctx, entity.CalendarURL)
-		if err != nil {
-			return nil, fmt.Errorf("error getting calendar items: %s", err.Error())
+	/*
+		if entity.CalendarURL != "" {
+			reservations, err = ical.Get(ctx, entity.CalendarURL)
+			if err != nil {
+				return nil, fmt.Errorf("error getting calendar items: %s", err.Error())
+			}
 		}
-	}
+	*/
 
 	properties, err := property.NewRepository().List(ctx)
 	if err != nil {
@@ -182,7 +182,7 @@ func update(ctx context.Context, req events.APIGatewayProxyRequest) (*shared.API
 		return nil, fmt.Errorf("error unmarshalling body: %s", err.Error())
 	}
 
-	entity, ok, err := unit.Get(ctx, parsedID)
+	entity, ok, err := unit.NewRepository().Get(ctx, parsedID)
 	if err != nil {
 		return nil, fmt.Errorf("error getting entity: %s", err.Error())
 	}
@@ -194,7 +194,7 @@ func update(ctx context.Context, req events.APIGatewayProxyRequest) (*shared.API
 	entity.PropertyID = body.PropertyID
 	entity.CalendarURL = body.CalendarURL
 
-	entity, err = unit.Put(ctx, entity)
+	entity, err = unit.NewRepository().Put(ctx, entity)
 	if err != nil {
 		return nil, fmt.Errorf("error updating entity: %s", err.Error())
 	}
@@ -208,7 +208,7 @@ func create(ctx context.Context, req events.APIGatewayProxyRequest) (*shared.API
 		return nil, fmt.Errorf("error unmarshalling body: %s", err.Error())
 	}
 
-	entity, err := unit.Put(ctx, shared.Unit{
+	entity, err := unit.NewRepository().Put(ctx, shared.Unit{
 		ID:         uuid.New(),
 		Name:       body.Name,
 		PropertyID: body.PropertyID,

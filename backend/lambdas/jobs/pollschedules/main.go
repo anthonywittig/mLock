@@ -9,8 +9,9 @@ import (
 	"mlock/lambdas/shared/dynamo/property"
 	"mlock/lambdas/shared/dynamo/unit"
 	"mlock/lambdas/shared/ezlo"
-	"mlock/lambdas/shared/ical"
+	"mlock/lambdas/shared/ical/reservation"
 	"mlock/lambdas/shared/lockengine"
+	"mlock/lambdas/shared/scheduler"
 	"mlock/lambdas/shared/ses"
 	mshared "mlock/shared"
 	"strings"
@@ -18,14 +19,13 @@ import (
 
 	"github.com/aws/aws-lambda-go/lambda"
 	"github.com/google/uuid"
-	"golang.org/x/sync/errgroup"
 )
 
 type MyEvent struct {
 }
 
 type Response struct {
-	Messages []string `json:"Messages"`
+	Message string `json:"message"`
 }
 
 func main() {
@@ -49,117 +49,56 @@ func HandleRequest(ctx context.Context, event MyEvent) (Response, error) {
 		return Response{}, fmt.Errorf("error getting email service: %s", err.Error())
 	}
 
-	// TODO: This should really move somewhere else.
-	ps, err := property.NewRepository().List(ctx)
+	deviceRepository := device.NewRepository()
+	reservationRepository := reservation.NewRepository()
+	propertyRepository := property.NewRepository()
+	unitRepository := unit.NewRepository()
+
+	// Get the latest data from the controller and save it to the devices.
+	ps, err := propertyRepository.List(ctx)
 	if err != nil {
 		return Response{}, fmt.Errorf("error getting properties: %s", err.Error())
 	}
 	for _, p := range ps {
-		if err := updateDevices(ctx, emailService, p); err != nil {
+		if err := updateDevicesFromController(ctx, emailService, p); err != nil {
 			return Response{}, fmt.Errorf("error updating devices for property: %s, error: %s", p.Name, err.Error())
 		}
 	}
 
-	// TODO: Should eventually go after we've processed the reservations.
-	// TODO: if there are updates, should we do another poll of ezlo data?
+	// Get the latest data from the reservations and save it to the devices.
+	if err := scheduler.NewScheduler(
+		deviceRepository,
+		time.Now(),
+		reservationRepository,
+		unitRepository,
+	).ReconcileReservationsAndLockCodes(ctx); err != nil {
+		return Response{}, fmt.Errorf("error scheduling: %s", err.Error())
+	}
+
+	// Process and save any device changes to the controller.
 	if err := lockengine.NewLockEngine(
 		ezlo.NewLockCodeRepository(),
-		device.NewRepository(),
+		deviceRepository,
 		emailService,
-		property.NewRepository(),
+		propertyRepository,
 	).UpdateLocks(ctx); err != nil {
 		return Response{}, fmt.Errorf("error updating lock codes: %s", err.Error())
 	}
 
-	// get all units
-	units, err := unit.List(ctx)
-	if err != nil {
-		return Response{}, fmt.Errorf("error getting entities: %s", err.Error())
-	}
-
-	// pull calendar info for those with a link
-	reservations, err := getReservations(ctx, units)
-	if err != nil {
-		return Response{}, fmt.Errorf("error getting reservations: %s", err.Error())
-	}
-
-	var sb strings.Builder
-	for i, ress := range reservations {
-		// Start/End dates are UTC but they're really naive and just the day. Check-in is at 4 pm and check-out is at 11 am.
-		// The events go away when they're close to the end date (in one experiment it went away between 1 hour and 10 minutes and 10 minutes before it ended).
-		now := time.Now()
-		notTooFarAway := now.Add(15 * time.Minute)
-		if len(ress) != 0 {
-			upcomingRess := []string{}
-			for _, r := range ress {
-				if r.Start.After(now) && r.Start.Before(notTooFarAway) {
-					upcomingRess = append(upcomingRess, fmt.Sprintf("<li>tx:%s<ul>%s (start) (%f hours till)</ul><ul>%s (end) (%f hours till)</ul></li>", r.TransactionNumber, r.Start, time.Until(r.Start).Hours(), r.End, time.Until(r.End).Hours()))
-				}
-			}
-
-			if len(upcomingRess) == 0 {
-				continue
-			}
-
-			u := units[i]
-			sb.WriteString(fmt.Sprintf("<h1>Unit %s</h1>", u.Name))
-			sb.WriteString("<ul>")
-			for _, s := range upcomingRess {
-				sb.WriteString(s)
-			}
-			sb.WriteString("</ul>")
-		}
-	}
-
-	message := sb.String()
-
-	if message == "" {
-		return Response{
-			Messages: []string{"no reservations to return"},
-		}, nil
-	}
-
-	if err := emailService.SendEamil(ctx, "Upcoming Reservations", message); err != nil {
-		return Response{}, fmt.Errorf("error sending email: %s", err.Error())
-	}
-
 	return Response{
-		Messages: []string{message},
+		Message: "ok",
 	}, nil
 }
 
-func getReservations(ctx context.Context, units []shared.Unit) ([][]shared.Reservation, error) {
-	reservations := make([][]shared.Reservation, len(units))
-
-	g, ctx := errgroup.WithContext(ctx)
-	for i, unit := range units {
-		i, unit := i, unit // https://golang.org/doc/faq#closures_and_goroutines
-		g.Go(func() error {
-			if unit.CalendarURL != "" {
-				ress, err := ical.Get(ctx, unit.CalendarURL)
-				if err != nil {
-					return fmt.Errorf("error getting calendar items: %s", err.Error())
-				}
-				reservations[i] = ress
-			}
-			return nil
-		})
-	}
-
-	if err := g.Wait(); err != nil {
-		return [][]shared.Reservation{}, fmt.Errorf("error getting reservations: %s", err.Error())
-	}
-
-	return reservations, nil
-}
-
-func updateDevices(ctx context.Context, emailService *ses.EmailService, property shared.Property) error {
+func updateDevicesFromController(ctx context.Context, emailService *ses.EmailService, property shared.Property) error {
 	rds, err := ezlo.GetDevices(ctx, property)
 	if err != nil {
 		return fmt.Errorf("error getting devices: %s", err.Error())
 	}
 
-	eds, err := device.NewRepository().List(ctx)
+	deviceRepository := device.NewRepository()
+
+	eds, err := deviceRepository.List(ctx)
 	if err != nil {
 		return fmt.Errorf("error getting devices: %s", err.Error())
 	}
@@ -222,7 +161,7 @@ func updateDevices(ctx context.Context, emailService *ses.EmailService, property
 		d.RawDevice = rd
 		d.LastRefreshedAt = time.Now()
 
-		if _, err := device.NewRepository().Put(ctx, d); err != nil {
+		if _, err := deviceRepository.Put(ctx, d); err != nil {
 			return fmt.Errorf("error putting device: %s", err.Error())
 		}
 	}

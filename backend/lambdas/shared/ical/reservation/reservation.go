@@ -1,4 +1,4 @@
-package ical
+package reservation
 
 import (
 	"context"
@@ -10,21 +10,30 @@ import (
 	"sort"
 	"strings"
 	"time"
+
+	"github.com/google/uuid"
+	"golang.org/x/sync/errgroup"
 )
+
+type Repository struct{}
 
 const (
 	timeFormat = "20060102T150405Z"
 )
 
-func Get(ctx context.Context, url string) ([]shared.Reservation, error) {
+func NewRepository() *Repository {
+	return &Repository{}
+}
+
+func (r *Repository) Get(ctx context.Context, url string) ([]shared.Reservation, error) {
 	data, err := getData(ctx, url)
 	if err != nil {
-		return []shared.Reservation{}, fmt.Errorf("error getting data: %s", err.Error())
+		return nil, fmt.Errorf("error getting data: %s", err.Error())
 	}
 
 	ress, err := parseReservations(data)
 	if err != nil {
-		return []shared.Reservation{}, fmt.Errorf("error parsing reservations: %s", err.Error())
+		return nil, fmt.Errorf("error parsing reservations: %s", err.Error())
 	}
 
 	sort.Slice(ress, func(i, j int) bool {
@@ -44,10 +53,41 @@ func Get(ctx context.Context, url string) ([]shared.Reservation, error) {
 
 	ress, err = updateTimestampsForCheckInOut(ress)
 	if err != nil {
-		return []shared.Reservation{}, fmt.Errorf("error updating reservation check in/out times: %s", err.Error())
+		return nil, fmt.Errorf("error updating reservation check in/out times: %s", err.Error())
 	}
 
 	return ress, nil
+}
+
+func (r *Repository) GetForUnits(ctx context.Context, units []shared.Unit) (map[uuid.UUID][]shared.Reservation, error) {
+	reservations := make([][]shared.Reservation, len(units))
+
+	g, ctx := errgroup.WithContext(ctx)
+	for i, unit := range units {
+		i, unit := i, unit // https://golang.org/doc/faq#closures_and_goroutines
+		g.Go(func() error {
+			if unit.CalendarURL != "" {
+				ress, err := r.Get(ctx, unit.CalendarURL)
+				if err != nil {
+					return fmt.Errorf("error getting calendar items: %s", err.Error())
+				}
+				reservations[i] = ress
+			}
+			return nil
+		})
+	}
+
+	if err := g.Wait(); err != nil {
+		return nil, fmt.Errorf("error getting reservations: %s", err.Error())
+	}
+
+	// Might be able to do this inside the goroutine but I'm too lazy to figure out the possible errors with concurrency (or what other data structures to use).
+	byUnitID := map[uuid.UUID][]shared.Reservation{}
+	for i, unit := range units {
+		byUnitID[unit.ID] = reservations[i]
+	}
+
+	return byUnitID, nil
 }
 
 func getData(ctx context.Context, url string) (string, error) {
@@ -74,23 +114,23 @@ func parseReservations(data string) ([]shared.Reservation, error) {
 	lines := strings.Split(data, "\r\n")
 
 	if len(lines) == 0 {
-		return []shared.Reservation{}, fmt.Errorf("no reservations to parse")
+		return nil, fmt.Errorf("no reservations to parse")
 	}
 
 	if len(lines) < 4 {
-		return []shared.Reservation{}, fmt.Errorf("expect at least 4 lines to parse")
+		return nil, fmt.Errorf("expect at least 4 lines to parse")
 	}
 
 	if _, err := getMatch("^BEGIN:VCALENDA(R)$", lines[0]); err != nil {
-		return []shared.Reservation{}, fmt.Errorf("expected begin vcalendar: %s", lines[0])
+		return nil, fmt.Errorf("expected begin vcalendar: %s", lines[0])
 	}
 
 	if _, err := getMatch("^VERSION:(.*)$", lines[1]); err != nil {
-		return []shared.Reservation{}, fmt.Errorf("expected version: %s", lines[1])
+		return nil, fmt.Errorf("expected version: %s", lines[1])
 	}
 
 	if _, err := getMatch("^PRODID:(.*)$", lines[2]); err != nil {
-		return []shared.Reservation{}, fmt.Errorf("expected PRODID: %s", lines[2])
+		return nil, fmt.Errorf("expected PRODID: %s", lines[2])
 	}
 
 	reservations := []shared.Reservation{}
@@ -102,7 +142,7 @@ func parseReservations(data string) ([]shared.Reservation, error) {
 		}
 
 		if _, err := getMatch("^BEGIN:(VEVENT)$", lines[i]); err != nil {
-			return []shared.Reservation{}, fmt.Errorf("expected begin vevent: %s", lines[i])
+			return nil, fmt.Errorf("expected begin vevent: %s", lines[i])
 		}
 		i++
 
@@ -110,19 +150,19 @@ func parseReservations(data string) ([]shared.Reservation, error) {
 
 		m, err := getMatch("^UID:(.*)$", lines[i])
 		if err != nil {
-			return []shared.Reservation{}, fmt.Errorf("expected UID: %s (%s)", lines[i], err.Error())
+			return nil, fmt.Errorf("expected UID: %s (%s)", lines[i], err.Error())
 		}
 		i++
 		res.ID = m
 
 		if _, err := getMatch("^DTSTAMP:(.*)$", lines[i]); err != nil {
-			return []shared.Reservation{}, fmt.Errorf("expected DTSTAMP: %s", lines[i])
+			return nil, fmt.Errorf("expected DTSTAMP: %s", lines[i])
 		}
 		i++
 
 		m, err = getMatch("^DTSTART:(.*)$", lines[i])
 		if err != nil {
-			return []shared.Reservation{}, fmt.Errorf("expected DTSTART: %s", lines[i])
+			return nil, fmt.Errorf("expected DTSTART: %s", lines[i])
 		}
 		i++
 		start, err := time.Parse(timeFormat, m)
@@ -130,7 +170,7 @@ func parseReservations(data string) ([]shared.Reservation, error) {
 
 		m, err = getMatch("^DTEND:(.*)$", lines[i])
 		if err != nil {
-			return []shared.Reservation{}, fmt.Errorf("expected DTEND: %s", lines[i])
+			return nil, fmt.Errorf("expected DTEND: %s", lines[i])
 		}
 		i++
 		end, err := time.Parse(timeFormat, m)
@@ -138,26 +178,30 @@ func parseReservations(data string) ([]shared.Reservation, error) {
 
 		m, err = getMatch("^SUMMARY:(.*)$", lines[i])
 		if err != nil {
-			return []shared.Reservation{}, fmt.Errorf("expected SUMMARY: %s", lines[i])
+			return nil, fmt.Errorf("expected SUMMARY: %s", lines[i])
 		}
 		i++
 		res.Summary = m
+
+		if len(res.Summary) < 4 {
+			return nil, fmt.Errorf("unexpectedly short summary (%s) for reservation ID: %s", res.Summary, res.ID)
+		}
 		res.TransactionNumber = res.Summary // The summary is the transaction number.
 
 		if _, err := getMatch("^DESCRIPTION:(.*)$", lines[i]); err != nil {
-			return []shared.Reservation{}, fmt.Errorf("expected DESCRIPTION: %s", lines[i])
+			return nil, fmt.Errorf("expected DESCRIPTION: %s", lines[i])
 		}
 		i++
 
 		m, err = getMatch("^STATUS:(.*)$", lines[i])
 		if err != nil {
-			return []shared.Reservation{}, fmt.Errorf("expected STATUS: %s", lines[i])
+			return nil, fmt.Errorf("expected STATUS: %s", lines[i])
 		}
 		i++
 		res.Status = m
 
 		if _, err := getMatch("^END:(VEVENT)$", lines[i]); err != nil {
-			return []shared.Reservation{}, fmt.Errorf("expected END:VEVENT: %s", lines[i])
+			return nil, fmt.Errorf("expected END:VEVENT: %s", lines[i])
 		}
 		i++
 
@@ -165,17 +209,17 @@ func parseReservations(data string) ([]shared.Reservation, error) {
 	}
 
 	if lines[i] != "END:VCALENDAR" {
-		return []shared.Reservation{}, fmt.Errorf("expected END:VCALENDAR: %s", lines[i])
+		return nil, fmt.Errorf("expected END:VCALENDAR: %s", lines[i])
 	}
 	i++
 
 	if lines[i] != "" {
-		return []shared.Reservation{}, fmt.Errorf("expected blank line: %s", lines[i])
+		return nil, fmt.Errorf("expected blank line: %s", lines[i])
 	}
 	i++
 
 	if i != len(lines) {
-		return []shared.Reservation{}, fmt.Errorf("line lenght doesn't _line_ up")
+		return nil, fmt.Errorf("line lenght doesn't _line_ up")
 	}
 
 	return reservations, nil
@@ -206,13 +250,13 @@ func updateTimestampsForCheckInOut(ress []shared.Reservation) ([]shared.Reservat
 	for _, res := range ress {
 		t, err := getCheckinTimestamp(res.Start)
 		if err != nil {
-			return []shared.Reservation{}, fmt.Errorf("error getting check-in timestamp %s", err.Error())
+			return nil, fmt.Errorf("error getting check-in timestamp %s", err.Error())
 		}
 		res.Start = t
 
 		t, err = getCheckoutTimestamp(res.End)
 		if err != nil {
-			return []shared.Reservation{}, fmt.Errorf("error getting check-out timestamp %s", err.Error())
+			return nil, fmt.Errorf("error getting check-out timestamp %s", err.Error())
 		}
 		res.End = t
 
@@ -228,13 +272,13 @@ func getCheckinTimestamp(in time.Time) (time.Time, error) {
 		return time.Time{}, fmt.Errorf("timestamp isn't midnight UTC: %s", in)
 	}
 
-	// Change to MT (this should be configurable)
+	// Change to MT (this should be configurable).
 	mt, err := time.LoadLocation("America/Denver")
 	if err != nil {
 		return time.Time{}, fmt.Errorf("error getting time zone %s", err.Error())
 	}
 
-	// Change to 4 pm (this really should be configurable)
+	// Change to 4 pm (this should be configurable).
 	fourPM := 16
 
 	return time.Date(utc.Year(), utc.Month(), utc.Day(), fourPM, utc.Minute(), utc.Second(), utc.Nanosecond(), mt), nil
@@ -246,13 +290,13 @@ func getCheckoutTimestamp(in time.Time) (time.Time, error) {
 		return time.Time{}, fmt.Errorf("timestamp isn't midnight UTC: %s", in)
 	}
 
-	// Change to MT (this should be configurable)
+	// Change to MT (this should be configurable).
 	mt, err := time.LoadLocation("America/Denver")
 	if err != nil {
 		return time.Time{}, fmt.Errorf("error getting time zone %s", err.Error())
 	}
 
-	// Change to 11 am (this really should be configurable)
+	// Change to 11 am (this really should be configurable).
 	elevenAM := 11
 
 	return time.Date(utc.Year(), utc.Month(), utc.Day(), elevenAM, utc.Minute(), utc.Second(), utc.Nanosecond(), mt), nil

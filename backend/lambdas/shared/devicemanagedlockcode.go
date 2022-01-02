@@ -7,12 +7,13 @@ import (
 )
 
 type DeviceManagedLockCode struct {
-	Code    string                      `json:"code"`
-	EndAt   time.Time                   `json:"endAt"`
-	ID      uuid.UUID                   `json:"id"`
-	Note    string                      `json:"note"`
-	Status  DeviceManagedLockCodeStatus `json:"status"`
-	StartAt time.Time                   `json:"startAt"`
+	Code          string                      `json:"code"`
+	EndAt         time.Time                   `json:"endAt"`
+	ID            uuid.UUID                   `json:"id"`
+	Note          string                      `json:"note"`
+	ReservationID string                      `json:"reservationId"`
+	Status        DeviceManagedLockCodeStatus `json:"status"`
+	StartAt       time.Time                   `json:"startAt"`
 }
 
 type DeviceManagedLockCodeStatus string

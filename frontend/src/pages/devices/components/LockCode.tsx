@@ -94,6 +94,7 @@ export const LockCode = (props:Props) => {
             statusBadge = <Badge pill variant={variant}>{status}</Badge>;
         }
 
+        // TODO: we should show the time zone that's being used.
         return (
             <Form onSubmit={evt => formSubmit(evt)} style={ {"marginBottom": "2em"} } >
                 <Form.Group>

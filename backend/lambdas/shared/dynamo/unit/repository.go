@@ -15,11 +15,17 @@ import (
 	"github.com/google/uuid"
 )
 
+type Repository struct{}
+
 const (
 	tableName = "Unit_v2"
 )
 
-func Delete(ctx context.Context, id uuid.UUID) error {
+func NewRepository() *Repository {
+	return &Repository{}
+}
+
+func (r *Repository) Delete(ctx context.Context, id uuid.UUID) error {
 	dy, err := dynamo.GetClient(ctx)
 	if err != nil {
 		return fmt.Errorf("error getting client: %s", err.Error())
@@ -41,7 +47,7 @@ func Delete(ctx context.Context, id uuid.UUID) error {
 	return nil
 }
 
-func Get(ctx context.Context, id uuid.UUID) (shared.Unit, bool, error) {
+func (r *Repository) Get(ctx context.Context, id uuid.UUID) (shared.Unit, bool, error) {
 	dy, err := dynamo.GetClient(ctx)
 	if err != nil {
 		return shared.Unit{}, false, fmt.Errorf("error getting client: %s", err.Error())
@@ -69,7 +75,7 @@ func Get(ctx context.Context, id uuid.UUID) (shared.Unit, bool, error) {
 	return item, true, nil
 }
 
-func List(ctx context.Context) ([]shared.Unit, error) {
+func (r *Repository) List(ctx context.Context) ([]shared.Unit, error) {
 	dy, err := dynamo.GetClient(ctx)
 	if err != nil {
 		return []shared.Unit{}, fmt.Errorf("error getting client: %s", err.Error())
@@ -107,7 +113,21 @@ func List(ctx context.Context) ([]shared.Unit, error) {
 	return items, nil
 }
 
-func Put(ctx context.Context, item shared.Unit) (shared.Unit, error) {
+func (r *Repository) ListByID(ctx context.Context) (map[uuid.UUID]shared.Unit, error) {
+	units, err := r.List(ctx)
+	if err != nil {
+		return map[uuid.UUID]shared.Unit{}, fmt.Errorf("error getting units: %s", err.Error())
+	}
+
+	byID := map[uuid.UUID]shared.Unit{}
+	for _, u := range units {
+		byID[u.ID] = u
+	}
+
+	return byID, nil
+}
+
+func (r *Repository) Put(ctx context.Context, item shared.Unit) (shared.Unit, error) {
 	dy, err := dynamo.GetClient(ctx)
 	if err != nil {
 		return shared.Unit{}, fmt.Errorf("error getting client: %s", err.Error())
@@ -147,7 +167,7 @@ func Put(ctx context.Context, item shared.Unit) (shared.Unit, error) {
 		return shared.Unit{}, fmt.Errorf("error putting item: %s", err.Error())
 	}
 
-	entity, ok, err := Get(ctx, item.ID)
+	entity, ok, err := r.Get(ctx, item.ID)
 	if err != nil {
 		return shared.Unit{}, err
 	}
