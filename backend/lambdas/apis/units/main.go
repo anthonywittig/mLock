@@ -9,6 +9,7 @@ import (
 	"mlock/lambdas/shared/dynamo/device"
 	"mlock/lambdas/shared/dynamo/property"
 	"mlock/lambdas/shared/dynamo/unit"
+	"mlock/lambdas/shared/ical/reservation"
 	"net/http"
 	"regexp"
 
@@ -141,14 +142,12 @@ func detail(ctx context.Context, req events.APIGatewayProxyRequest, id string) (
 	}
 
 	reservations := []shared.Reservation{}
-	/*
-		if entity.CalendarURL != "" {
-			reservations, err = ical.Get(ctx, entity.CalendarURL)
-			if err != nil {
-				return nil, fmt.Errorf("error getting calendar items: %s", err.Error())
-			}
+	if entity.CalendarURL != "" {
+		reservations, err = reservation.NewRepository().Get(ctx, entity.CalendarURL)
+		if err != nil {
+			return nil, fmt.Errorf("error getting calendar items: %s", err.Error())
 		}
-	*/
+	}
 
 	properties, err := property.NewRepository().List(ctx)
 	if err != nil {
