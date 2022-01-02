@@ -40,6 +40,7 @@ type DeviceManagedLockCodeT = {
     deviceId: string,
     code: string,
     note: string,
+    reservationId: string,
     status: string,
     startAt: string,
     endAt: string,

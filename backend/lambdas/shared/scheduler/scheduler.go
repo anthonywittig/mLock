@@ -147,6 +147,11 @@ func (s *Scheduler) processDevice(ctx context.Context, device shared.Device, res
 					continue
 				}
 
+				if mlc.StartAt.After(nearFuture) {
+					// Just so the reservation doesn't look odd with a start date after the end date...
+					mlc.StartAt = nearFuture
+				}
+
 				mlc.EndAt = nearFuture
 				mlc.Note = "Reservation has dissapeared, setting the end time to an hour from now."
 				needToSave = append(needToSave, mlc)

@@ -103,6 +103,10 @@ func create(ctx context.Context, req events.APIGatewayProxyRequest, d shared.Dev
 		StartAt: body.StartAt,
 	}
 
+	if mlc.StartAt.After(mlc.EndAt) {
+		return nil, fmt.Errorf("can't start after it ends")
+	}
+
 	if d.HasConflictingManagedLockCode(mlc) {
 		return nil, fmt.Errorf("conflicting lock code already exists")
 	}
@@ -132,7 +136,14 @@ func update(ctx context.Context, req events.APIGatewayProxyRequest, d shared.Dev
 		return nil, fmt.Errorf("unable to find managed lock code")
 	}
 
+	if mlc.ReservationID != "" {
+		return nil, fmt.Errorf("can't edit a reservation lock code")
+	}
+
 	mlc.EndAt = body.EndAt
+	if mlc.StartAt.After(mlc.EndAt) {
+		return nil, fmt.Errorf("can't start after it ends")
+	}
 
 	cd, err := shared.GetContextData(ctx)
 	if err != nil {

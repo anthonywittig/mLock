@@ -12,9 +12,15 @@ interface Props{
 
 export const LockCode = (props:Props) => {
     const [loading, setLoading] = React.useState<boolean>(false);
-    const [code, setCode] = React.useState<string>(
-        props.managedLockCode ? props.managedLockCode.code + " - " + props.managedLockCode.status + " - " + props.managedLockCode.note : ""
-    );
+    let initialCode = "";
+    if (props.managedLockCode) {
+        initialCode = props.managedLockCode.code + " - " + props.managedLockCode.status;
+        if (props.managedLockCode.reservationId) {
+            initialCode += " - Reservation " + props.managedLockCode.reservationId.replace("@LiveRez.com", "");
+        }
+        initialCode += " - " + props.managedLockCode.note;
+    }
+    const [code, setCode] = React.useState<string>(initialCode);
     const [startAt, setStartAt] = React.useState<Date>(props.managedLockCode ? parseISO(props.managedLockCode.startAt) : new Date());
     const [endAt, setEndAt] = React.useState<Date>(props.managedLockCode ? parseISO(props.managedLockCode.endAt) : addDays(set(new Date(), {minutes: 0}), 1));
 
@@ -109,10 +115,10 @@ export const LockCode = (props:Props) => {
 
                 <Form.Group>
                     <Form.Label>Disable At</Form.Label>
-                    <Form.Control type="datetime-local" defaultValue={format(endAt, "yyyy-MM-dd'T'HH:mm")} onChange={(evt) => setEndAt(parseISO(evt.target.value))}/>
+                    <Form.Control type="datetime-local" defaultValue={format(endAt, "yyyy-MM-dd'T'HH:mm")} onChange={(evt) => setEndAt(parseISO(evt.target.value))} disabled={!!(props.managedLockCode?.reservationId)}/>
                 </Form.Group>
 
-                <Button variant="secondary" type="submit">
+                <Button variant="secondary" type="submit" disabled={!!(props.managedLockCode?.reservationId)}>
                     {props.managedLockCode ? "Update" : "Add"} Lock Code
                 </Button>
             </Form>
