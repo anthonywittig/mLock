@@ -2,7 +2,7 @@ import React from 'react';
 import {
     GoogleLogin,
     GoogleLoginResponse,
-    GoogleLoginResponseOffline, 
+    GoogleLoginResponseOffline,
     GoogleLogout,
 } from 'react-google-login';
 import {
@@ -30,7 +30,7 @@ export class SignIn extends React.Component<Props, State> {
         messageClass: "",
         processing: false,
         successfullyLoggedIn: false,
-    }
+    };
 
     componentDidMount() {
         const state = new URLSearchParams(window.location.search).get('state');

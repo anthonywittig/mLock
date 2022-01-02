@@ -31,7 +31,7 @@ export class List extends React.Component<Props, State> {
         entities: [],
         loadingEntities: true,
         properties: [],
-    }
+    };
 
     componentDidMount() {
         StandardFetch(Endpoint, {method: "GET"})

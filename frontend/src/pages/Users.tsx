@@ -26,7 +26,7 @@ export class Users extends React.Component<Props, State> {
         newUserFieldEnabled: true,
         newUserButtonEnabled: false,
         loadingUsers: true,
-    }
+    };
 
     componentDidMount() {
         StandardFetch("users", {method: "GET"})

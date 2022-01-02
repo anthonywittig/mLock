@@ -20,7 +20,7 @@ export class Properties extends React.Component<Props, State> {
     state: Readonly<State> = {
         entities: [],
         loadingEntities: true,
-    }
+    };
 
     componentDidMount() {
         StandardFetch("properties", {method: "GET"})
