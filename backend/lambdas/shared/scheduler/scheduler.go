@@ -83,9 +83,10 @@ func (s *Scheduler) processDevice(ctx context.Context, device shared.Device, res
 	}
 
 	// We want the lock codes to start and end with a buffer.
-	for _, r := range relevantReservations {
+	for id, r := range relevantReservations {
 		r.Start = r.Start.Add(-30 * time.Minute)
 		r.End = r.End.Add(30 * time.Minute)
+		relevantReservations[id] = r
 	}
 
 	needToSave := []*shared.DeviceManagedLockCode{}
@@ -167,8 +168,8 @@ func (s *Scheduler) processDevice(ctx context.Context, device shared.Device, res
 	return nil
 }
 
-func (s *Scheduler) getRelevantReservations(reservations []shared.Reservation) (map[string]*shared.Reservation, error) {
-	relevantReservations := map[string]*shared.Reservation{}
+func (s *Scheduler) getRelevantReservations(reservations []shared.Reservation) (map[string]shared.Reservation, error) {
+	relevantReservations := map[string]shared.Reservation{}
 	for _, r := range reservations {
 		if r.End.Before(s.now.Add(-1 * time.Hour)) {
 			continue // If it ended an hour or more ago, ignore it.
@@ -183,7 +184,7 @@ func (s *Scheduler) getRelevantReservations(reservations []shared.Reservation) (
 			return nil, fmt.Errorf("duplicate reservation found, reservation ID: %s", r.ID)
 		}
 
-		relevantReservations[r.ID] = &r
+		relevantReservations[r.ID] = r
 	}
 
 	return relevantReservations, nil
