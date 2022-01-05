@@ -135,17 +135,19 @@ export const Detail = () => {
                     </div>
                     <div className="card-body">
                         <h2 className="card-title">Audit Log</h2>
-                        <ul>
-                            {
-                                auditLog.entries.length ? (
-                                    auditLog.entries.map(entry=>
-                                        <li>{format(parseISO(entry.createdAt), "L/d/yy h:mm aaa")} --- {entry.log}</li>
+                        <div className="card" style={{ "maxHeight": "300px", "overflowY": "auto" }}>
+                            <ul className="list-group list-group-flush">
+                                {
+                                    auditLog.entries.length ? (
+                                        auditLog.entries.map(entry=>
+                                            <li className="list-group-item">{format(parseISO(entry.createdAt), "L/d/yy h:mm aaa")} --- {entry.log}</li>
+                                        )
+                                    ) : (
+                                        <li>no entries yet</li>
                                     )
-                                ) : (
-                                    <li>no entries yet</li>
-                                )
-                            }
-                        </ul>
+                                }
+                            </ul>
+                        </div>
                     </div>
                 </div>
             </>

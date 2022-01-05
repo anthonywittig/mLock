@@ -181,8 +181,15 @@ func detail(ctx context.Context, req events.APIGatewayProxyRequest, id string) (
 	if !found {
 		auditLog = shared.AuditLog{Entries: []shared.AuditLogEntry{}}
 	}
-	if len(auditLog.Entries) > 30 {
-		auditLog.Entries = auditLog.Entries[len(auditLog.Entries)-30:]
+	if len(auditLog.Entries) > 100 {
+		auditLog.Entries = auditLog.Entries[len(auditLog.Entries)-100:]
+	}
+
+	// Reverse the entries so that the newer items are first.
+	// https://github.com/golang/go/wiki/SliceTricks#reversing
+	for i := len(auditLog.Entries)/2 - 1; i >= 0; i-- {
+		opp := len(auditLog.Entries) - 1 - i
+		auditLog.Entries[i], auditLog.Entries[opp] = auditLog.Entries[opp], auditLog.Entries[i]
 	}
 
 	properties, err := property.NewRepository().List(ctx)

@@ -27,30 +27,37 @@ func NewRepository() *Repository {
 }
 
 func (r *Repository) AppendToAuditLog(ctx context.Context, device shared.Device, managedLockCodes []*shared.DeviceManagedLockCode) error {
-	if len(managedLockCodes) > 0 {
-		al, exists, err := auditlog.Get(ctx, device.ID)
-		if err != nil {
-			return fmt.Errorf("error getting audit log: %s", err.Error())
-		}
+	if len(managedLockCodes) == 0 {
+		return nil
+	}
 
-		if !exists {
-			al = shared.AuditLog{ID: device.ID}
-		}
+	al, exists, err := auditlog.Get(ctx, device.ID)
+	if err != nil {
+		return fmt.Errorf("error getting audit log: %s", err.Error())
+	}
 
-		for _, mlc := range managedLockCodes {
-			al.Entries = append(
-				al.Entries,
-				shared.AuditLogEntry{
-					CreatedAt: time.Now(),
-					Log:       fmt.Sprintf("Code: %s; Start: %s; End: %s; Note: %s", mlc.Code, mlc.StartAt.Format(time.RFC3339), mlc.EndAt.Format(time.RFC3339), mlc.Note),
-				},
-			)
-		}
+	if !exists {
+		al = shared.AuditLog{ID: device.ID}
+	}
 
-		// It'd be nice to tie this to the `device.Put`.
-		if _, err := auditlog.Put(ctx, al); err != nil {
-			return fmt.Errorf("error putting audit log: %s", err.Error())
-		}
+	for _, mlc := range managedLockCodes {
+		al.Entries = append(
+			al.Entries,
+			shared.AuditLogEntry{
+				CreatedAt: time.Now(),
+				Log:       fmt.Sprintf("Code: %s; Start: %s; End: %s; Note: %s", mlc.Code, mlc.StartAt.Format(time.RFC3339), mlc.EndAt.Format(time.RFC3339), mlc.Note),
+			},
+		)
+	}
+
+	// In January 2022 we noticed that an audit log with 157 entries was 29kb. Dynamo has a 400kb limit. It'd be nice to "archive" the older audit log entries, but for now we'll kill them off. Things might start getting slow as we reach this limit.
+	if len(al.Entries) > 1000 {
+		al.Entries = al.Entries[len(al.Entries)-1000:]
+	}
+
+	// It'd be nice to tie this to the `device.Put`.
+	if _, err := auditlog.Put(ctx, al); err != nil {
+		return fmt.Errorf("error putting audit log: %s", err.Error())
 	}
 
 	return nil

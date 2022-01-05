@@ -229,6 +229,72 @@ func Test_RemoveLockCode(t *testing.T) {
 	assert.Equal(t, shared.DeviceManagedLockCodeStatus4Removing, managedLockCode.Status)
 }
 
+func Test_deleteOneButNotAllMLCs(t *testing.T) {
+	// Because I like to mess up pointers in loops...
+
+	ctx := context.Background()
+	property := shared.Property{
+		ControllerID: "9876",
+		ID:           uuid.New(),
+	}
+	managedLockCode1 := &shared.DeviceManagedLockCode{
+		Code:    "1234",
+		EndAt:   time.Now().Add(-1 * time.Hour * 24 * 8),
+		Status:  shared.DeviceManagedLockCodeStatus5Complete,
+		StartAt: time.Now().Add(-1 * time.Hour * 24 * 9),
+	}
+	managedLockCode2 := &shared.DeviceManagedLockCode{
+		Code:    "5678",
+		EndAt:   time.Now().Add(-1 * time.Hour * 24 * 1),
+		Status:  shared.DeviceManagedLockCodeStatus5Complete,
+		StartAt: time.Now().Add(-1 * time.Hour * 24 * 2),
+	}
+	device := shared.Device{
+		ID:               uuid.New(),
+		ManagedLockCodes: []*shared.DeviceManagedLockCode{managedLockCode1, managedLockCode2},
+		PropertyID:       property.ID,
+		RawDevice:        shared.RawDevice{},
+	}
+
+	le, _, dr, pr := newLockEngine(t)
+
+	dr.EXPECT().List(ctx).Return(
+		[]shared.Device{device},
+		nil,
+	)
+
+	pr.EXPECT().GetCached(ctx, property.ID).Return(property, true, nil).AnyTimes()
+
+	dr.EXPECT().AppendToAuditLog(
+		ctx,
+		gomock.Any(),
+		gomock.Any(),
+	).Do(func(ctx context.Context, d shared.Device, managedLockCodes []*shared.DeviceManagedLockCode) {
+		assert.Equal(t, device.ID, d.ID)
+
+		assert.Equal(t, 1, len(d.ManagedLockCodes))
+		mlc := d.ManagedLockCodes[0]
+		assert.Equal(t, "5678", mlc.Code)
+
+		assert.Equal(t, 1, len(managedLockCodes))
+		mlc = managedLockCodes[0]
+		assert.Equal(t, "1234", mlc.Code)
+	}).Return(nil)
+
+	dr.EXPECT().Put(
+		ctx,
+		gomock.Any(),
+	).Do(func(ctx context.Context, d shared.Device) {
+		assert.Equal(t, d.ID, d.ID)
+		assert.Equal(t, 1, len(d.ManagedLockCodes))
+		mlc := d.ManagedLockCodes[0]
+		assert.Equal(t, "5678", mlc.Code)
+	}).Return(shared.Device{}, nil)
+
+	err := le.UpdateLocks(ctx)
+	assert.Nil(t, err)
+}
+
 func newLockEngine(t *testing.T) (*lockengine.LockEngine, *mock_lockengine.MockDeviceController, *mock_lockengine.MockDeviceRepository, *mock_lockengine.MockPropertyRepository) {
 	ctrl := gomock.NewController(t)
 

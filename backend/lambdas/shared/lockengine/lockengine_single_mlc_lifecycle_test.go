@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/golang/mock/gomock"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 )
@@ -309,6 +310,50 @@ func Test_CompletedEndedNotExists(t *testing.T) {
 	s.generateLockengineSingleMLCLifecycleTest(false)
 
 	s.pr.EXPECT().GetCached(s.ctx, s.p.ID).Return(s.p, true, nil)
+
+	err := s.le.UpdateLocks(s.ctx)
+	assert.Nil(t, err)
+
+	assert.Equal(t, shared.DeviceManagedLockCodeStatus5Complete, s.mlc.Status)
+}
+
+func Test_CompletedEndedLongAgoNotExists(t *testing.T) {
+	// MLC is completed, has ended (long ago), and does not exist.
+
+	s := newSingleMLCLifecycleTest(t)
+
+	s.mlc = &shared.DeviceManagedLockCode{
+		Code:    "1234",
+		EndAt:   time.Now().Add(-1 * time.Hour * 24 * 8),
+		Status:  shared.DeviceManagedLockCodeStatus5Complete,
+		StartAt: time.Now().Add(-1 * time.Hour * 24 * 9),
+	}
+
+	s.generateLockengineSingleMLCLifecycleTest(false)
+
+	s.pr.EXPECT().GetCached(s.ctx, s.p.ID).Return(s.p, true, nil)
+
+	s.dr.EXPECT().AppendToAuditLog(
+		s.ctx,
+		gomock.Any(),
+		gomock.Any(),
+	).Do(func(ctx context.Context, d shared.Device, managedLockCodes []*shared.DeviceManagedLockCode) {
+		assert.Equal(t, s.d.ID, d.ID)
+		assert.Equal(t, 0, len(d.ManagedLockCodes))
+
+		assert.Equal(t, 1, len(managedLockCodes))
+		mlc := managedLockCodes[0]
+		assert.Equal(t, "1234", mlc.Code)
+		assert.Equal(t, shared.DeviceManagedLockCodeStatus5Complete, mlc.Status)
+	}).Return(nil)
+
+	s.dr.EXPECT().Put(
+		s.ctx,
+		gomock.Any(),
+	).Do(func(ctx context.Context, d shared.Device) {
+		assert.Equal(t, s.d.ID, d.ID)
+		assert.Equal(t, 0, len(d.ManagedLockCodes))
+	}).Return(shared.Device{}, nil)
 
 	err := s.le.UpdateLocks(s.ctx)
 	assert.Nil(t, err)

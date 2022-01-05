@@ -58,6 +58,7 @@ func (l *LockEngine) UpdateLocks(ctx context.Context) error {
 	}
 
 	now := time.Now()
+	nearPast := now.Add(-1 * time.Hour * 24 * 7)
 
 	for _, d := range ds {
 		lockStates := l.getLockStates(now, d)
@@ -66,6 +67,27 @@ func (l *LockEngine) UpdateLocks(ctx context.Context) error {
 		if err != nil {
 			return fmt.Errorf("error calculating and sending lock commands: %s", err.Error())
 		}
+
+		nonDeletedMLCs := []*shared.DeviceManagedLockCode{}
+		for i, mlc := range d.ManagedLockCodes {
+			fmt.Printf("mlc: %+v\n", mlc)
+			if mlc.EndAt.Before(nearPast) && mlc.Status == shared.DeviceManagedLockCodeStatus5Complete {
+				justUpdated := false
+				for _, m := range needToSave {
+					if m == mlc {
+						justUpdated = true
+						break
+					}
+				}
+				if !justUpdated {
+					d.ManagedLockCodes[i].Note = "Deleting code as it completed a while ago."
+					needToSave = append(needToSave, d.ManagedLockCodes[i])
+					continue
+				}
+			}
+			nonDeletedMLCs = append(nonDeletedMLCs, d.ManagedLockCodes[i])
+		}
+		d.ManagedLockCodes = nonDeletedMLCs
 
 		if len(needToSave) > 0 {
 			if err := l.DeviceRepository.AppendToAuditLog(ctx, d, needToSave); err != nil {
