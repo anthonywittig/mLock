@@ -65,7 +65,7 @@ export const List = () => {
             <>
                 <div className="card" style={{marginBottom: "1rem", marginTop: "1rem"}}>
                     <div className="card-body">
-                        <h2 className="card-title">Details</h2>
+                        <h2 className="card-title">Devices</h2>
                         { renderEntities() }
                     </div>
                 </div>

@@ -3,7 +3,14 @@ import { Loading } from '../utils/Loading';
 import { StandardFetch } from '../utils/FetchHelper';
 import { Unit } from './Unit';
 
+
+type Device = {
+    id: string,
+    name: string,
+}
+
 type Entity = {
+    devices: Device[],
     id: string,
     name: string,
     propertyId: string,
@@ -58,8 +65,10 @@ export class List extends React.Component<Props, State> {
     }
 
     addEntity(id: string, name: string, propertyId: string, updatedBy: string) {
+        const devices: Device[] = [];
         this.setState({
             entities: this.state.entities.concat([{
+                devices,
                 id,
                 name,
                 propertyId,
@@ -77,6 +86,7 @@ export class List extends React.Component<Props, State> {
                 <thead>
                     <tr>
                         <th scope="col">Name</th>
+                        <th scope="col">Devices</th>
                         <th scope="col">Property</th>
                         <th scope="col">Actions</th>
                     </tr>
@@ -84,6 +94,7 @@ export class List extends React.Component<Props, State> {
                 <tbody>
                     {this.state.entities.map(entity =>
                         <Unit
+                            devices={entity.devices}
                             entityId={entity.id}
                             entityName={entity.name}
                             propertyId={entity.propertyId}
@@ -94,6 +105,7 @@ export class List extends React.Component<Props, State> {
                         />
                     )}
                     <Unit
+                        devices={[] as Device[]}
                         entityId=""
                         entityName=""
                         propertyId=""

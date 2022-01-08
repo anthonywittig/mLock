@@ -1,12 +1,17 @@
 import React from 'react';
 import { Button } from 'react-bootstrap';
-import { useHistory } from 'react-router-dom';
+import { Link, useHistory } from 'react-router-dom';
 import { StandardFetch } from '../utils/FetchHelper';
 import { History } from 'history';
 
 
 type Adder = (id:string, name: string, propertyId: string, updatedBy: string) => void;
 type IdAction = (id: string) => void;
+
+type Device = {
+    id: string,
+    name: string,
+}
 
 type Property = {
     id: string,
@@ -15,6 +20,7 @@ type Property = {
 }
 
 type Props = {
+    devices: Device[],
     entityId: string,
     entityName: string,
     propertyId: string,
@@ -87,6 +93,10 @@ function removeClick(props: Props, id: string) {
     });
 }
 
+function deviceClick(state: State, id: string) {
+    state.history.push('/devices/' + id);
+}
+
 function nameClick(state: State, id: string) {
     state.history.push('/units/' + id);
 }
@@ -144,6 +154,7 @@ function render(props: Props, state: State) {
                         onKeyUp={(evt) => evt.key === "Enter" ? newEntitySubmit(props, state) : ""}
                     />
                 </th>
+                <td></td>
                 <td>
                     <select
                         id="newProperty"
@@ -164,6 +175,20 @@ function render(props: Props, state: State) {
         );
     }
 
+    let devices = <></>;
+    if (props.devices.length === 1) {
+        //devices = <>TBD</>;
+        //devices = <Button variant="link" onClick={evt => deviceClick(state, props.devices[0].id)}>{props.devices[0].name}</Button>;
+        devices = <Link to={"/devices/" + props.devices[0].id}><Button variant="link">{props.devices[0].name}</Button></Link>;
+        //devices = <Link to={"/devices"}><Button variant="link">{props.devices[0].name}</Button></Link>;
+    } else {
+        devices= (<ul>
+            {props.devices.map(device =>
+                <li><Button variant="link" onClick={evt => deviceClick(state, device.id)}>{device.name}</Button></li>
+            )}
+        </ul>);
+    }
+
     return (
         <tr key={props.entityId}>
             <th scope="row">
@@ -171,6 +196,7 @@ function render(props: Props, state: State) {
                     {props.entityName}
                 </Button>
             </th>
+            <td>{devices}</td>
             <td>{ props.properties.find(e => e.id === props.propertyId )?.name }</td>
             <td><Button variant="secondary" onClick={evt => removeClick(props, props.entityId)}>Delete</Button></td>
         </tr>

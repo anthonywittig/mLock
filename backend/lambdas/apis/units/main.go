@@ -27,8 +27,22 @@ type DetailResponse struct {
 }
 
 type ListResponse struct {
-	Entities []shared.Unit `json:"entities"`
-	Extra    ExtraEntities `json:"extra"`
+	Entities []ListResponseEntity `json:"entities"`
+	Extra    ExtraEntities        `json:"extra"`
+}
+
+type ListResponseDevice struct {
+	ID   uuid.UUID `json:"id"`
+	Name string    `json:"name"`
+}
+
+type ListResponseEntity struct {
+	Devices     []ListResponseDevice `json:"devices"`
+	ID          uuid.UUID            `json:"id"`
+	Name        string               `json:"name"`
+	PropertyID  uuid.UUID            `json:"propertyId"`
+	CalendarURL string               `json:"calendarUrl"`
+	UpdatedBy   string               `json:"updatedBy"`
 }
 
 type CreateBody struct {
@@ -114,13 +128,52 @@ func list(ctx context.Context, req events.APIGatewayProxyRequest) (*shared.APIRe
 		return nil, fmt.Errorf("error getting entities: %s", err.Error())
 	}
 
+	devices, err := device.NewRepository().ListByUnit(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("error getting devices: %s", err.Error())
+	}
+
 	properties, err := property.NewRepository().List(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("error getting properties: %s", err.Error())
 	}
 
+	ds := map[uuid.UUID][]ListResponseDevice{}
+	for id, devicess := range devices {
+		dss := []ListResponseDevice{}
+		for _, device := range devicess {
+			dss = append(
+				dss,
+				ListResponseDevice{
+					ID:   device.ID,
+					Name: device.RawDevice.Name,
+				},
+			)
+		}
+		ds[id] = dss
+	}
+
+	es := []ListResponseEntity{}
+	for _, e := range entities {
+		esd, ok := ds[e.ID]
+		if !ok {
+			esd = []ListResponseDevice{}
+		}
+
+		es = append(
+			es,
+			ListResponseEntity{
+				Devices:    esd,
+				ID:         e.ID,
+				Name:       e.Name,
+				PropertyID: e.PropertyID,
+				UpdatedBy:  e.UpdatedBy,
+			},
+		)
+	}
+
 	return shared.NewAPIResponse(http.StatusOK, ListResponse{
-		Entities: entities,
+		Entities: es,
 		Extra: ExtraEntities{
 			Properties: properties,
 		},

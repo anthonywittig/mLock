@@ -151,10 +151,31 @@ func (r *Repository) List(ctx context.Context) ([]shared.Device, error) {
 	return items, nil
 }
 
+func (r *Repository) ListByUnit(ctx context.Context) (map[uuid.UUID][]shared.Device, error) {
+	all, err := r.List(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("error getting devices: %s", err.Error())
+	}
+
+	byU := map[uuid.UUID][]shared.Device{}
+	for _, d := range all {
+		if d.UnitID != nil {
+			ds, ok := byU[*d.UnitID]
+			if !ok {
+				ds = []shared.Device{}
+			}
+			ds = append(ds, d)
+			byU[*d.UnitID] = ds
+		}
+	}
+
+	return byU, nil
+}
+
 func (r *Repository) ListForUnit(ctx context.Context, unit shared.Unit) ([]shared.Device, error) {
 	all, err := r.List(ctx)
 	if err != nil {
-		return []shared.Device{}, fmt.Errorf("error getting devices: %s", err.Error())
+		return nil, fmt.Errorf("error getting devices: %s", err.Error())
 	}
 
 	forU := []shared.Device{}
