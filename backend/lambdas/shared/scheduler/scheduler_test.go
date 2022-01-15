@@ -18,7 +18,7 @@ import (
 func Test_addMLC(t *testing.T) {
 	// Add a MLC based on a reservation.
 
-	s, dr, now, rr, ur := newScheduler(t)
+	s, dr, now, rr, ur := newScheduler(t, time.Now())
 
 	ctx := context.Background()
 	unit := shared.Unit{
@@ -97,7 +97,7 @@ func Test_addMLC(t *testing.T) {
 func Test_noEditMLC(t *testing.T) {
 	// Don't edit a MLC based on a reservation.
 
-	s, dr, now, rr, ur := newScheduler(t)
+	s, dr, now, rr, ur := newScheduler(t, time.Now())
 
 	ctx := context.Background()
 	unit := shared.Unit{
@@ -149,7 +149,7 @@ func Test_noEditMLC(t *testing.T) {
 func Test_editMLC(t *testing.T) {
 	// Edit a MLC based on a reservation.
 
-	s, dr, now, rr, ur := newScheduler(t)
+	s, dr, now, rr, ur := newScheduler(t, time.Now())
 
 	ctx := context.Background()
 	unit := shared.Unit{
@@ -221,85 +221,10 @@ func Test_editMLC(t *testing.T) {
 	assert.Nil(t, err)
 }
 
-func Test_editMLCReservationInFarFuture(t *testing.T) {
-	// Imagine a reservation that has started and is then moved to the future.
-
-	s, dr, now, rr, ur := newScheduler(t)
-
-	ctx := context.Background()
-	unit := shared.Unit{
-		ID:          uuid.New(),
-		CalendarURL: "notBlank",
-	}
-	reservation := shared.Reservation{
-		ID:                "someReservationID",
-		Start:             now.Add(24 * time.Hour * 180),
-		End:               now.Add(24 * time.Hour * 181),
-		TransactionNumber: "12345678",
-	}
-	mlcOriginalStartAt := now.Add(-24 * time.Hour)
-	mlcOriginalEndAt := now.Add(24 * time.Hour)
-	managedLockCode := &shared.DeviceManagedLockCode{
-		ID:            uuid.New(),
-		ReservationID: reservation.ID,
-		Code:          "5678",
-		StartAt:       mlcOriginalStartAt,
-		EndAt:         mlcOriginalEndAt,
-	}
-	device := shared.Device{
-		ID:               uuid.New(),
-		ManagedLockCodes: []*shared.DeviceManagedLockCode{managedLockCode},
-		UnitID:           &unit.ID,
-	}
-
-	ur.EXPECT().List(ctx).Return(
-		[]shared.Unit{unit},
-		nil,
-	)
-
-	rr.EXPECT().GetForUnits(ctx, []shared.Unit{unit}).Return(
-		map[uuid.UUID][]shared.Reservation{
-			unit.ID: {reservation},
-		},
-		nil,
-	)
-
-	dr.EXPECT().List(ctx).Return(
-		[]shared.Device{device},
-		nil,
-	)
-
-	dr.EXPECT().AppendToAuditLog(
-		ctx,
-		gomock.Any(),
-		gomock.Any(),
-	).Do(func(ctx context.Context, d shared.Device, managedLockCodes []*shared.DeviceManagedLockCode) {
-		assert.Equal(t, device.ID, d.ID)
-		assert.Equal(t, d.ManagedLockCodes, managedLockCodes)
-
-		assert.Equal(t, 1, len(d.ManagedLockCodes))
-		mlc := d.ManagedLockCodes[0]
-		assert.Equal(t, reservation.ID, mlc.ReservationID)
-		assert.Equal(t, mlcOriginalStartAt, mlc.StartAt) // Start at doesn't change.
-		assert.Equal(t, now.Add(1*time.Hour), mlc.EndAt)
-	}).Return(nil)
-
-	dr.EXPECT().Put(
-		ctx,
-		gomock.Any(),
-	).Do(func(ctx context.Context, d shared.Device) {
-		assert.Equal(t, device.ID, d.ID)
-		assert.Equal(t, 1, len(d.ManagedLockCodes))
-	})
-
-	err := s.ReconcileReservationsAndLockCodes(ctx)
-	assert.Nil(t, err)
-}
-
 func Test_recentlyEndedReservation(t *testing.T) {
 	// Do nothing for a reservation that has recently ended and doesn't have a corresponding MLC.
 
-	s, dr, now, rr, ur := newScheduler(t)
+	s, dr, now, rr, ur := newScheduler(t, time.Now())
 
 	ctx := context.Background()
 	unit := shared.Unit{
@@ -344,7 +269,7 @@ func Test_recentlyEndedReservation(t *testing.T) {
 func Test_futureReservation(t *testing.T) {
 	// Do nothing for a reservation that is far in the future.
 
-	s, dr, now, rr, ur := newScheduler(t)
+	s, dr, now, rr, ur := newScheduler(t, time.Now())
 
 	ctx := context.Background()
 	unit := shared.Unit{
@@ -389,7 +314,7 @@ func Test_futureReservation(t *testing.T) {
 func Test_recentlyEndedMLC(t *testing.T) {
 	// Do nothing for a MLC that has recently ended and doesn't have a corresponding reservation.
 
-	s, dr, now, rr, ur := newScheduler(t)
+	s, dr, now, rr, ur := newScheduler(t, time.Now())
 
 	ctx := context.Background()
 	unit := shared.Unit{
@@ -431,79 +356,75 @@ func Test_recentlyEndedMLC(t *testing.T) {
 }
 
 func Test_editMLCWithNoReservation(t *testing.T) {
-	// Edit a MLC when it's reservation doesn't exist anymore.
 
-	s, dr, now, rr, ur := newScheduler(t)
-
-	ctx := context.Background()
-	unit := shared.Unit{
-		ID:          uuid.New(),
-		CalendarURL: "notBlank",
-	}
-	managedLockCode := &shared.DeviceManagedLockCode{
-		// The code, start, and end don't match (should probably test them individually).
-		ID:            uuid.New(),
-		ReservationID: "someReservationIDThatDoesn'tExist",
-		Code:          "1111",
-		StartAt:       now.Add(-5 * time.Hour),
-		EndAt:         now.Add(5 * time.Hour),
-	}
-	device := shared.Device{
-		ID:               uuid.New(),
-		ManagedLockCodes: []*shared.DeviceManagedLockCode{managedLockCode},
-		UnitID:           &unit.ID,
+	type TestCase struct {
+		OriginalStartAt time.Time
+		OriginalEndAt   time.Time
 	}
 
-	ur.EXPECT().List(ctx).Return(
-		[]shared.Unit{unit},
-		nil,
-	)
+	now := time.Now()
 
-	rr.EXPECT().GetForUnits(ctx, []shared.Unit{unit}).Return(
-		map[uuid.UUID][]shared.Reservation{},
-		nil,
-	)
+	for _, testCase := range []TestCase{
+		// Reservation has ended.
+		{
+			OriginalStartAt: now.Add(-10 * time.Hour),
+			OriginalEndAt:   now.Add(-5 * time.Hour),
+		},
+		// Reservation is in progress.
+		{
+			OriginalStartAt: now.Add(-10 * time.Hour),
+			OriginalEndAt:   now.Add(10 * time.Hour),
+		},
+		// Reservation hasn't started.
+		{
+			OriginalStartAt: now.Add(10 * time.Hour),
+			OriginalEndAt:   now.Add(20 * time.Hour),
+		},
+	} {
+		s, dr, _, rr, ur := newScheduler(t, now)
 
-	dr.EXPECT().List(ctx).Return(
-		[]shared.Device{device},
-		nil,
-	)
+		ctx := context.Background()
+		unit := shared.Unit{
+			ID:          uuid.New(),
+			CalendarURL: "notBlank",
+		}
+		managedLockCode := &shared.DeviceManagedLockCode{
+			ID:            uuid.New(),
+			ReservationID: "someReservationIDThatDoesn'tExist",
+			Code:          "1111",
+			StartAt:       testCase.OriginalStartAt,
+			EndAt:         testCase.OriginalEndAt,
+		}
+		device := shared.Device{
+			ID:               uuid.New(),
+			ManagedLockCodes: []*shared.DeviceManagedLockCode{managedLockCode},
+			UnitID:           &unit.ID,
+		}
 
-	dr.EXPECT().AppendToAuditLog(
-		ctx,
-		gomock.Any(),
-		gomock.Any(),
-	).Do(func(ctx context.Context, d shared.Device, managedLockCodes []*shared.DeviceManagedLockCode) {
-		assert.Equal(t, device.ID, d.ID)
-		assert.Equal(t, d.ManagedLockCodes, managedLockCodes)
+		ur.EXPECT().List(ctx).Return(
+			[]shared.Unit{unit},
+			nil,
+		)
 
-		assert.Equal(t, 1, len(d.ManagedLockCodes))
-		mlc := d.ManagedLockCodes[0]
-		assert.Equal(t, "1111", mlc.Code)
-		assert.Equal(t, managedLockCode.ReservationID, mlc.ReservationID)
+		rr.EXPECT().GetForUnits(ctx, []shared.Unit{unit}).Return(
+			map[uuid.UUID][]shared.Reservation{},
+			nil,
+		)
 
-		// The start time stays the same but the end time changes.
-		assert.Equal(t, managedLockCode.StartAt, mlc.StartAt)
-		assert.Equal(t, now.Add(1*time.Hour), mlc.EndAt)
-	}).Return(nil)
+		dr.EXPECT().List(ctx).Return(
+			[]shared.Device{device},
+			nil,
+		)
 
-	dr.EXPECT().Put(
-		ctx,
-		gomock.Any(),
-	).Do(func(ctx context.Context, d shared.Device) {
-		assert.Equal(t, device.ID, d.ID)
-		assert.Equal(t, 1, len(d.ManagedLockCodes))
-	})
-
-	err := s.ReconcileReservationsAndLockCodes(ctx)
-	assert.Nil(t, err)
+		err := s.ReconcileReservationsAndLockCodes(ctx)
+		assert.Nil(t, err)
+	}
 }
 
-func newScheduler(t *testing.T) (*scheduler.Scheduler, *mock_scheduler.MockDeviceRepository, time.Time, *mock_scheduler.MockReservationRepository, *mock_scheduler.MockUnitRepository) {
+func newScheduler(t *testing.T, now time.Time) (*scheduler.Scheduler, *mock_scheduler.MockDeviceRepository, time.Time, *mock_scheduler.MockReservationRepository, *mock_scheduler.MockUnitRepository) {
 	ctrl := gomock.NewController(t)
 
 	dr := mock_scheduler.NewMockDeviceRepository(ctrl)
-	now := time.Now()
 	rr := mock_scheduler.NewMockReservationRepository(ctrl)
 	ur := mock_scheduler.NewMockUnitRepository(ctrl)
 

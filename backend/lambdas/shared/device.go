@@ -90,29 +90,6 @@ func (d *Device) GetManagedLockCode(id uuid.UUID) *DeviceManagedLockCode {
 	return nil
 }
 
-func (d *Device) HasConflictingManagedLockCode(lc *DeviceManagedLockCode) bool {
-	if lc.EndAt.Before(lc.StartAt) {
-		// Invalid range, not really our place but let's just fail it.
-		return true
-	}
-
-	for _, elc := range d.ManagedLockCodes {
-		if elc.Code != lc.Code {
-			continue
-		}
-
-		// Add an ~hour buffer.
-		startsAfter := elc.StartAt.After(lc.EndAt.Add(59 * time.Minute))
-		endsBefore := elc.EndAt.Before(lc.StartAt.Add(-59 * time.Minute))
-
-		if !(startsAfter || endsBefore) {
-			return true
-		}
-	}
-
-	return false
-}
-
 func (d *Device) SortManagedLockCodes() {
 	// This is really just here so that we end up with an empty array instead of null when marshalling.
 	if d.ManagedLockCodes == nil {

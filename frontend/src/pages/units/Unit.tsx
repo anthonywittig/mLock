@@ -93,10 +93,6 @@ function removeClick(props: Props, id: string) {
     });
 }
 
-function deviceClick(state: State, id: string) {
-    state.history.push('/devices/' + id);
-}
-
 function nameClick(state: State, id: string) {
     state.history.push('/units/' + id);
 }
@@ -177,14 +173,11 @@ function render(props: Props, state: State) {
 
     let devices = <></>;
     if (props.devices.length === 1) {
-        //devices = <>TBD</>;
-        //devices = <Button variant="link" onClick={evt => deviceClick(state, props.devices[0].id)}>{props.devices[0].name}</Button>;
         devices = <Link to={"/devices/" + props.devices[0].id}><Button variant="link">{props.devices[0].name}</Button></Link>;
-        //devices = <Link to={"/devices"}><Button variant="link">{props.devices[0].name}</Button></Link>;
     } else {
         devices= (<ul>
             {props.devices.map(device =>
-                <li><Button variant="link" onClick={evt => deviceClick(state, device.id)}>{device.name}</Button></li>
+                <li><Link to={"/devices/" + device.id}><Button variant="link">{device.name}</Button></Link></li>
             )}
         </ul>);
     }

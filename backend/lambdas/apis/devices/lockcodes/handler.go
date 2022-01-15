@@ -107,10 +107,6 @@ func create(ctx context.Context, req events.APIGatewayProxyRequest, d shared.Dev
 		return nil, fmt.Errorf("can't start after it ends")
 	}
 
-	if d.HasConflictingManagedLockCode(mlc) {
-		return nil, fmt.Errorf("conflicting lock code already exists")
-	}
-
 	d.ManagedLockCodes = append(d.ManagedLockCodes, mlc)
 
 	if err := device.NewRepository().AppendToAuditLog(ctx, d, []*shared.DeviceManagedLockCode{mlc}); err != nil {

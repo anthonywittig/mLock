@@ -133,31 +133,11 @@ func (s *Scheduler) processDevice(ctx context.Context, device shared.Device, res
 		}
 	}
 
-	for _, mlc := range device.ManagedLockCodes {
-		if mlc.ReservationID != "" {
-			if mlc.EndAt.Before(s.now) {
-				continue // Someone else will eventually delete this.
-			}
-
-			if _, ok := relevantReservations[mlc.ReservationID]; !ok {
-				// Our reservation doesn't exist anymore. It might be that the reservation was canceled, modified to end early, or isn't showing up due to a system error. To play it safe, we'll set the expiration to something in the near future (if it's less than the current expiration).
-				nearFuture := s.now.Add(1 * time.Hour)
-
-				if mlc.EndAt.Before(nearFuture) {
-					continue
-				}
-
-				if mlc.StartAt.After(nearFuture) {
-					// Just so the reservation doesn't look odd with a start date after the end date...
-					mlc.StartAt = nearFuture
-				}
-
-				mlc.EndAt = nearFuture
-				mlc.Note = "Reservation has disappeared, setting the end time to an hour from now."
-				needToSave = append(needToSave, mlc)
-			}
-		}
-	}
+	// We could check to see if the reservation has disappeared, but that can happen for at least these reasons:
+	// * the reservation was canceled
+	// * modified to end early
+	// * is missing due to a system error (this happens a lot)
+	// In practice, we'll delay creating reservations until they're close to their start time, so if it disappears we'll assume a system error and do nothing.
 
 	if len(needToSave) > 0 {
 		if err := s.dr.AppendToAuditLog(ctx, device, needToSave); err != nil {
