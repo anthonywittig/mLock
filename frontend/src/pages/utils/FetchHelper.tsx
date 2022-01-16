@@ -13,14 +13,10 @@ function getStandardFetch(retries: number, path: string, init?: RequestInit): Pr
     return fetch((process.env.REACT_APP_BACKEND_DOMAIN || "") + "/" + path, init)
     .then(response => {
         if (response.status === 401 || response.status === 403) {
-            // Setting the location probably isn't a good pattern, right?
-            window.location.href = "/sign-in?state=" + response.status;
-            return Promise.reject(); 
-        } else if (response.status === 504) {
-            // To help with Aurora waking up.
-            if (retries > 0) {
-                return getStandardFetch(--retries, path, init);
-            }
+            const next = encodeURIComponent(window.location.pathname + window.location.search);
+            // Is setting the location directly a good pattern?
+            window.location.href = "/sign-in?state=" + response.status + "&next=" + next;
+            return Promise.reject();
         }
         return response;
     });
