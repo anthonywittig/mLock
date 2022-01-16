@@ -59,6 +59,7 @@ func (l *LockEngine) UpdateLocks(ctx context.Context) error {
 
 	now := time.Now()
 	nearPast := now.Add(-1 * time.Hour * 24 * 7)
+	minPastCount := 5
 
 	for _, d := range ds {
 		lockStates := l.getLockStates(now, d)
@@ -69,8 +70,9 @@ func (l *LockEngine) UpdateLocks(ctx context.Context) error {
 		}
 
 		nonDeletedMLCs := []*shared.DeviceManagedLockCode{}
+		completedMLCsCount := 0
+
 		for i, mlc := range d.ManagedLockCodes {
-			fmt.Printf("mlc: %+v\n", mlc)
 			if mlc.EndAt.Before(nearPast) && mlc.Status == shared.DeviceManagedLockCodeStatus5Complete {
 				justUpdated := false
 				for _, m := range needToSave {
@@ -80,9 +82,12 @@ func (l *LockEngine) UpdateLocks(ctx context.Context) error {
 					}
 				}
 				if !justUpdated {
-					d.ManagedLockCodes[i].Note = "Deleting code as it completed a while ago."
-					needToSave = append(needToSave, d.ManagedLockCodes[i])
-					continue
+					completedMLCsCount = completedMLCsCount + 1
+					if completedMLCsCount >= minPastCount {
+						d.ManagedLockCodes[i].Note = "Deleting code as it completed a while ago."
+						needToSave = append(needToSave, d.ManagedLockCodes[i])
+						continue
+					}
 				}
 			}
 			nonDeletedMLCs = append(nonDeletedMLCs, d.ManagedLockCodes[i])

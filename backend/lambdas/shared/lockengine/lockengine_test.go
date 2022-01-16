@@ -237,23 +237,61 @@ func Test_deleteOneButNotAllMLCs(t *testing.T) {
 		ControllerID: "9876",
 		ID:           uuid.New(),
 	}
-	managedLockCode1 := &shared.DeviceManagedLockCode{
-		Code:    "1234",
-		EndAt:   time.Now().Add(-1 * time.Hour * 24 * 8),
-		Status:  shared.DeviceManagedLockCodeStatus5Complete,
-		StartAt: time.Now().Add(-1 * time.Hour * 24 * 9),
-	}
-	managedLockCode2 := &shared.DeviceManagedLockCode{
-		Code:    "5678",
-		EndAt:   time.Now().Add(-1 * time.Hour * 24 * 1),
-		Status:  shared.DeviceManagedLockCodeStatus5Complete,
-		StartAt: time.Now().Add(-1 * time.Hour * 24 * 2),
-	}
 	device := shared.Device{
-		ID:               uuid.New(),
-		ManagedLockCodes: []*shared.DeviceManagedLockCode{managedLockCode1, managedLockCode2},
-		PropertyID:       property.ID,
-		RawDevice:        shared.RawDevice{},
+		ID: uuid.New(),
+		ManagedLockCodes: []*shared.DeviceManagedLockCode{
+			// Old enough to delete, but since we keep the x most recent it'll hang out.
+			{
+				Code:    "0001",
+				EndAt:   time.Now().Add(-1 * time.Hour * 24 * 8),
+				Status:  shared.DeviceManagedLockCodeStatus5Complete,
+				StartAt: time.Now().Add(-1 * time.Hour * 24 * 9),
+			},
+			// Old enough to delete, but since we keep the x most recent it'll hang out.
+			{
+				Code:    "0002",
+				EndAt:   time.Now().Add(-1 * time.Hour * 24 * 9),
+				Status:  shared.DeviceManagedLockCodeStatus5Complete,
+				StartAt: time.Now().Add(-1 * time.Hour * 24 * 10),
+			},
+			// Old enough to delete, but since we keep the x most recent it'll hang out.
+			{
+				Code:    "0003",
+				EndAt:   time.Now().Add(-1 * time.Hour * 24 * 10),
+				Status:  shared.DeviceManagedLockCodeStatus5Complete,
+				StartAt: time.Now().Add(-1 * time.Hour * 24 * 11),
+			},
+			// Old enough to delete, but since we keep the x most recent it'll hang out.
+			{
+				Code:    "0004",
+				EndAt:   time.Now().Add(-1 * time.Hour * 24 * 11),
+				Status:  shared.DeviceManagedLockCodeStatus5Complete,
+				StartAt: time.Now().Add(-1 * time.Hour * 24 * 12),
+			},
+			// Expect to be deleted.
+			{
+				Code:    "0005",
+				EndAt:   time.Now().Add(-1 * time.Hour * 24 * 12),
+				Status:  shared.DeviceManagedLockCodeStatus5Complete,
+				StartAt: time.Now().Add(-1 * time.Hour * 24 * 13),
+			},
+			// Expect to be deleted.
+			{
+				Code:    "0006",
+				EndAt:   time.Now().Add(-1 * time.Hour * 24 * 13),
+				Status:  shared.DeviceManagedLockCodeStatus5Complete,
+				StartAt: time.Now().Add(-1 * time.Hour * 24 * 14),
+			},
+			// Don't delete because it's not a week old.
+			{
+				Code:    "9999",
+				EndAt:   time.Now().Add(-1 * time.Hour * 24 * 1),
+				Status:  shared.DeviceManagedLockCodeStatus5Complete,
+				StartAt: time.Now().Add(-1 * time.Hour * 24 * 2),
+			},
+		},
+		PropertyID: property.ID,
+		RawDevice:  shared.RawDevice{},
 	}
 
 	le, _, dr, pr := newLockEngine(t)
@@ -272,13 +310,23 @@ func Test_deleteOneButNotAllMLCs(t *testing.T) {
 	).Do(func(ctx context.Context, d shared.Device, managedLockCodes []*shared.DeviceManagedLockCode) {
 		assert.Equal(t, device.ID, d.ID)
 
-		assert.Equal(t, 1, len(d.ManagedLockCodes))
+		assert.Equal(t, 5, len(d.ManagedLockCodes))
 		mlc := d.ManagedLockCodes[0]
-		assert.Equal(t, "5678", mlc.Code)
+		assert.Equal(t, "0001", mlc.Code)
+		mlc = d.ManagedLockCodes[1]
+		assert.Equal(t, "0002", mlc.Code)
+		mlc = d.ManagedLockCodes[2]
+		assert.Equal(t, "0003", mlc.Code)
+		mlc = d.ManagedLockCodes[3]
+		assert.Equal(t, "0004", mlc.Code)
+		mlc = d.ManagedLockCodes[4]
+		assert.Equal(t, "9999", mlc.Code)
 
-		assert.Equal(t, 1, len(managedLockCodes))
+		assert.Equal(t, 2, len(managedLockCodes))
 		mlc = managedLockCodes[0]
-		assert.Equal(t, "1234", mlc.Code)
+		assert.Equal(t, "0005", mlc.Code)
+		mlc = managedLockCodes[1]
+		assert.Equal(t, "0006", mlc.Code)
 	}).Return(nil)
 
 	dr.EXPECT().Put(
@@ -286,9 +334,17 @@ func Test_deleteOneButNotAllMLCs(t *testing.T) {
 		gomock.Any(),
 	).Do(func(ctx context.Context, d shared.Device) {
 		assert.Equal(t, d.ID, d.ID)
-		assert.Equal(t, 1, len(d.ManagedLockCodes))
+		assert.Equal(t, 5, len(d.ManagedLockCodes))
 		mlc := d.ManagedLockCodes[0]
-		assert.Equal(t, "5678", mlc.Code)
+		assert.Equal(t, "0001", mlc.Code)
+		mlc = d.ManagedLockCodes[1]
+		assert.Equal(t, "0002", mlc.Code)
+		mlc = d.ManagedLockCodes[2]
+		assert.Equal(t, "0003", mlc.Code)
+		mlc = d.ManagedLockCodes[3]
+		assert.Equal(t, "0004", mlc.Code)
+		mlc = d.ManagedLockCodes[4]
+		assert.Equal(t, "9999", mlc.Code)
 	}).Return(shared.Device{}, nil)
 
 	err := le.UpdateLocks(ctx)
