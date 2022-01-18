@@ -1,8 +1,4 @@
 function StandardFetch(path: string, init?: RequestInit): Promise<Response> {
-    return getStandardFetch(3, path, init);
-}
-
-function getStandardFetch(retries: number, path: string, init?: RequestInit): Promise<Response> {
     if (!init) {
         init = {};
     }
