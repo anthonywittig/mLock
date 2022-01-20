@@ -76,7 +76,8 @@ func Test_addMLC(t *testing.T) {
 		assert.Equal(t, 1, len(d.ManagedLockCodes))
 		mlc := d.ManagedLockCodes[0]
 		assert.Equal(t, "5678", mlc.Code)
-		assert.Equal(t, reservation.ID, mlc.ReservationID)
+		assert.Equal(t, reservation.ID, mlc.Reservation.ID)
+		assert.Equal(t, true, mlc.Reservation.Sync)
 		assert.Equal(t, reservation.Start.Add(-30*time.Minute), mlc.StartAt)
 		assert.Equal(t, reservation.End.Add(30*time.Minute), mlc.EndAt)
 		assert.Equal(t, shared.DeviceManagedLockCodeStatus1Scheduled, mlc.Status)
@@ -111,11 +112,14 @@ func Test_noEditMLC(t *testing.T) {
 		TransactionNumber: "12345678",
 	}
 	managedLockCode := &shared.DeviceManagedLockCode{
-		ID:            uuid.New(),
-		ReservationID: reservation.ID,
-		Code:          "5678",
-		StartAt:       reservation.Start.Add(-30 * time.Minute),
-		EndAt:         reservation.End.Add(30 * time.Minute),
+		ID: uuid.New(),
+		Reservation: shared.DeviceManagedLockCodeReservation{
+			ID:   reservation.ID,
+			Sync: true,
+		},
+		Code:    "5678",
+		StartAt: reservation.Start.Add(-30 * time.Minute),
+		EndAt:   reservation.End.Add(30 * time.Minute),
 	}
 	device := shared.Device{
 		ID:               uuid.New(),
@@ -164,11 +168,14 @@ func Test_editMLC(t *testing.T) {
 	}
 	managedLockCode := &shared.DeviceManagedLockCode{
 		// The code, start, and end don't match (should probably test them individually).
-		ID:            uuid.New(),
-		ReservationID: reservation.ID,
-		Code:          "1111",                                  // Should be "5678".
-		StartAt:       reservation.Start.Add(-5 * time.Minute), // Should be -30.
-		EndAt:         reservation.End.Add(5 * time.Minute),    // Should be +30.
+		ID: uuid.New(),
+		Reservation: shared.DeviceManagedLockCodeReservation{
+			ID:   reservation.ID,
+			Sync: true,
+		},
+		Code:    "1111",                                  // Should be "5678".
+		StartAt: reservation.Start.Add(-5 * time.Minute), // Should be -30.
+		EndAt:   reservation.End.Add(5 * time.Minute),    // Should be +30.
 	}
 	device := shared.Device{
 		ID:               uuid.New(),
@@ -204,7 +211,8 @@ func Test_editMLC(t *testing.T) {
 		assert.Equal(t, 1, len(d.ManagedLockCodes))
 		mlc := d.ManagedLockCodes[0]
 		assert.Equal(t, "5678", mlc.Code)
-		assert.Equal(t, reservation.ID, mlc.ReservationID)
+		assert.Equal(t, reservation.ID, mlc.Reservation.ID)
+		assert.Equal(t, true, mlc.Reservation.Sync)
 		assert.Equal(t, reservation.Start.Add(-30*time.Minute), mlc.StartAt)
 		assert.Equal(t, reservation.End.Add(30*time.Minute), mlc.EndAt)
 	}).Return(nil)
@@ -322,11 +330,14 @@ func Test_recentlyEndedMLC(t *testing.T) {
 		CalendarURL: "notBlank",
 	}
 	managedLockCode := &shared.DeviceManagedLockCode{
-		ID:            uuid.New(),
-		ReservationID: "someReservationIDThatDoesn'tExist",
-		Code:          "1111",
-		StartAt:       now.Add(-2 * time.Minute),
-		EndAt:         now.Add(-1 * time.Minute),
+		ID: uuid.New(),
+		Reservation: shared.DeviceManagedLockCodeReservation{
+			ID:   "someReservationIDThatDoesn'tExist",
+			Sync: true,
+		},
+		Code:    "1111",
+		StartAt: now.Add(-2 * time.Minute),
+		EndAt:   now.Add(-1 * time.Minute),
 	}
 	device := shared.Device{
 		ID:               uuid.New(),
@@ -389,11 +400,14 @@ func Test_editMLCWithNoReservation(t *testing.T) {
 			CalendarURL: "notBlank",
 		}
 		managedLockCode := &shared.DeviceManagedLockCode{
-			ID:            uuid.New(),
-			ReservationID: "someReservationIDThatDoesn'tExist",
-			Code:          "1111",
-			StartAt:       testCase.OriginalStartAt,
-			EndAt:         testCase.OriginalEndAt,
+			ID: uuid.New(),
+			Reservation: shared.DeviceManagedLockCodeReservation{
+				ID:   "someReservationIDThatDoesn'tExist",
+				Sync: true,
+			},
+			Code:    "1111",
+			StartAt: testCase.OriginalStartAt,
+			EndAt:   testCase.OriginalEndAt,
 		}
 		device := shared.Device{
 			ID:               uuid.New(),

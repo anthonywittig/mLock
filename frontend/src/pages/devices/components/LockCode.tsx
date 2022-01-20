@@ -15,12 +15,13 @@ export const LockCode = (props:Props) => {
     let initialCode = "";
     if (props.managedLockCode) {
         initialCode = props.managedLockCode.code + " - " + props.managedLockCode.status;
-        if (props.managedLockCode.reservationId) {
-            initialCode += " - Reservation " + props.managedLockCode.reservationId.replace("@LiveRez.com", "");
+        if (props.managedLockCode.reservation.id) {
+            initialCode += " - Reservation " + props.managedLockCode.reservation.id.replace("@LiveRez.com", "");
         }
         initialCode += " - " + props.managedLockCode.note;
     }
     const [code, setCode] = React.useState<string>(initialCode);
+    const [syncWithReservation, setSyncWithReservation] = React.useState<boolean>(true);
     const [startAt, setStartAt] = React.useState<Date>(props.managedLockCode ? parseISO(props.managedLockCode.startAt) : new Date());
     const [endAt, setEndAt] = React.useState<Date>(props.managedLockCode ? parseISO(props.managedLockCode.endAt) : addDays(set(new Date(), {minutes: 0}), 1));
 
@@ -100,6 +101,21 @@ export const LockCode = (props:Props) => {
             statusBadge = <Badge pill variant={variant}>{status}</Badge>;
         }
 
+        let syncWithReservationCB = <></>;
+        if (props.managedLockCode?.reservation.id) {
+            syncWithReservationCB = (
+                <Form.Group className="mb-3" controlId="formBasicCheckbox">
+                    <Form.Check
+                        type="checkbox"
+                        label="Sync With Reservation"
+                        checked={syncWithReservation}
+                        onChange={e => setSyncWithReservation(e.target.checked)}
+                        disabled={!!props.managedLockCode}
+                    />
+                </Form.Group>
+            );
+        }
+
         // TODO: we should show the time zone that's being used.
         return (
             <Form onSubmit={evt => formSubmit(evt)} style={ {"marginBottom": "2em"} } >
@@ -108,6 +124,8 @@ export const LockCode = (props:Props) => {
                     <Form.Control type="text" defaultValue={code} onChange={(evt) => setCode(evt.target.value)} disabled={!!props.managedLockCode}/>
                 </Form.Group>
 
+                {syncWithReservationCB}
+
                 <Form.Group>
                     <Form.Label>Enable At</Form.Label>
                     <Form.Control type="datetime-local" defaultValue={format(startAt, "yyyy-MM-dd'T'HH:mm")} onChange={(evt) => setStartAt(parseISO(evt.target.value))} disabled={!!props.managedLockCode}/>
@@ -115,10 +133,10 @@ export const LockCode = (props:Props) => {
 
                 <Form.Group>
                     <Form.Label>Disable At</Form.Label>
-                    <Form.Control type="datetime-local" defaultValue={format(endAt, "yyyy-MM-dd'T'HH:mm")} onChange={(evt) => setEndAt(parseISO(evt.target.value))} disabled={!!(props.managedLockCode?.reservationId)}/>
+                    <Form.Control type="datetime-local" defaultValue={format(endAt, "yyyy-MM-dd'T'HH:mm")} onChange={(evt) => setEndAt(parseISO(evt.target.value))} disabled={!!(props.managedLockCode?.reservation.id)}/>
                 </Form.Group>
 
-                <Button variant="secondary" type="submit" disabled={!!(props.managedLockCode?.reservationId)}>
+                <Button variant="secondary" type="submit" disabled={!!(props.managedLockCode?.reservation.id)}>
                     {props.managedLockCode ? "Update" : "Add"} Lock Code
                 </Button>
             </Form>

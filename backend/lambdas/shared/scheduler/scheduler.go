@@ -72,8 +72,8 @@ func (s *Scheduler) processDevice(ctx context.Context, device shared.Device, res
 
 	mlcByReservation := map[string]*shared.DeviceManagedLockCode{}
 	for _, mlc := range device.ManagedLockCodes {
-		if mlc.ReservationID != "" {
-			mlcByReservation[mlc.ReservationID] = mlc
+		if mlc.Reservation.ID != "" {
+			mlcByReservation[mlc.Reservation.ID] = mlc
 		}
 	}
 
@@ -100,13 +100,16 @@ func (s *Scheduler) processDevice(ctx context.Context, device shared.Device, res
 			}
 
 			newMLC := &shared.DeviceManagedLockCode{
-				Code:          code,
-				EndAt:         reservation.End,
-				ID:            uuid.New(),
-				Note:          fmt.Sprintf("Automatically created for reservation %s", reservation.TransactionNumber),
-				ReservationID: reservation.ID,
-				Status:        shared.DeviceManagedLockCodeStatus1Scheduled,
-				StartAt:       reservation.Start,
+				Code:  code,
+				EndAt: reservation.End,
+				ID:    uuid.New(),
+				Note:  fmt.Sprintf("Automatically created for reservation %s", reservation.TransactionNumber),
+				Reservation: shared.DeviceManagedLockCodeReservation{
+					ID:   reservation.ID,
+					Sync: true,
+				},
+				Status:  shared.DeviceManagedLockCodeStatus1Scheduled,
+				StartAt: reservation.Start,
 			}
 
 			device.ManagedLockCodes = append(device.ManagedLockCodes, newMLC)

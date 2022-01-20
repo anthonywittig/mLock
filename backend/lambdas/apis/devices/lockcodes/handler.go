@@ -132,7 +132,7 @@ func update(ctx context.Context, req events.APIGatewayProxyRequest, d shared.Dev
 		return nil, fmt.Errorf("unable to find managed lock code")
 	}
 
-	if mlc.ReservationID != "" {
+	if mlc.Reservation.Sync {
 		return nil, fmt.Errorf("can't edit a reservation lock code")
 	}
 

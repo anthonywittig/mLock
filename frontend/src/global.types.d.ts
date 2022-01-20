@@ -40,10 +40,15 @@ type DeviceManagedLockCodeT = {
     deviceId: string,
     code: string,
     note: string,
-    reservationId: string,
+    reservation: DeviceManagedLockCodeReservationT,
     status: string,
     startAt: string,
     endAt: string,
+}
+
+type DeviceManagedLockCodeReservationT = {
+    id: string,
+    sync: boolean,
 }
 
 type UnitT = {
