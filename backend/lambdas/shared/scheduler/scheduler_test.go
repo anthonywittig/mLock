@@ -150,6 +150,61 @@ func Test_noEditMLC(t *testing.T) {
 	assert.Nil(t, err)
 }
 
+func Test_noSyncMLC(t *testing.T) {
+	// Don't sync a MLC based on a reservation.
+
+	s, dr, now, rr, ur := newScheduler(t, time.Now())
+
+	ctx := context.Background()
+	unit := shared.Unit{
+		ID:          uuid.New(),
+		CalendarURL: "notBlank",
+	}
+	reservation := shared.Reservation{
+		ID:                "someReservationID",
+		Start:             now,
+		End:               now.Add(1 * time.Hour),
+		TransactionNumber: "12345678",
+	}
+	managedLockCode := &shared.DeviceManagedLockCode{
+		ID: uuid.New(),
+		Reservation: shared.DeviceManagedLockCodeReservation{
+			ID:   reservation.ID,
+			Sync: false, // Because we're not syncing, we shouldn't see any changes.
+		},
+		Code:    "5678",
+		StartAt: reservation.Start.Add(-1 * time.Hour * 24), // Starts a day earlier than the reservation says.
+		EndAt:   reservation.End.Add(1 * time.Minute * 24),  // Ends a day later than the reservation says.
+	}
+	device := shared.Device{
+		ID:               uuid.New(),
+		ManagedLockCodes: []*shared.DeviceManagedLockCode{managedLockCode},
+		UnitID:           &unit.ID,
+	}
+
+	ur.EXPECT().List(ctx).Return(
+		[]shared.Unit{unit},
+		nil,
+	)
+
+	rr.EXPECT().GetForUnits(ctx, []shared.Unit{unit}).Return(
+		map[uuid.UUID][]shared.Reservation{
+			unit.ID: {reservation},
+		},
+		nil,
+	)
+
+	dr.EXPECT().List(ctx).Return(
+		[]shared.Device{device},
+		nil,
+	)
+
+	// No dr.AppendToAuditLog or dr.Put because there are no modifications.
+
+	err := s.ReconcileReservationsAndLockCodes(ctx)
+	assert.Nil(t, err)
+}
+
 func Test_editMLC(t *testing.T) {
 	// Edit a MLC based on a reservation.
 

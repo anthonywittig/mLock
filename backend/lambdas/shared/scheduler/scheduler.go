@@ -114,7 +114,7 @@ func (s *Scheduler) processDevice(ctx context.Context, device shared.Device, res
 
 			device.ManagedLockCodes = append(device.ManagedLockCodes, newMLC)
 			needToSave = append(needToSave, newMLC)
-		} else {
+		} else if mlc.Reservation.Sync {
 			changedFields := []string{}
 			if mlc.Code != code {
 				changedFields = append(changedFields, "code")
