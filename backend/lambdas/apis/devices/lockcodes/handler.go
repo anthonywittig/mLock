@@ -25,7 +25,12 @@ type CreateResponse struct {
 }
 
 type UpdateBody struct {
-	EndAt time.Time `json:"endAt"`
+	Reservation UpdateBodyReservation `json:"reservation"`
+	EndAt       time.Time             `json:"endAt"`
+}
+
+type UpdateBodyReservation struct {
+	Sync bool `json:"sync"`
 }
 
 type UpdateResponse struct {
@@ -132,14 +137,12 @@ func update(ctx context.Context, req events.APIGatewayProxyRequest, d shared.Dev
 		return nil, fmt.Errorf("unable to find managed lock code")
 	}
 
-	if mlc.Reservation.Sync {
-		return nil, fmt.Errorf("can't edit a reservation lock code")
-	}
-
 	mlc.EndAt = body.EndAt
 	if mlc.StartAt.After(mlc.EndAt) {
 		return nil, fmt.Errorf("can't start after it ends")
 	}
+
+	mlc.Reservation.Sync = body.Reservation.Sync
 
 	cd, err := shared.GetContextData(ctx)
 	if err != nil {

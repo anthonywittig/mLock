@@ -21,7 +21,7 @@ export const LockCode = (props:Props) => {
         initialCode += " - " + props.managedLockCode.note;
     }
     const [code, setCode] = React.useState<string>(initialCode);
-    const [syncWithReservation, setSyncWithReservation] = React.useState<boolean>(true);
+    const [syncWithReservation, setSyncWithReservation] = React.useState<boolean>(!!props.managedLockCode?.reservation.sync);
     const [startAt, setStartAt] = React.useState<Date>(props.managedLockCode ? parseISO(props.managedLockCode.startAt) : new Date());
     const [endAt, setEndAt] = React.useState<Date>(props.managedLockCode ? parseISO(props.managedLockCode.endAt) : addDays(set(new Date(), {minutes: 0}), 1));
 
@@ -54,6 +54,9 @@ export const LockCode = (props:Props) => {
         StandardFetch("devices/" + props.deviceId + "/lock-codes/" + props.managedLockCode?.id, {
             method: "PUT",
             body: JSON.stringify({
+                reservation: {
+                    sync: syncWithReservation,
+                },
                 endAt: endAt,
             })
         })
@@ -110,7 +113,6 @@ export const LockCode = (props:Props) => {
                         label="Sync With Reservation"
                         checked={syncWithReservation}
                         onChange={e => setSyncWithReservation(e.target.checked)}
-                        disabled={!!props.managedLockCode}
                     />
                 </Form.Group>
             );
@@ -133,10 +135,10 @@ export const LockCode = (props:Props) => {
 
                 <Form.Group>
                     <Form.Label>Disable At</Form.Label>
-                    <Form.Control type="datetime-local" defaultValue={format(endAt, "yyyy-MM-dd'T'HH:mm")} onChange={(evt) => setEndAt(parseISO(evt.target.value))} disabled={!!(props.managedLockCode?.reservation.id)}/>
+                    <Form.Control type="datetime-local" defaultValue={format(endAt, "yyyy-MM-dd'T'HH:mm")} onChange={(evt) => setEndAt(parseISO(evt.target.value))} disabled={syncWithReservation}/>
                 </Form.Group>
 
-                <Button variant="secondary" type="submit" disabled={!!(props.managedLockCode?.reservation.id)}>
+                <Button variant="secondary" type="submit">
                     {props.managedLockCode ? "Update" : "Add"} Lock Code
                 </Button>
             </Form>
