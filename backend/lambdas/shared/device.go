@@ -99,10 +99,10 @@ func (d *Device) SortManagedLockCodes() {
 	sort.Slice(
 		d.ManagedLockCodes,
 		func(a, b int) bool {
-			if d.ManagedLockCodes[a].StartAt.Equal(d.ManagedLockCodes[b].StartAt) {
-				return d.ManagedLockCodes[a].EndAt.After(d.ManagedLockCodes[b].EndAt)
+			if d.ManagedLockCodes[a].EndAt.Equal(d.ManagedLockCodes[b].EndAt) {
+				return d.ManagedLockCodes[a].StartAt.After(d.ManagedLockCodes[b].StartAt)
 			}
-			return d.ManagedLockCodes[a].StartAt.After(d.ManagedLockCodes[b].StartAt)
+			return d.ManagedLockCodes[a].EndAt.After(d.ManagedLockCodes[b].EndAt)
 		},
 	)
 }
