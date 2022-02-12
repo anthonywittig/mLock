@@ -45,7 +45,7 @@ func (l *LockCodeRepository) AddLockCode(ctx context.Context, prop shared.Proper
 	lc := shared.RawDeviceLockCode{
 		Code: code,
 		Mode: "enabled",
-		Name: fmt.Sprintf("Code %d", len(lockCodes)+1), // TODO: make sure this is unique?
+		Name: code,
 	}
 
 	err = wsAddLockCodeForItem(ws, item, lc)
@@ -70,10 +70,6 @@ func (l *LockCodeRepository) RemoveLockCode(ctx context.Context, prop shared.Pro
 	lockCodes, item, err := wsGetLockCodesForDevice(ws, device.RawDevice.ID)
 	if err != nil {
 		return fmt.Errorf("error getting lock codes: %s", err.Error())
-	}
-
-	if len(lockCodes) >= item.ElementsMaxNumber {
-		return fmt.Errorf("max number of lock codes already set")
 	}
 
 	slot := -1

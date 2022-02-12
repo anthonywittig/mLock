@@ -128,6 +128,15 @@ func (i *wsItem) getLockCodes() ([]shared.RawDeviceLockCode, error) {
 			return lcs, fmt.Errorf("error getting slot: %s", err.Error())
 		}
 
+		if lc.Code == "**********" {
+			if _, err := strconv.Atoi(lc.Name); err == nil {
+				// The name is parsable as an int.
+				if len(lc.Name) == 4 {
+					lc.Code = lc.Name
+				}
+			}
+		}
+
 		lc.Slot = slot
 		lcs = append(lcs, lc)
 	}
