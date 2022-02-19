@@ -85,11 +85,17 @@ func HandleRequest(ctx context.Context, event MyEvent) (Response, error) {
 		return Response{}, fmt.Errorf("error scheduling: %s", err.Error())
 	}
 
+	fed, err := mshared.GetConfig("FRONTEND_DOMAIN")
+	if err != nil {
+		return Response{}, fmt.Errorf("error getting front end domain: %s", err.Error())
+	}
+
 	// Process and save any device changes to the controller.
 	if err := lockengine.NewLockEngine(
 		ezlo.NewLockCodeRepository(),
 		deviceRepository,
 		emailService,
+		fed,
 		propertyRepository,
 		tz,
 	).UpdateLocks(ctx); err != nil {

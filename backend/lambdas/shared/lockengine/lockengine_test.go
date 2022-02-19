@@ -362,6 +362,6 @@ func newLockEngine(t *testing.T) (*lockengine.LockEngine, *mock_lockengine.MockD
 	// This is probably temporary so we'll just completely mock it out all the way for now.
 	es.EXPECT().SendEamil(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes()
 
-	le := lockengine.NewLockEngine(dc, dr, es, pr, time.UTC)
+	le := lockengine.NewLockEngine(dc, dr, es, "", pr, time.UTC)
 	return le, dc, dr, pr
 }

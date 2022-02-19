@@ -33,6 +33,7 @@ type LockEngine struct {
 	deviceController   DeviceController
 	deviceRepository   DeviceRepository
 	emailService       EmailService
+	frontEndDomain     string
 	propertyRepository PropertyRepository
 	timeZone           *time.Location
 }
@@ -43,11 +44,19 @@ type lockState struct {
 	RequestToRemove []*shared.DeviceManagedLockCode
 }
 
-func NewLockEngine(dc DeviceController, dr DeviceRepository, es EmailService, pr PropertyRepository, tz *time.Location) *LockEngine {
+func NewLockEngine(
+	dc DeviceController,
+	dr DeviceRepository,
+	es EmailService,
+	fed string,
+	pr PropertyRepository,
+	tz *time.Location,
+) *LockEngine {
 	return &LockEngine{
 		deviceController:   dc,
 		deviceRepository:   dr,
 		emailService:       es,
+		frontEndDomain:     fed,
 		propertyRepository: pr,
 		timeZone:           tz,
 	}
@@ -217,7 +226,8 @@ func (l *LockEngine) getLockStates(now time.Time, d shared.Device) map[string]*l
 func (l *LockEngine) sendEmailForAuditLogs(ctx context.Context, d shared.Device, needToSave []*shared.DeviceManagedLockCode) error {
 	var sb strings.Builder
 
-	sb.WriteString(fmt.Sprintf("<h1>New Audit Logs For Device: %s</h1>", d.RawDevice.Name))
+	link := fmt.Sprintf("%s/devices/%s", l.frontEndDomain, d.ID)
+	sb.WriteString(fmt.Sprintf("New audit logs for device: <a href=\"%s\">%s</a>", link, d.RawDevice.Name))
 	sb.WriteString("<ul>")
 	for _, m := range needToSave {
 		sb.WriteString(fmt.Sprintf("<li>Code: %s, Status: %s</li>", m.Code, m.Status))
