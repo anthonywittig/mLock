@@ -9,13 +9,13 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-type LockCodeRepository struct{}
+type DeviceController struct{}
 
-func NewLockCodeRepository() *LockCodeRepository {
-	return &LockCodeRepository{}
+func NewDeviceController() *DeviceController {
+	return &DeviceController{}
 }
 
-func (l *LockCodeRepository) AddLockCode(ctx context.Context, prop shared.Property, device shared.Device, code string) error {
+func (d *DeviceController) AddLockCode(ctx context.Context, prop shared.Property, device shared.Device, code string) error {
 	if prop.ControllerID == "" {
 		return fmt.Errorf("property doesn't have a controller ID")
 	}
@@ -56,7 +56,7 @@ func (l *LockCodeRepository) AddLockCode(ctx context.Context, prop shared.Proper
 	return nil
 }
 
-func (l *LockCodeRepository) GetDevices(ctx context.Context, prop shared.Property) ([]shared.RawDevice, error) {
+func (d *DeviceController) GetDevices(ctx context.Context, prop shared.Property) ([]shared.RawDevice, error) {
 	if prop.ControllerID == "" {
 		return nil, nil
 	}
@@ -75,7 +75,7 @@ func (l *LockCodeRepository) GetDevices(ctx context.Context, prop shared.Propert
 	return devices, nil
 }
 
-func (l *LockCodeRepository) RemoveLockCode(ctx context.Context, prop shared.Property, device shared.Device, code string) error {
+func (d *DeviceController) RemoveLockCode(ctx context.Context, prop shared.Property, device shared.Device, code string) error {
 	if prop.ControllerID == "" {
 		return fmt.Errorf("property doesn't have a controller ID")
 	}

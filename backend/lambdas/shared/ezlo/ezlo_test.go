@@ -13,9 +13,9 @@ import (
 func Test_GetDevicesNoController(t *testing.T) {
 	assert.Nil(t, loadConfig())
 
-	lcr := NewLockCodeRepository()
+	dc := NewDeviceController()
 
-	ds, err := lcr.GetDevices(context.Background(), shared.Property{})
+	ds, err := dc.GetDevices(context.Background(), shared.Property{})
 	assert.Nil(t, err)
 	assert.Empty(t, ds)
 }
@@ -23,9 +23,9 @@ func Test_GetDevicesNoController(t *testing.T) {
 func Test_GetDevices(t *testing.T) {
 	assert.Nil(t, loadConfig())
 
-	lcr := NewLockCodeRepository()
+	dc := NewDeviceController()
 
-	ds, err := lcr.GetDevices(context.Background(), shared.Property{ControllerID: "92001809"})
+	ds, err := dc.GetDevices(context.Background(), shared.Property{ControllerID: "92001809"})
 	assert.Nil(t, err)
 
 	// Just check that we have one device (fragile).

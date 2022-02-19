@@ -59,8 +59,8 @@ func HandleRequest(ctx context.Context, event MyEvent) (Response, error) {
 		return Response{}, fmt.Errorf("error getting time zone %s", err.Error())
 	}
 
+	deviceController := ezlo.NewDeviceController()
 	deviceRepository := device.NewRepository()
-	lockCodeRepository := ezlo.NewLockCodeRepository()
 	reservationRepository := reservation.NewRepository(tz)
 	propertyRepository := property.NewRepository()
 	unitRepository := unit.NewRepository()
@@ -71,7 +71,7 @@ func HandleRequest(ctx context.Context, event MyEvent) (Response, error) {
 		return Response{}, fmt.Errorf("error getting properties: %s", err.Error())
 	}
 	for _, p := range ps {
-		if err := updateDevicesFromController(ctx, emailService, p, lockCodeRepository); err != nil {
+		if err := updateDevicesFromController(ctx, emailService, p, deviceController); err != nil {
 			return Response{}, fmt.Errorf("error updating devices for property: %s, error: %s", p.Name, err.Error())
 		}
 	}
@@ -93,7 +93,7 @@ func HandleRequest(ctx context.Context, event MyEvent) (Response, error) {
 
 	// Process and save any device changes to the controller.
 	if err := lockengine.NewLockEngine(
-		lockCodeRepository,
+		deviceController,
 		deviceRepository,
 		emailService,
 		fed,
@@ -112,9 +112,9 @@ func updateDevicesFromController(
 	ctx context.Context,
 	emailService *ses.EmailService,
 	property shared.Property,
-	lockCodeRepository *ezlo.LockCodeRepository,
+	deviceController *ezlo.DeviceController,
 ) error {
-	rds, err := lockCodeRepository.GetDevices(ctx, property)
+	rds, err := deviceController.GetDevices(ctx, property)
 	if err != nil {
 		return fmt.Errorf("error getting devices: %s", err.Error())
 	}
