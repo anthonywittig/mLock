@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"mlock/lambdas/shared"
-	mshared "mlock/shared"
 	"strings"
 	"time"
 
@@ -31,10 +30,11 @@ type PropertyRepository interface {
 }
 
 type LockEngine struct {
-	DeviceController   DeviceController
-	DeviceRepository   DeviceRepository
-	EmailService       EmailService
-	PropertyRepository PropertyRepository
+	deviceController   DeviceController
+	deviceRepository   DeviceRepository
+	emailService       EmailService
+	propertyRepository PropertyRepository
+	timeZone           *time.Location
 }
 
 type lockState struct {
@@ -43,17 +43,18 @@ type lockState struct {
 	RequestToRemove []*shared.DeviceManagedLockCode
 }
 
-func NewLockEngine(dc DeviceController, dr DeviceRepository, es EmailService, pr PropertyRepository) *LockEngine {
+func NewLockEngine(dc DeviceController, dr DeviceRepository, es EmailService, pr PropertyRepository, tz *time.Location) *LockEngine {
 	return &LockEngine{
-		DeviceController:   dc,
-		DeviceRepository:   dr,
-		EmailService:       es,
-		PropertyRepository: pr,
+		deviceController:   dc,
+		deviceRepository:   dr,
+		emailService:       es,
+		propertyRepository: pr,
+		timeZone:           tz,
 	}
 }
 
 func (l *LockEngine) UpdateLocks(ctx context.Context) error {
-	ds, err := l.DeviceRepository.List(ctx)
+	ds, err := l.deviceRepository.List(ctx)
 	if err != nil {
 		return fmt.Errorf("error getting devices: %s", err.Error())
 	}
@@ -96,11 +97,11 @@ func (l *LockEngine) UpdateLocks(ctx context.Context) error {
 		d.ManagedLockCodes = nonDeletedMLCs
 
 		if len(needToSave) > 0 {
-			if err := l.DeviceRepository.AppendToAuditLog(ctx, d, needToSave); err != nil {
+			if err := l.deviceRepository.AppendToAuditLog(ctx, d, needToSave); err != nil {
 				return fmt.Errorf("error appending to audit log: %s", err.Error())
 			}
 
-			if _, err := l.DeviceRepository.Put(ctx, d); err != nil {
+			if _, err := l.deviceRepository.Put(ctx, d); err != nil {
 				return fmt.Errorf("error putting device: %s", err.Error())
 			}
 
@@ -117,7 +118,7 @@ func (l *LockEngine) calculateAndSendLockCommands(ctx context.Context, device sh
 	needToSave := []*shared.DeviceManagedLockCode{}
 
 	for code, ls := range lockStates {
-		prop, ok, err := l.PropertyRepository.GetCached(ctx, device.PropertyID)
+		prop, ok, err := l.propertyRepository.GetCached(ctx, device.PropertyID)
 		if err != nil {
 			return nil, fmt.Errorf("error getting property: %s", err.Error())
 		}
@@ -142,7 +143,7 @@ func (l *LockEngine) calculateAndSendLockCommands(ctx context.Context, device sh
 					}
 				}
 			} else if len(ls.RequestToRemove) > 0 {
-				if err := l.DeviceController.RemoveLockCode(ctx, prop, device, code); err != nil {
+				if err := l.deviceController.RemoveLockCode(ctx, prop, device, code); err != nil {
 					return nil, fmt.Errorf("error removing lock code: %s", err.Error())
 				}
 
@@ -154,7 +155,7 @@ func (l *LockEngine) calculateAndSendLockCommands(ctx context.Context, device sh
 			}
 		} else { // !ls.Exists
 			if len(ls.RequestToAdd) > 0 {
-				if err := l.DeviceController.AddLockCode(ctx, prop, device, code); err != nil {
+				if err := l.deviceController.AddLockCode(ctx, prop, device, code); err != nil {
 					return nil, fmt.Errorf("error removing lock code: %s", err.Error())
 				}
 
@@ -223,22 +224,12 @@ func (l *LockEngine) sendEmailForAuditLogs(ctx context.Context, d shared.Device,
 	}
 	sb.WriteString("</ul>")
 
-	tzName, err := mshared.GetConfig("TIME_ZONE")
-	if err != nil {
-		return fmt.Errorf("error getting time zone name: %s", err.Error())
-	}
-
-	tz, err := time.LoadLocation(tzName)
-	if err != nil {
-		return fmt.Errorf("error getting time zone %s", err.Error())
-	}
-
-	now := time.Now().In(tz)
+	now := time.Now().In(l.timeZone)
 	startOfWeek := now.AddDate(0, 0, -1*int(now.Weekday()))
 	weekOf := startOfWeek.Format("week of 01/02/2006")
 
 	subject := fmt.Sprintf("MursetLock - Added Audit Log Entries - %s - %s", d.RawDevice.Name, weekOf)
-	if err := l.EmailService.SendEamil(ctx, subject, sb.String()); err != nil {
+	if err := l.emailService.SendEamil(ctx, subject, sb.String()); err != nil {
 		return fmt.Errorf("error sending email: %s", err.Error())
 	}
 

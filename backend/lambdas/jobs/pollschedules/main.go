@@ -91,6 +91,7 @@ func HandleRequest(ctx context.Context, event MyEvent) (Response, error) {
 		deviceRepository,
 		emailService,
 		propertyRepository,
+		tz,
 	).UpdateLocks(ctx); err != nil {
 		return Response{}, fmt.Errorf("error updating lock codes: %s", err.Error())
 	}
