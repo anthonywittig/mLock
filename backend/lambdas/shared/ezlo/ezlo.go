@@ -185,25 +185,6 @@ type wsRegisterRequestParams struct {
 	Serial string `json:"serial"`
 }
 
-func GetDevices(ctx context.Context, prop shared.Property) ([]shared.RawDevice, error) {
-	if prop.ControllerID == "" {
-		return nil, nil
-	}
-
-	ws, err := getConnection(ctx, prop.ControllerID)
-	if err != nil {
-		return []shared.RawDevice{}, fmt.Errorf("error getting websocket: %s", err.Error())
-	}
-	defer ws.Close()
-
-	devices, err := getRawDevices(ws)
-	if err != nil {
-		return []shared.RawDevice{}, fmt.Errorf("error getting raw devices: %s", err.Error())
-	}
-
-	return devices, nil
-}
-
 func getConnection(ctx context.Context, controllerID string) (*websocket.Conn, error) {
 	username, err := mshared.GetConfig("EZLO_USERNAME")
 	if err != nil {

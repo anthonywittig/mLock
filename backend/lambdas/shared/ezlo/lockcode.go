@@ -56,6 +56,25 @@ func (l *LockCodeRepository) AddLockCode(ctx context.Context, prop shared.Proper
 	return nil
 }
 
+func (l *LockCodeRepository) GetDevices(ctx context.Context, prop shared.Property) ([]shared.RawDevice, error) {
+	if prop.ControllerID == "" {
+		return nil, nil
+	}
+
+	ws, err := getConnection(ctx, prop.ControllerID)
+	if err != nil {
+		return []shared.RawDevice{}, fmt.Errorf("error getting websocket: %s", err.Error())
+	}
+	defer ws.Close()
+
+	devices, err := getRawDevices(ws)
+	if err != nil {
+		return []shared.RawDevice{}, fmt.Errorf("error getting raw devices: %s", err.Error())
+	}
+
+	return devices, nil
+}
+
 func (l *LockCodeRepository) RemoveLockCode(ctx context.Context, prop shared.Property, device shared.Device, code string) error {
 	if prop.ControllerID == "" {
 		return fmt.Errorf("property doesn't have a controller ID")
