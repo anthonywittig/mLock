@@ -49,8 +49,18 @@ func HandleRequest(ctx context.Context, event MyEvent) (Response, error) {
 		return Response{}, fmt.Errorf("error getting email service: %s", err.Error())
 	}
 
+	tzName, err := mshared.GetConfig("TIME_ZONE")
+	if err != nil {
+		return Response{}, fmt.Errorf("error getting time zone name: %s", err.Error())
+	}
+
+	tz, err := time.LoadLocation(tzName)
+	if err != nil {
+		return Response{}, fmt.Errorf("error getting time zone %s", err.Error())
+	}
+
 	deviceRepository := device.NewRepository()
-	reservationRepository := reservation.NewRepository()
+	reservationRepository := reservation.NewRepository(tz)
 	propertyRepository := property.NewRepository()
 	unitRepository := unit.NewRepository()
 

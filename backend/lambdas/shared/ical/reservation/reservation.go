@@ -15,14 +15,18 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-type Repository struct{}
+type Repository struct {
+	timeZone *time.Location
+}
 
 const (
 	timeFormat = "20060102T150405Z"
 )
 
-func NewRepository() *Repository {
-	return &Repository{}
+func NewRepository(timeZone *time.Location) *Repository {
+	return &Repository{
+		timeZone: timeZone,
+	}
 }
 
 func (r *Repository) Get(ctx context.Context, url string) ([]shared.Reservation, error) {
@@ -51,7 +55,7 @@ func (r *Repository) Get(ctx context.Context, url string) ([]shared.Reservation,
 		return false
 	})
 
-	ress, err = updateTimestampsForCheckInOut(ress)
+	ress, err = r.updateTimestampsForCheckInOut(ress)
 	if err != nil {
 		return nil, fmt.Errorf("error updating reservation check in/out times: %s", err.Error())
 	}
@@ -244,17 +248,17 @@ func getMatch(pattern string, input string) (string, error) {
 	return submatch[1], nil
 }
 
-func updateTimestampsForCheckInOut(ress []shared.Reservation) ([]shared.Reservation, error) {
+func (r *Repository) updateTimestampsForCheckInOut(ress []shared.Reservation) ([]shared.Reservation, error) {
 	out := []shared.Reservation{}
 
 	for _, res := range ress {
-		t, err := getCheckinTimestamp(res.Start)
+		t, err := r.getCheckinTimestamp(res.Start)
 		if err != nil {
 			return nil, fmt.Errorf("error getting check-in timestamp %s", err.Error())
 		}
 		res.Start = t
 
-		t, err = getCheckoutTimestamp(res.End)
+		t, err = r.getCheckoutTimestamp(res.End)
 		if err != nil {
 			return nil, fmt.Errorf("error getting check-out timestamp %s", err.Error())
 		}
@@ -266,39 +270,27 @@ func updateTimestampsForCheckInOut(ress []shared.Reservation) ([]shared.Reservat
 	return out, nil
 }
 
-func getCheckinTimestamp(in time.Time) (time.Time, error) {
+func (r *Repository) getCheckinTimestamp(in time.Time) (time.Time, error) {
 	utc := in.UTC()
 	if utc.Hour() != 0 || utc.Minute() != 0 || utc.Second() != 0 || utc.Nanosecond() != 0 {
 		return time.Time{}, fmt.Errorf("timestamp isn't midnight UTC: %s", in)
-	}
-
-	// Change to MT (this should be configurable).
-	mt, err := time.LoadLocation("America/Denver")
-	if err != nil {
-		return time.Time{}, fmt.Errorf("error getting time zone %s", err.Error())
 	}
 
 	// Change to 4 pm (this should be configurable).
 	fourPM := 16
 
-	return time.Date(utc.Year(), utc.Month(), utc.Day(), fourPM, utc.Minute(), utc.Second(), utc.Nanosecond(), mt), nil
+	return time.Date(utc.Year(), utc.Month(), utc.Day(), fourPM, utc.Minute(), utc.Second(), utc.Nanosecond(), r.timeZone), nil
 }
 
-func getCheckoutTimestamp(in time.Time) (time.Time, error) {
+func (r *Repository) getCheckoutTimestamp(in time.Time) (time.Time, error) {
 	utc := in.UTC()
 	if utc.Hour() != 0 || utc.Minute() != 0 || utc.Second() != 0 || utc.Nanosecond() != 0 {
 		return time.Time{}, fmt.Errorf("timestamp isn't midnight UTC: %s", in)
 	}
 
-	// Change to MT (this should be configurable).
-	mt, err := time.LoadLocation("America/Denver")
-	if err != nil {
-		return time.Time{}, fmt.Errorf("error getting time zone %s", err.Error())
-	}
-
 	// Change to 11 am (this really should be configurable).
 	elevenAM := 11
 
-	return time.Date(utc.Year(), utc.Month(), utc.Day(), elevenAM, utc.Minute(), utc.Second(), utc.Nanosecond(), mt), nil
+	return time.Date(utc.Year(), utc.Month(), utc.Day(), elevenAM, utc.Minute(), utc.Second(), utc.Nanosecond(), r.timeZone), nil
 
 }

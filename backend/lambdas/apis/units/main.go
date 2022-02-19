@@ -10,8 +10,10 @@ import (
 	"mlock/lambdas/shared/dynamo/property"
 	"mlock/lambdas/shared/dynamo/unit"
 	"mlock/lambdas/shared/ical/reservation"
+	mshared "mlock/shared"
 	"net/http"
 	"regexp"
+	"time"
 
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/google/uuid"
@@ -194,9 +196,19 @@ func detail(ctx context.Context, req events.APIGatewayProxyRequest, id string) (
 		return nil, fmt.Errorf("entity not found: %s", parsedID)
 	}
 
+	tzName, err := mshared.GetConfig("TIME_ZONE")
+	if err != nil {
+		return nil, fmt.Errorf("error getting time zone name: %s", err.Error())
+	}
+
+	tz, err := time.LoadLocation(tzName)
+	if err != nil {
+		return nil, fmt.Errorf("error getting time zone %s", err.Error())
+	}
+
 	reservations := []shared.Reservation{}
 	if entity.CalendarURL != "" {
-		reservations, err = reservation.NewRepository().Get(ctx, entity.CalendarURL)
+		reservations, err = reservation.NewRepository(tz).Get(ctx, entity.CalendarURL)
 		if err != nil {
 			return nil, fmt.Errorf("error getting calendar items: %s", err.Error())
 		}

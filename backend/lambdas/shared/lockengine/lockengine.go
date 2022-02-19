@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"mlock/lambdas/shared"
+	mshared "mlock/shared"
 	"strings"
 	"time"
 
@@ -222,7 +223,22 @@ func (l *LockEngine) sendEmailForAuditLogs(ctx context.Context, d shared.Device,
 	}
 	sb.WriteString("</ul>")
 
-	if err := l.EmailService.SendEamil(ctx, "MursetLock - Added Audit Log Entries", sb.String()); err != nil {
+	tzName, err := mshared.GetConfig("TIME_ZONE")
+	if err != nil {
+		return fmt.Errorf("error getting time zone name: %s", err.Error())
+	}
+
+	tz, err := time.LoadLocation(tzName)
+	if err != nil {
+		return fmt.Errorf("error getting time zone %s", err.Error())
+	}
+
+	now := time.Now().In(tz)
+	startOfWeek := now.AddDate(0, 0, -1*int(now.Weekday()))
+	weekOf := startOfWeek.Format("week of 01/02/2006")
+
+	subject := fmt.Sprintf("MursetLock - Added Audit Log Entries - %s - %s", d.RawDevice.Name, weekOf)
+	if err := l.EmailService.SendEamil(ctx, subject, sb.String()); err != nil {
 		return fmt.Errorf("error sending email: %s", err.Error())
 	}
 
