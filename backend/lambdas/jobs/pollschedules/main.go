@@ -59,7 +59,10 @@ func HandleRequest(ctx context.Context, event MyEvent) (Response, error) {
 		return Response{}, fmt.Errorf("error getting time zone %s", err.Error())
 	}
 
-	deviceController := ezlo.NewDeviceController()
+	connectionPool := ezlo.NewConnectionPool()
+	defer connectionPool.Close()
+
+	deviceController := ezlo.NewDeviceController(connectionPool)
 	deviceRepository := device.NewRepository()
 	reservationRepository := reservation.NewRepository(tz)
 	propertyRepository := property.NewRepository()

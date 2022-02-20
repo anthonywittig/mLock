@@ -13,7 +13,9 @@ import (
 func Test_GetDevicesNoController(t *testing.T) {
 	assert.Nil(t, loadConfig())
 
-	dc := NewDeviceController()
+	cp := NewConnectionPool()
+	defer cp.Close()
+	dc := NewDeviceController(cp)
 
 	ds, err := dc.GetDevices(context.Background(), shared.Property{})
 	assert.Nil(t, err)
@@ -23,7 +25,9 @@ func Test_GetDevicesNoController(t *testing.T) {
 func Test_GetDevices(t *testing.T) {
 	assert.Nil(t, loadConfig())
 
-	dc := NewDeviceController()
+	cp := NewConnectionPool()
+	defer cp.Close()
+	dc := NewDeviceController(cp)
 
 	ds, err := dc.GetDevices(context.Background(), shared.Property{ControllerID: "92001809"})
 	assert.Nil(t, err)

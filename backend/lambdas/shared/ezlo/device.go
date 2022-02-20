@@ -9,10 +9,14 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-type DeviceController struct{}
+type DeviceController struct {
+	connectionPool *ConnectionPool
+}
 
-func NewDeviceController() *DeviceController {
-	return &DeviceController{}
+func NewDeviceController(cp *ConnectionPool) *DeviceController {
+	return &DeviceController{
+		connectionPool: cp,
+	}
 }
 
 func (d *DeviceController) AddLockCode(ctx context.Context, prop shared.Property, device shared.Device, code string) error {
@@ -20,11 +24,10 @@ func (d *DeviceController) AddLockCode(ctx context.Context, prop shared.Property
 		return fmt.Errorf("property doesn't have a controller ID")
 	}
 
-	ws, err := getConnection(ctx, prop.ControllerID)
+	ws, err := d.connectionPool.GetConnection(ctx, prop.ControllerID)
 	if err != nil {
 		return fmt.Errorf("error getting websocket: %s", err.Error())
 	}
-	defer ws.Close()
 
 	lockCodes, item, err := wsGetLockCodesForDevice(ws, device.RawDevice.ID)
 	if err != nil {
@@ -61,11 +64,10 @@ func (d *DeviceController) GetDevices(ctx context.Context, prop shared.Property)
 		return nil, nil
 	}
 
-	ws, err := getConnection(ctx, prop.ControllerID)
+	ws, err := d.connectionPool.GetConnection(ctx, prop.ControllerID)
 	if err != nil {
 		return []shared.RawDevice{}, fmt.Errorf("error getting websocket: %s", err.Error())
 	}
-	defer ws.Close()
 
 	devices, err := getRawDevices(ws)
 	if err != nil {
@@ -80,11 +82,10 @@ func (d *DeviceController) RemoveLockCode(ctx context.Context, prop shared.Prope
 		return fmt.Errorf("property doesn't have a controller ID")
 	}
 
-	ws, err := getConnection(ctx, prop.ControllerID)
+	ws, err := d.connectionPool.GetConnection(ctx, prop.ControllerID)
 	if err != nil {
 		return fmt.Errorf("error getting websocket: %s", err.Error())
 	}
-	defer ws.Close()
 
 	lockCodes, item, err := wsGetLockCodesForDevice(ws, device.RawDevice.ID)
 	if err != nil {
