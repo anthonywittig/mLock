@@ -78,6 +78,7 @@ func (d *DeviceController) GetDevices(ctx context.Context, prop shared.Property)
 }
 
 func (d *DeviceController) RemoveLockCode(ctx context.Context, prop shared.Property, device shared.Device, code string) error {
+	// TODO: if multiple codes for the same device are getting removed within a short period of time, might we end up removing the wrong code?
 	if prop.ControllerID == "" {
 		return fmt.Errorf("property doesn't have a controller ID")
 	}

@@ -17,7 +17,9 @@ type ConnectionPool struct {
 }
 
 func NewConnectionPool() *ConnectionPool {
-	return &ConnectionPool{}
+	return &ConnectionPool{
+		connectionByControllerID: map[string]*websocket.Conn{},
+	}
 }
 
 func (cp *ConnectionPool) Close() {
