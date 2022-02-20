@@ -7,13 +7,13 @@ import (
 	mshared "mlock/shared"
 	"strings"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/ses"
+	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/service/ses"
+	"github.com/aws/aws-sdk-go-v2/service/ses/types"
 )
 
 type EmailService struct {
-	c *ses.SES
+	c *ses.Client
 }
 
 func NewEmailService(ctx context.Context) (*EmailService, error) {
@@ -27,7 +27,7 @@ func NewEmailService(ctx context.Context) (*EmailService, error) {
 	}, nil
 }
 
-func getClient(ctx context.Context) (*ses.SES, error) {
+func getClient(ctx context.Context) (*ses.Client, error) {
 	// Might want to refactor this more to store the `EmailService` in the context (if we need to store anything in there).
 	cd, err := shared.GetContextData(ctx)
 	if err != nil {
@@ -38,14 +38,13 @@ func getClient(ctx context.Context) (*ses.SES, error) {
 		return cd.SES, nil
 	}
 
-	sess, err := session.NewSession(&aws.Config{
-		Region: aws.String("us-west-1")},
-	)
+	cfg, err := config.LoadDefaultConfig(ctx, config.WithRegion("us-west-1"))
 	if err != nil {
-		return nil, fmt.Errorf("error getting aws session: %s", err.Error())
+		return nil, fmt.Errorf("error getting aws config: %s", err.Error())
 	}
 
-	cd.SES = ses.New(sess)
+	cd.SES = ses.NewFromConfig(cfg)
+
 	return cd.SES, nil
 }
 
@@ -55,26 +54,22 @@ func (s *EmailService) SendEamil(ctx context.Context, subject string, body strin
 		return fmt.Errorf("empty from address")
 	}
 
-	tos := []*string{}
-	for _, a := range strings.Split(mshared.GetConfigUnsafe("EMAIL_TO_ADDRESSES"), ";") {
-		tos = append(tos, &a)
-	}
-
 	characterSet := "UTF-8"
+	tos := strings.Split(mshared.GetConfigUnsafe("EMAIL_TO_ADDRESSES"), ";")
 
-	_, err = s.c.SendEmailWithContext(ctx, &ses.SendEmailInput{
+	_, err = s.c.SendEmail(ctx, &ses.SendEmailInput{
 		Source: &from,
-		Destination: &ses.Destination{
+		Destination: &types.Destination{
 			ToAddresses: tos,
 		},
-		Message: &ses.Message{
-			Body: &ses.Body{
-				Html: &ses.Content{
+		Message: &types.Message{
+			Body: &types.Body{
+				Html: &types.Content{
 					Charset: &characterSet,
 					Data:    &body,
 				},
 			},
-			Subject: &ses.Content{
+			Subject: &types.Content{
 				Charset: &characterSet,
 				Data:    &subject,
 			},

@@ -8,9 +8,10 @@ import (
 	"mlock/lambdas/shared/dynamo"
 	"sort"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/service/dynamodb"
-	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbattribute"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue"
+	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
+	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
 	"github.com/google/uuid"
 )
 
@@ -38,9 +39,9 @@ func (r *Repository) Delete(ctx context.Context, id uuid.UUID) error {
 
 	// No audit trail for deletes. :(
 
-	if _, err = dy.DeleteItemWithContext(ctx, &dynamodb.DeleteItemInput{
-		Key: map[string]*dynamodb.AttributeValue{
-			"id": {B: id[:]},
+	if _, err = dy.DeleteItem(ctx, &dynamodb.DeleteItemInput{
+		Key: map[string]types.AttributeValue{
+			"id": &types.AttributeValueMemberB{Value: id[:]},
 		},
 		TableName: aws.String(tableName),
 	}); err != nil {
@@ -56,10 +57,10 @@ func (r *Repository) Get(ctx context.Context, id uuid.UUID) (shared.Property, bo
 		return shared.Property{}, false, fmt.Errorf("error getting client: %s", err.Error())
 	}
 
-	result, err := dy.GetItemWithContext(ctx, &dynamodb.GetItemInput{
+	result, err := dy.GetItem(ctx, &dynamodb.GetItemInput{
 		TableName: aws.String(tableName),
-		Key: map[string]*dynamodb.AttributeValue{
-			"id": {B: id[:]},
+		Key: map[string]types.AttributeValue{
+			"id": &types.AttributeValueMemberB{Value: id[:]},
 		},
 	})
 	if err != nil {
@@ -70,7 +71,7 @@ func (r *Repository) Get(ctx context.Context, id uuid.UUID) (shared.Property, bo
 	}
 
 	item := shared.Property{}
-	err = dynamodbattribute.UnmarshalMap(result.Item, &item)
+	err = attributevalue.UnmarshalMap(result.Item, &item)
 	if err != nil {
 		return shared.Property{}, false, fmt.Errorf("error unmarshalling: %s", err.Error())
 	}
@@ -104,14 +105,14 @@ func (r *Repository) List(ctx context.Context) ([]shared.Property, error) {
 
 	items := []shared.Property{}
 	for {
-		result, err := dy.ScanWithContext(ctx, input)
+		result, err := dy.Scan(ctx, input)
 		if err != nil {
 			return []shared.Property{}, fmt.Errorf("error calling dynamo: %s", err.Error())
 		}
 
 		for _, i := range result.Items {
 			item := shared.Property{}
-			if err = dynamodbattribute.UnmarshalMap(i, &item); err != nil {
+			if err = attributevalue.UnmarshalMap(i, &item); err != nil {
 				return []shared.Property{}, fmt.Errorf("error unmarshaling: %s", err.Error())
 			}
 			items = append(items, item)
@@ -152,7 +153,7 @@ func (r *Repository) Put(ctx context.Context, item shared.Property) (shared.Prop
 	}
 	item.UpdatedBy = currentUser.Email
 
-	av, err := dynamodbattribute.MarshalMap(item)
+	av, err := attributevalue.MarshalMap(item)
 	if err != nil {
 		return shared.Property{}, fmt.Errorf("error marshalling map: %s", err.Error())
 	}
@@ -162,7 +163,7 @@ func (r *Repository) Put(ctx context.Context, item shared.Property) (shared.Prop
 		TableName: aws.String(tableName),
 	}
 
-	_, err = dy.PutItemWithContext(ctx, input)
+	_, err = dy.PutItem(ctx, input)
 	if err != nil {
 		return shared.Property{}, fmt.Errorf("error putting item: %s", err.Error())
 	}
@@ -205,23 +206,23 @@ func migrateCreateTable(ctx context.Context) error {
 	}
 
 	input := &dynamodb.CreateTableInput{
-		AttributeDefinitions: []*dynamodb.AttributeDefinition{
+		AttributeDefinitions: []types.AttributeDefinition{
 			{
 				AttributeName: aws.String("id"),
-				AttributeType: aws.String("B"),
+				AttributeType: "B",
 			},
 		},
-		BillingMode: aws.String("PAY_PER_REQUEST"),
-		KeySchema: []*dynamodb.KeySchemaElement{
+		BillingMode: "PAY_PER_REQUEST",
+		KeySchema: []types.KeySchemaElement{
 			{
 				AttributeName: aws.String("id"),
-				KeyType:       aws.String("HASH"),
+				KeyType:       "HASH",
 			},
 		},
 		TableName: aws.String(tableName),
 	}
 
-	result, err := dy.CreateTableWithContext(ctx, input)
+	result, err := dy.CreateTable(ctx, input)
 	if err != nil {
 		return fmt.Errorf("error getting client: %s", err.Error())
 	}

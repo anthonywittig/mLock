@@ -5,14 +5,14 @@ import (
 	"database/sql"
 	"fmt"
 
-	"github.com/aws/aws-sdk-go/service/dynamodb"
-	"github.com/aws/aws-sdk-go/service/ses"
+	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
+	"github.com/aws/aws-sdk-go-v2/service/ses"
 )
 
 type ContextData struct {
 	DB   *sql.DB
-	DY   *dynamodb.DynamoDB
-	SES  *ses.SES
+	DY   *dynamodb.Client
+	SES  *ses.Client
 	User *User
 }
 

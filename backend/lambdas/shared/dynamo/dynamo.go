@@ -5,13 +5,11 @@ import (
 	"fmt"
 	"mlock/lambdas/shared"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/awserr"
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/dynamodb"
+	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 )
 
-func GetClient(ctx context.Context) (*dynamodb.DynamoDB, error) {
+func GetClient(ctx context.Context) (*dynamodb.Client, error) {
 	cd, err := shared.GetContextData(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("error getting context data: %s", err.Error())
@@ -21,14 +19,13 @@ func GetClient(ctx context.Context) (*dynamodb.DynamoDB, error) {
 		return cd.DY, nil
 	}
 
-	sess, err := session.NewSession(&aws.Config{
-		Region: aws.String("us-west-1")},
-	)
+	cfg, err := config.LoadDefaultConfig(ctx, config.WithRegion("us-west-1"))
 	if err != nil {
-		return nil, fmt.Errorf("error getting aws session: %s", err.Error())
+		return nil, fmt.Errorf("error getting aws config: %s", err.Error())
 	}
 
-	cd.DY = dynamodb.New(sess)
+	cd.DY = dynamodb.NewFromConfig(cfg)
+
 	return cd.DY, nil
 }
 
@@ -58,18 +55,12 @@ func listTables(ctx context.Context) ([]string, error) {
 	tables := []string{}
 	for {
 		// Get the list of tables
-		result, err := dy.ListTables(input)
+		result, err := dy.ListTables(ctx, input)
 		if err != nil {
-			if aerr, ok := err.(awserr.Error); ok {
-				return []string{}, fmt.Errorf("error calling dynamo: %s -- %s", aerr.Error(), err.Error())
-			} else {
-				return []string{}, fmt.Errorf("error calling dynamo: %s", err.Error())
-			}
+			return []string{}, fmt.Errorf("error calling dynamo: %s", err.Error())
 		}
 
-		for _, n := range result.TableNames {
-			tables = append(tables, *n)
-		}
+		tables = append(tables, result.TableNames...)
 
 		// assign the last read tablename as the start for our next call to the ListTables function
 		// the maximum number of table names returned in a call is 100 (default), which requires us to make
