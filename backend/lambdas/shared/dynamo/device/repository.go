@@ -11,7 +11,6 @@ import (
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
-	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
 	"github.com/google/uuid"
@@ -106,7 +105,7 @@ func (r *Repository) Get(ctx context.Context, id uuid.UUID) (shared.Device, bool
 	}
 
 	item := &shared.Device{}
-	err = attributevalue.UnmarshalMap(result.Item, item)
+	err = dynamo.UnmarshalMapWithOptions(result.Item, item)
 	if err != nil {
 		return shared.Device{}, false, fmt.Errorf("error unmarshalling: %s", err.Error())
 	}
@@ -133,7 +132,7 @@ func (r *Repository) List(ctx context.Context) ([]shared.Device, error) {
 
 		for _, i := range result.Items {
 			item := shared.Device{}
-			if err = attributevalue.UnmarshalMap(i, &item); err != nil {
+			if err = dynamo.UnmarshalMapWithOptions(i, &item); err != nil {
 				return []shared.Device{}, fmt.Errorf("error unmarshaling: %s", err.Error())
 			}
 			items = append(items, item)
@@ -199,7 +198,7 @@ func (r *Repository) Put(ctx context.Context, item shared.Device) (shared.Device
 		return shared.Device{}, fmt.Errorf("an ID is required")
 	}
 
-	av, err := attributevalue.MarshalMap(item)
+	av, err := dynamo.MarshalMapWithOptions(item)
 	if err != nil {
 		return shared.Device{}, fmt.Errorf("error marshalling map: %s", err.Error())
 	}

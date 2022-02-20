@@ -9,7 +9,6 @@ import (
 	"sort"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
-	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
 	"github.com/google/uuid"
@@ -71,7 +70,7 @@ func (r *Repository) Get(ctx context.Context, id uuid.UUID) (shared.Property, bo
 	}
 
 	item := shared.Property{}
-	err = attributevalue.UnmarshalMap(result.Item, &item)
+	err = dynamo.UnmarshalMapWithOptions(result.Item, &item)
 	if err != nil {
 		return shared.Property{}, false, fmt.Errorf("error unmarshalling: %s", err.Error())
 	}
@@ -112,7 +111,7 @@ func (r *Repository) List(ctx context.Context) ([]shared.Property, error) {
 
 		for _, i := range result.Items {
 			item := shared.Property{}
-			if err = attributevalue.UnmarshalMap(i, &item); err != nil {
+			if err = dynamo.UnmarshalMapWithOptions(i, &item); err != nil {
 				return []shared.Property{}, fmt.Errorf("error unmarshaling: %s", err.Error())
 			}
 			items = append(items, item)
@@ -153,7 +152,7 @@ func (r *Repository) Put(ctx context.Context, item shared.Property) (shared.Prop
 	}
 	item.UpdatedBy = currentUser.Email
 
-	av, err := attributevalue.MarshalMap(item)
+	av, err := dynamo.MarshalMapWithOptions(item)
 	if err != nil {
 		return shared.Property{}, fmt.Errorf("error marshalling map: %s", err.Error())
 	}

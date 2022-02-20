@@ -11,7 +11,6 @@ import (
 	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
-	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
 	"github.com/google/uuid"
@@ -73,7 +72,7 @@ func (u *UserService) Get(ctx context.Context, id uuid.UUID) (shared.User, bool,
 	}
 
 	item := shared.User{}
-	err = attributevalue.UnmarshalMap(result.Item, &item)
+	err = dynamo.UnmarshalMapWithOptions(result.Item, &item)
 	if err != nil {
 		return shared.User{}, false, fmt.Errorf("error unmarshalling: %s", err.Error())
 	}
@@ -131,7 +130,7 @@ func (u *UserService) List(ctx context.Context) ([]shared.User, error) {
 
 		for _, i := range result.Items {
 			item := shared.User{}
-			if err = attributevalue.UnmarshalMap(i, &item); err != nil {
+			if err = dynamo.UnmarshalMapWithOptions(i, &item); err != nil {
 				return []shared.User{}, fmt.Errorf("error unmarshaling: %s", err.Error())
 			}
 			items = append(items, item)
@@ -178,7 +177,7 @@ func (u *UserService) ListOld(ctx context.Context) ([]shared.User, error) {
 
 		for _, i := range result.Items {
 			item := User2{}
-			if err = attributevalue.UnmarshalMap(i, &item); err != nil {
+			if err = dynamo.UnmarshalMapWithOptions(i, &item); err != nil {
 				return []shared.User{}, fmt.Errorf("error unmarshaling: %s", err.Error())
 			}
 			items = append(items, shared.User{
@@ -230,7 +229,7 @@ func (u *UserService) Put(ctx context.Context, user shared.User) (shared.User, e
 	// CreatedBy is deprecated, but treat it as UpdatedBy.
 	user.CreatedBy = user.UpdatedBy
 
-	av, err := attributevalue.MarshalMap(user)
+	av, err := dynamo.MarshalMapWithOptions(user)
 	if err != nil {
 		return shared.User{}, fmt.Errorf("error marshalling map: %s", err.Error())
 	}

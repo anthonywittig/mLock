@@ -6,7 +6,9 @@ import (
 	"mlock/lambdas/shared"
 
 	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
+	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
 )
 
 func GetClient(ctx context.Context) (*dynamodb.Client, error) {
@@ -29,6 +31,15 @@ func GetClient(ctx context.Context) (*dynamodb.Client, error) {
 	return cd.DY, nil
 }
 
+func MarshalMapWithOptions(in interface{}) (map[string]types.AttributeValue, error) {
+	return attributevalue.MarshalMapWithOptions(
+		in,
+		func(x *attributevalue.EncoderOptions) {
+			x.TagKey = "json"
+		},
+	)
+}
+
 func TableExists(ctx context.Context, name string) (bool, error) {
 	tables, err := listTables(ctx)
 	if err != nil {
@@ -42,6 +53,16 @@ func TableExists(ctx context.Context, name string) (bool, error) {
 	}
 
 	return false, nil
+}
+
+func UnmarshalMapWithOptions(m map[string]types.AttributeValue, out interface{}) error {
+	return attributevalue.UnmarshalMapWithOptions(
+		m,
+		out,
+		func(x *attributevalue.DecoderOptions) {
+			x.TagKey = "json"
+		},
+	)
 }
 
 func listTables(ctx context.Context) ([]string, error) {
