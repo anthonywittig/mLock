@@ -82,8 +82,6 @@ func HandleRequest(ctx context.Context, req events.APIGatewayProxyRequest) (*sha
 }
 
 func create(ctx context.Context, req events.APIGatewayProxyRequest, d shared.Device) (*shared.APIResponse, error) {
-	// TODO: create audit log.
-
 	var body CreateRequest
 	if err := json.Unmarshal([]byte(req.Body), &body); err != nil {
 		return nil, fmt.Errorf("error unmarshalling body: %s", err.Error())
@@ -122,6 +120,8 @@ func create(ctx context.Context, req events.APIGatewayProxyRequest, d shared.Dev
 	if err != nil {
 		return nil, fmt.Errorf("error updating device: %s", err.Error())
 	}
+
+	// TODO: kick off poll schedule lambda
 
 	return shared.NewAPIResponse(http.StatusOK, CreateResponse{Entity: d})
 }
@@ -164,6 +164,8 @@ func update(ctx context.Context, req events.APIGatewayProxyRequest, d shared.Dev
 	if err != nil {
 		return nil, fmt.Errorf("error updating device: %s", err.Error())
 	}
+
+	// TODO: kick off poll schedule lambda
 
 	return shared.NewAPIResponse(http.StatusOK, UpdateResponse{Entity: d})
 }
