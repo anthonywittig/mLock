@@ -164,13 +164,17 @@ func (l *LockEngine) calculateAndSendLockCommands(ctx context.Context, device sh
 			}
 		} else { // !ls.Exists
 			if len(ls.RequestToAdd) > 0 {
-				if err := l.deviceController.AddLockCode(ctx, prop, device, code); err != nil {
-					return nil, fmt.Errorf("error removing lock code: %s", err.Error())
+				note := "Attempting to add lock code."
+				err := l.deviceController.AddLockCode(ctx, prop, device, code)
+				if err != nil {
+					// TODO: log metric?
+					fmt.Printf("error adding lock code: %s", err.Error())
+					note = "Error attempting to add lock code."
 				}
 
 				for _, mlc := range ls.RequestToAdd {
 					mlc.Status = shared.DeviceManagedLockCodeStatus2Adding
-					mlc.Note = "Attempting to add lock code."
+					mlc.Note = note
 					needToSave = append(needToSave, mlc)
 				}
 			}

@@ -31,7 +31,7 @@ func (d *DeviceController) AddLockCode(ctx context.Context, prop shared.Property
 
 	lockCodes, item, err := wsGetLockCodesForDevice(ws, device.RawDevice.ID)
 	if err != nil {
-		return fmt.Errorf("error getting lock codes: %s", err.Error())
+		return fmt.Errorf("error getting lock codes for device \"%s\": %s", device.RawDevice.Name, err.Error())
 	}
 
 	if len(lockCodes) >= item.ElementsMaxNumber {
@@ -90,7 +90,7 @@ func (d *DeviceController) RemoveLockCode(ctx context.Context, prop shared.Prope
 
 	lockCodes, item, err := wsGetLockCodesForDevice(ws, device.RawDevice.ID)
 	if err != nil {
-		return fmt.Errorf("error getting lock codes: %s", err.Error())
+		return fmt.Errorf("error getting lock codes for device \"%s\": %s", device.RawDevice.Name, err.Error())
 	}
 
 	slot := -1
@@ -202,7 +202,7 @@ func wsGetLockCodesForDevice(ws *websocket.Conn, deviceID string) ([]shared.RawD
 		}
 	}
 
-	return []shared.RawDeviceLockCode{}, wsItem{}, fmt.Errorf("couldn't find lock codes")
+	return []shared.RawDeviceLockCode{}, wsItem{}, fmt.Errorf("couldn't find lock codes for deviceID: %s", deviceID)
 }
 
 func wsRemoveLockCodeForItem(ws *websocket.Conn, item wsItem, slot string) error {
