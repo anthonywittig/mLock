@@ -318,7 +318,7 @@ func getDevice(ctx context.Context, ad authData, d device) (deviceResponse, erro
 	return body, nil
 }
 
-func getDevices(ctx context.Context, ad authData, controllerID string) (device, error) {
+func getDeviceByID(ctx context.Context, ad authData, controllerID string) (device, error) {
 	// TODO: we probably need to use the same domain that we used to auth.
 	url := fmt.Sprintf("https://vera-us-oem-account11.mios.com/account/account/account/%d/devices", ad.Identity.PKAccount)
 
@@ -350,18 +350,13 @@ func getDevices(ctx context.Context, ad authData, controllerID string) (device, 
 		return device{}, fmt.Errorf("error unmarshalling body: %s; url: %s; authData: %+v; error: %s", string(respBody), url, ad, err.Error())
 	}
 
-	// For now, we'll only work with a single device.
-	if c := len(body.Devices); c != 1 {
-		return device{}, fmt.Errorf("unexpected device count: %d", c)
+	for _, d := range body.Devices {
+		if d.PKDevice == controllerID {
+			return d, nil
+		}
 	}
 
-	d := body.Devices[0]
-
-	if d.PKDevice != controllerID {
-		return device{}, fmt.Errorf("unexpected PK: %s", d.PKDevice)
-	}
-
-	return d, nil
+	return device{}, fmt.Errorf("unable to find device: %+v", body.Devices)
 }
 
 func wsSendCommand(ws *websocket.Conn, id string, request interface{}, outResponse interface{}) error {
