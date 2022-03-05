@@ -6,13 +6,11 @@ import (
 	"mlock/lambdas/shared"
 	"strings"
 	"time"
-
-	"github.com/google/uuid"
 )
 
 type DeviceController interface {
-	AddLockCode(ctx context.Context, prop shared.Property, device shared.Device, code string) error
-	RemoveLockCode(ctx context.Context, prop shared.Property, device shared.Device, code string) error
+	AddLockCode(ctx context.Context, device shared.Device, code string) error
+	RemoveLockCode(ctx context.Context, device shared.Device, code string) error
 }
 
 type DeviceRepository interface {
@@ -25,17 +23,12 @@ type EmailService interface {
 	SendEamil(ctx context.Context, subject string, body string) error
 }
 
-type PropertyRepository interface {
-	GetCached(ctx context.Context, id uuid.UUID) (shared.Property, bool, error)
-}
-
 type LockEngine struct {
-	deviceController   DeviceController
-	deviceRepository   DeviceRepository
-	emailService       EmailService
-	frontEndDomain     string
-	propertyRepository PropertyRepository
-	timeZone           *time.Location
+	deviceController DeviceController
+	deviceRepository DeviceRepository
+	emailService     EmailService
+	frontEndDomain   string
+	timeZone         *time.Location
 }
 
 type lockState struct {
@@ -49,16 +42,14 @@ func NewLockEngine(
 	dr DeviceRepository,
 	es EmailService,
 	fed string,
-	pr PropertyRepository,
 	tz *time.Location,
 ) *LockEngine {
 	return &LockEngine{
-		deviceController:   dc,
-		deviceRepository:   dr,
-		emailService:       es,
-		frontEndDomain:     fed,
-		propertyRepository: pr,
-		timeZone:           tz,
+		deviceController: dc,
+		deviceRepository: dr,
+		emailService:     es,
+		frontEndDomain:   fed,
+		timeZone:         tz,
 	}
 }
 
@@ -127,14 +118,6 @@ func (l *LockEngine) calculateAndSendLockCommands(ctx context.Context, device sh
 	needToSave := []*shared.DeviceManagedLockCode{}
 
 	for code, ls := range lockStates {
-		prop, ok, err := l.propertyRepository.GetCached(ctx, device.PropertyID)
-		if err != nil {
-			return nil, fmt.Errorf("error getting property: %s", err.Error())
-		}
-		if !ok {
-			return nil, fmt.Errorf("error finding property: %s", device.PropertyID)
-		}
-
 		if ls.Exists {
 			if len(ls.RequestToAdd) > 0 {
 				for _, mlc := range ls.RequestToRemove {
@@ -152,7 +135,7 @@ func (l *LockEngine) calculateAndSendLockCommands(ctx context.Context, device sh
 					}
 				}
 			} else if len(ls.RequestToRemove) > 0 {
-				if err := l.deviceController.RemoveLockCode(ctx, prop, device, code); err != nil {
+				if err := l.deviceController.RemoveLockCode(ctx, device, code); err != nil {
 					return nil, fmt.Errorf("error removing lock code: %s", err.Error())
 				}
 
@@ -165,7 +148,7 @@ func (l *LockEngine) calculateAndSendLockCommands(ctx context.Context, device sh
 		} else { // !ls.Exists
 			if len(ls.RequestToAdd) > 0 {
 				note := "Attempting to add lock code."
-				err := l.deviceController.AddLockCode(ctx, prop, device, code)
+				err := l.deviceController.AddLockCode(ctx, device, code)
 				if err != nil {
 					// TODO: log metric?
 					fmt.Printf("error adding lock code: %s", err.Error())

@@ -3,7 +3,6 @@ package ezlo
 import (
 	"context"
 	"fmt"
-	"mlock/lambdas/shared"
 	"testing"
 
 	"github.com/joho/godotenv"
@@ -17,7 +16,7 @@ func Test_GetDevicesNoController(t *testing.T) {
 	defer cp.Close()
 	dc := NewDeviceController(cp)
 
-	ds, err := dc.GetDevices(context.Background(), shared.Property{})
+	ds, err := dc.GetDevices(context.Background(), "")
 	assert.Nil(t, err)
 	assert.Empty(t, ds)
 }
@@ -29,7 +28,7 @@ func Test_GetDevices(t *testing.T) {
 	defer cp.Close()
 	dc := NewDeviceController(cp)
 
-	ds, err := dc.GetDevices(context.Background(), shared.Property{ControllerID: "92001809"})
+	ds, err := dc.GetDevices(context.Background(), "92001809")
 	assert.Nil(t, err)
 
 	// Just check that we have one device (fragile).

@@ -5,18 +5,11 @@ import { StandardFetch } from '../utils/FetchHelper';
 import { useHistory } from 'react-router';
 import { formatDistance, isAfter, isBefore, sub } from 'date-fns';
 
-type Property = {
-    id: string,
-    name: string,
-    updatedBy: string,
-}
-
 const Endpoint = "devices";
 
 export const List = () => {
     const [entities, setEntities] = React.useState<DeviceT[]>([]);
     const [loading, setLoading] = React.useState<boolean>(true);
-    const [properties, setProperties] = React.useState<Property[]>([]);
     const [units, setUnits] = React.useState<UnitT[]>([]);
     const history = useHistory();
 
@@ -28,7 +21,6 @@ export const List = () => {
         .then(response => {
             setEntities(response.entities);
             setLoading(false);
-            setProperties(response.extra.properties);
             setUnits(response.extra.units);
         })
         .catch(err => {
@@ -84,7 +76,6 @@ export const List = () => {
                         <th scope="col">Name</th>
                         <th scope="col">Status</th>
                         <th scope="col">Battery</th>
-                        <th scope="col">Property</th>
                         <th scope="col">Unit</th>
                         <th scope="col">Actions</th>
                     </tr>
@@ -99,7 +90,6 @@ export const List = () => {
                             </th>
                             <td>{ renderEntityStatus(entity) }</td>
                             <td>{ renderEntityBatteryLevel(entity) }</td>
-                            <td>{ properties.find(e => e.id === entity.propertyId )?.name }</td>
                             <td>{ units.find(e => e.id === entity.unitId )?.name }</td>
                             <td>{ renderDeleteButton(entity) }</td>
                         </tr>

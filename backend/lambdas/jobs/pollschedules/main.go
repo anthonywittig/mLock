@@ -6,7 +6,6 @@ import (
 	"log"
 	"mlock/lambdas/shared"
 	"mlock/lambdas/shared/dynamo/device"
-	"mlock/lambdas/shared/dynamo/property"
 	"mlock/lambdas/shared/dynamo/unit"
 	"mlock/lambdas/shared/ezlo"
 	"mlock/lambdas/shared/ical/reservation"
@@ -65,17 +64,21 @@ func HandleRequest(ctx context.Context, event MyEvent) (Response, error) {
 	deviceController := ezlo.NewDeviceController(connectionPool)
 	deviceRepository := device.NewRepository()
 	reservationRepository := reservation.NewRepository(tz)
-	propertyRepository := property.NewRepository()
 	unitRepository := unit.NewRepository()
 
-	// Get the latest data from the controller and save it to the devices.
-	ps, err := propertyRepository.List(ctx)
-	if err != nil {
-		return Response{}, fmt.Errorf("error getting properties: %s", err.Error())
-	}
-	for _, p := range ps {
-		if err := updateDevicesFromController(ctx, emailService, p, deviceController); err != nil {
-			return Response{}, fmt.Errorf("error updating devices for property: %s, error: %s", p.Name, err.Error())
+	// TODO: get the list of controller IDs from the "devices" API.
+	for _, c := range []string{
+		"90010799",
+		"92001809",
+	} {
+		if err := updateDevicesFromController(ctx, emailService, c, deviceController); err != nil {
+			if err2 := emailService.SendEamil(
+				ctx,
+				"MursetLock - Error updating devices from controller.",
+				fmt.Sprintf("Controller ID: %s; error: %s", c, err.Error()),
+			); err2 != nil {
+				return Response{}, fmt.Errorf("error sending error email for updating devices for controller: %s, error: %s", c, err.Error())
+			}
 		}
 	}
 
@@ -100,7 +103,6 @@ func HandleRequest(ctx context.Context, event MyEvent) (Response, error) {
 		deviceRepository,
 		emailService,
 		fed,
-		propertyRepository,
 		tz,
 	).UpdateLocks(ctx); err != nil {
 		return Response{}, fmt.Errorf("error updating lock codes: %s", err.Error())
@@ -114,10 +116,10 @@ func HandleRequest(ctx context.Context, event MyEvent) (Response, error) {
 func updateDevicesFromController(
 	ctx context.Context,
 	emailService *ses.EmailService,
-	property shared.Property,
+	controllerID string,
 	deviceController *ezlo.DeviceController,
 ) error {
-	rds, err := deviceController.GetDevices(ctx, property)
+	rds, err := deviceController.GetDevices(ctx, controllerID)
 	if err != nil {
 		return fmt.Errorf("error getting devices: %s", err.Error())
 	}
@@ -145,7 +147,7 @@ func updateDevicesFromController(
 		}
 
 		for _, ed := range eds {
-			if ed.PropertyID == property.ID && ed.RawDevice.ID == rd.ID {
+			if ed.ControllerID == controllerID && ed.RawDevice.ID == rd.ID {
 				// We found a match.
 				d = ed
 
@@ -183,7 +185,7 @@ func updateDevicesFromController(
 			}
 		}
 
-		d.PropertyID = property.ID
+		d.ControllerID = controllerID
 		d.RawDevice = rd
 		d.LastRefreshedAt = time.Now()
 

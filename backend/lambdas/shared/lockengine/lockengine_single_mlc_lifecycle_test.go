@@ -19,8 +19,6 @@ type singleMLCLifecycleTest struct {
 	dr  *mock_lockengine.MockDeviceRepository
 	le  *lockengine.LockEngine
 	mlc *shared.DeviceManagedLockCode
-	p   shared.Property
-	pr  *mock_lockengine.MockPropertyRepository
 	t   *testing.T
 }
 
@@ -88,8 +86,7 @@ func Test_ScheduledStartedNotExists(t *testing.T) {
 
 	s.generateLockengineSingleMLCLifecycleTest(false)
 
-	s.pr.EXPECT().GetCached(s.ctx, s.p.ID).Return(s.p, true, nil)
-	s.dc.EXPECT().AddLockCode(s.ctx, s.p, s.d, s.mlc.Code).Return(nil)
+	s.dc.EXPECT().AddLockCode(s.ctx, s.d, s.mlc.Code).Return(nil)
 	s.dr.EXPECT().AppendToAuditLog(s.ctx, s.d, []*shared.DeviceManagedLockCode{s.mlc}).Return(nil)
 	s.dr.EXPECT().Put(s.ctx, s.d).Return(shared.Device{}, nil)
 
@@ -114,7 +111,6 @@ func Test_ScheduledStartedExists(t *testing.T) {
 
 	s.generateLockengineSingleMLCLifecycleTest(true)
 
-	s.pr.EXPECT().GetCached(s.ctx, s.p.ID).Return(s.p, true, nil)
 	s.dr.EXPECT().AppendToAuditLog(s.ctx, s.d, []*shared.DeviceManagedLockCode{s.mlc}).Return(nil)
 	s.dr.EXPECT().Put(s.ctx, s.d).Return(shared.Device{}, nil)
 
@@ -138,8 +134,7 @@ func Test_AddingStartedNotExists(t *testing.T) {
 
 	s.generateLockengineSingleMLCLifecycleTest(false)
 
-	s.pr.EXPECT().GetCached(s.ctx, s.p.ID).Return(s.p, true, nil)
-	s.dc.EXPECT().AddLockCode(s.ctx, s.p, s.d, s.mlc.Code).Return(nil)
+	s.dc.EXPECT().AddLockCode(s.ctx, s.d, s.mlc.Code).Return(nil)
 	s.dr.EXPECT().AppendToAuditLog(s.ctx, s.d, []*shared.DeviceManagedLockCode{s.mlc}).Return(nil)
 	s.dr.EXPECT().Put(s.ctx, s.d).Return(shared.Device{}, nil)
 
@@ -163,7 +158,6 @@ func Test_AddingStartedExists(t *testing.T) {
 
 	s.generateLockengineSingleMLCLifecycleTest(true)
 
-	s.pr.EXPECT().GetCached(s.ctx, s.p.ID).Return(s.p, true, nil)
 	s.dr.EXPECT().AppendToAuditLog(s.ctx, s.d, []*shared.DeviceManagedLockCode{s.mlc}).Return(nil)
 	s.dr.EXPECT().Put(s.ctx, s.d).Return(shared.Device{}, nil)
 
@@ -187,8 +181,6 @@ func Test_EnabledStartedExists(t *testing.T) {
 
 	s.generateLockengineSingleMLCLifecycleTest(true)
 
-	s.pr.EXPECT().GetCached(s.ctx, s.p.ID).Return(s.p, true, nil)
-
 	err := s.le.UpdateLocks(s.ctx)
 	assert.Nil(t, err)
 
@@ -209,8 +201,7 @@ func Test_EnabledStartedNotExists(t *testing.T) {
 
 	s.generateLockengineSingleMLCLifecycleTest(false)
 
-	s.pr.EXPECT().GetCached(s.ctx, s.p.ID).Return(s.p, true, nil)
-	s.dc.EXPECT().AddLockCode(s.ctx, s.p, s.d, s.mlc.Code).Return(nil)
+	s.dc.EXPECT().AddLockCode(s.ctx, s.d, s.mlc.Code).Return(nil)
 	s.dr.EXPECT().AppendToAuditLog(s.ctx, s.d, []*shared.DeviceManagedLockCode{s.mlc}).Return(nil)
 	s.dr.EXPECT().Put(s.ctx, s.d).Return(shared.Device{}, nil)
 
@@ -234,8 +225,7 @@ func Test_EnabledEndedExists(t *testing.T) {
 
 	s.generateLockengineSingleMLCLifecycleTest(true)
 
-	s.pr.EXPECT().GetCached(s.ctx, s.p.ID).Return(s.p, true, nil)
-	s.dc.EXPECT().RemoveLockCode(s.ctx, s.p, s.d, s.mlc.Code).Return(nil)
+	s.dc.EXPECT().RemoveLockCode(s.ctx, s.d, s.mlc.Code).Return(nil)
 	s.dr.EXPECT().AppendToAuditLog(s.ctx, s.d, []*shared.DeviceManagedLockCode{s.mlc}).Return(nil)
 	s.dr.EXPECT().Put(s.ctx, s.d).Return(shared.Device{}, nil)
 
@@ -259,8 +249,7 @@ func Test_RemovingEndedExists(t *testing.T) {
 
 	s.generateLockengineSingleMLCLifecycleTest(true)
 
-	s.pr.EXPECT().GetCached(s.ctx, s.p.ID).Return(s.p, true, nil)
-	s.dc.EXPECT().RemoveLockCode(s.ctx, s.p, s.d, s.mlc.Code).Return(nil)
+	s.dc.EXPECT().RemoveLockCode(s.ctx, s.d, s.mlc.Code).Return(nil)
 	s.dr.EXPECT().AppendToAuditLog(s.ctx, s.d, []*shared.DeviceManagedLockCode{s.mlc}).Return(nil)
 	s.dr.EXPECT().Put(s.ctx, s.d).Return(shared.Device{}, nil)
 
@@ -284,7 +273,6 @@ func Test_RemovingEndedNotExists(t *testing.T) {
 
 	s.generateLockengineSingleMLCLifecycleTest(false)
 
-	s.pr.EXPECT().GetCached(s.ctx, s.p.ID).Return(s.p, true, nil)
 	s.dr.EXPECT().AppendToAuditLog(s.ctx, s.d, []*shared.DeviceManagedLockCode{s.mlc}).Return(nil)
 	s.dr.EXPECT().Put(s.ctx, s.d).Return(shared.Device{}, nil)
 
@@ -308,8 +296,6 @@ func Test_CompletedEndedNotExists(t *testing.T) {
 
 	s.generateLockengineSingleMLCLifecycleTest(false)
 
-	s.pr.EXPECT().GetCached(s.ctx, s.p.ID).Return(s.p, true, nil)
-
 	err := s.le.UpdateLocks(s.ctx)
 	assert.Nil(t, err)
 
@@ -330,8 +316,7 @@ func Test_CompletedEndedExists(t *testing.T) {
 
 	s.generateLockengineSingleMLCLifecycleTest(true)
 
-	s.pr.EXPECT().GetCached(s.ctx, s.p.ID).Return(s.p, true, nil)
-	s.dc.EXPECT().RemoveLockCode(s.ctx, s.p, s.d, s.mlc.Code).Return(nil)
+	s.dc.EXPECT().RemoveLockCode(s.ctx, s.d, s.mlc.Code).Return(nil)
 	s.dr.EXPECT().AppendToAuditLog(s.ctx, s.d, []*shared.DeviceManagedLockCode{s.mlc}).Return(nil)
 	s.dr.EXPECT().Put(s.ctx, s.d).Return(shared.Device{}, nil)
 
@@ -342,15 +327,9 @@ func Test_CompletedEndedExists(t *testing.T) {
 }
 
 func (s *singleMLCLifecycleTest) generateLockengineSingleMLCLifecycleTest(codeExists bool) {
-	s.p = shared.Property{
-		ControllerID: "9876",
-		ID:           uuid.New(),
-	}
-
 	s.d = shared.Device{
 		ID:               uuid.New(),
 		ManagedLockCodes: []*shared.DeviceManagedLockCode{s.mlc},
-		PropertyID:       s.p.ID,
 	}
 
 	if codeExists {
@@ -361,7 +340,7 @@ func (s *singleMLCLifecycleTest) generateLockengineSingleMLCLifecycleTest(codeEx
 		}
 	}
 
-	s.le, s.dc, s.dr, s.pr = newLockEngine(s.t)
+	s.le, s.dc, s.dr = newLockEngine(s.t)
 
 	s.dr.EXPECT().List(s.ctx).Return(
 		[]shared.Device{s.d},

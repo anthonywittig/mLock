@@ -17,7 +17,6 @@ type DeviceLockCodeT = {
 
 type DeviceT = {
     id: string,
-    propertyId: string,
     unitId: string | null,
     lastRefreshedAt: string,
     lastWentOfflineAt: string | null,

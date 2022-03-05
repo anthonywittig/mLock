@@ -33,10 +33,6 @@ func Test_AddLockCode(t *testing.T) {
 	// We'll have a single device and managed lock code, and we'll add the lock code.
 
 	ctx := context.Background()
-	property := shared.Property{
-		ControllerID: "9876",
-		ID:           uuid.New(),
-	}
 	code := "5566"
 	managedLockCode := &shared.DeviceManagedLockCode{
 		Code:    code,
@@ -47,12 +43,11 @@ func Test_AddLockCode(t *testing.T) {
 	device := shared.Device{
 		ID:               uuid.New(),
 		ManagedLockCodes: []*shared.DeviceManagedLockCode{managedLockCode},
-		PropertyID:       property.ID,
 	}
 
-	le, dc, dr, pr := newLockEngine(t)
+	le, dc, dr := newLockEngine(t)
 
-	dc.EXPECT().AddLockCode(ctx, property, device, code).Return(nil)
+	dc.EXPECT().AddLockCode(ctx, device, code).Return(nil)
 
 	dr.EXPECT().List(ctx).Return(
 		[]shared.Device{device},
@@ -61,8 +56,6 @@ func Test_AddLockCode(t *testing.T) {
 	dr.EXPECT().Put(ctx, device).Return(shared.Device{}, nil)
 
 	dr.EXPECT().AppendToAuditLog(ctx, device, []*shared.DeviceManagedLockCode{managedLockCode}).Return(nil)
-
-	pr.EXPECT().GetCached(ctx, property.ID).Return(property, true, nil)
 
 	err := le.UpdateLocks(ctx)
 	assert.Nil(t, err)
@@ -74,10 +67,6 @@ func Test_LeaveLockCode_MultipleMLC(t *testing.T) {
 	// We'll have a single device and lock code, with multiple managed lock codes for the same code. One MLC will say to remove the code, the other will say to keep it.
 
 	ctx := context.Background()
-	property := shared.Property{
-		ControllerID: "9876",
-		ID:           uuid.New(),
-	}
 	code := "5566"
 	activeManagedLockCode := &shared.DeviceManagedLockCode{
 		Code:    code,
@@ -97,7 +86,6 @@ func Test_LeaveLockCode_MultipleMLC(t *testing.T) {
 			activeManagedLockCode,
 			expiredManagedLockCode,
 		},
-		PropertyID: property.ID,
 		RawDevice: shared.RawDevice{
 			LockCodes: []shared.RawDeviceLockCode{
 				{
@@ -107,7 +95,7 @@ func Test_LeaveLockCode_MultipleMLC(t *testing.T) {
 		},
 	}
 
-	le, _, dr, pr := newLockEngine(t)
+	le, _, dr := newLockEngine(t)
 
 	dr.EXPECT().List(ctx).Return(
 		[]shared.Device{device},
@@ -116,8 +104,6 @@ func Test_LeaveLockCode_MultipleMLC(t *testing.T) {
 
 	dr.EXPECT().AppendToAuditLog(ctx, device, []*shared.DeviceManagedLockCode{expiredManagedLockCode}).Return(nil)
 	dr.EXPECT().Put(ctx, device).Return(shared.Device{}, nil)
-
-	pr.EXPECT().GetCached(ctx, property.ID).Return(property, true, nil)
 
 	err := le.UpdateLocks(ctx)
 	assert.Nil(t, err)
@@ -130,10 +116,6 @@ func Test_LeaveLockCode_SingleMLC(t *testing.T) {
 	// We'll have a single device, lock code, managed lock code, and we'll keep the lock code.
 
 	ctx := context.Background()
-	property := shared.Property{
-		ControllerID: "9876",
-		ID:           uuid.New(),
-	}
 	managedLockCode := &shared.DeviceManagedLockCode{
 		Code:    "5566",
 		EndAt:   time.Now().Add(1 * time.Hour),
@@ -143,7 +125,6 @@ func Test_LeaveLockCode_SingleMLC(t *testing.T) {
 	device := shared.Device{
 		ID:               uuid.New(),
 		ManagedLockCodes: []*shared.DeviceManagedLockCode{managedLockCode},
-		PropertyID:       property.ID,
 		RawDevice: shared.RawDevice{
 			LockCodes: []shared.RawDeviceLockCode{
 				{
@@ -153,14 +134,12 @@ func Test_LeaveLockCode_SingleMLC(t *testing.T) {
 		},
 	}
 
-	le, _, dr, pr := newLockEngine(t)
+	le, _, dr := newLockEngine(t)
 
 	dr.EXPECT().List(ctx).Return(
 		[]shared.Device{device},
 		nil,
 	)
-
-	pr.EXPECT().GetCached(ctx, property.ID).Return(property, true, nil)
 
 	err := le.UpdateLocks(ctx)
 	assert.Nil(t, err)
@@ -172,7 +151,7 @@ func Test_NoDevices(t *testing.T) {
 	// With no devices, we shouldn't add or remove any lock codes.
 
 	ctx := context.Background()
-	le, _, dr, _ := newLockEngine(t)
+	le, _, dr := newLockEngine(t)
 	dr.EXPECT().List(ctx).Return([]shared.Device{}, nil)
 
 	err := le.UpdateLocks(ctx)
@@ -185,10 +164,6 @@ func Test_RemoveLockCode(t *testing.T) {
 	// We'll have a single device, lock code, managed lock code, and remove the lock code.
 
 	ctx := context.Background()
-	property := shared.Property{
-		ControllerID: "9876",
-		ID:           uuid.New(),
-	}
 	code := "5566"
 	managedLockCode := &shared.DeviceManagedLockCode{
 		Code:    code,
@@ -199,7 +174,6 @@ func Test_RemoveLockCode(t *testing.T) {
 	device := shared.Device{
 		ID:               uuid.New(),
 		ManagedLockCodes: []*shared.DeviceManagedLockCode{managedLockCode},
-		PropertyID:       property.ID,
 		RawDevice: shared.RawDevice{
 			LockCodes: []shared.RawDeviceLockCode{
 				{
@@ -209,9 +183,9 @@ func Test_RemoveLockCode(t *testing.T) {
 		},
 	}
 
-	le, dc, dr, pr := newLockEngine(t)
+	le, dc, dr := newLockEngine(t)
 
-	dc.EXPECT().RemoveLockCode(ctx, property, device, code).Return(nil)
+	dc.EXPECT().RemoveLockCode(ctx, device, code).Return(nil)
 
 	dr.EXPECT().List(ctx).Return(
 		[]shared.Device{device},
@@ -220,8 +194,6 @@ func Test_RemoveLockCode(t *testing.T) {
 	dr.EXPECT().Put(ctx, device).Return(shared.Device{}, nil)
 
 	dr.EXPECT().AppendToAuditLog(ctx, device, []*shared.DeviceManagedLockCode{managedLockCode}).Return(nil)
-
-	pr.EXPECT().GetCached(ctx, property.ID).Return(property, true, nil)
 
 	err := le.UpdateLocks(ctx)
 	assert.Nil(t, err)
@@ -233,10 +205,6 @@ func Test_deleteOneButNotAllMLCs(t *testing.T) {
 	// Because I like to mess up pointers in loops...
 
 	ctx := context.Background()
-	property := shared.Property{
-		ControllerID: "9876",
-		ID:           uuid.New(),
-	}
 	device := shared.Device{
 		ID: uuid.New(),
 		ManagedLockCodes: []*shared.DeviceManagedLockCode{
@@ -290,18 +258,15 @@ func Test_deleteOneButNotAllMLCs(t *testing.T) {
 				StartAt: time.Now().Add(-1 * time.Hour * 24 * 2),
 			},
 		},
-		PropertyID: property.ID,
-		RawDevice:  shared.RawDevice{},
+		RawDevice: shared.RawDevice{},
 	}
 
-	le, _, dr, pr := newLockEngine(t)
+	le, _, dr := newLockEngine(t)
 
 	dr.EXPECT().List(ctx).Return(
 		[]shared.Device{device},
 		nil,
 	)
-
-	pr.EXPECT().GetCached(ctx, property.ID).Return(property, true, nil).AnyTimes()
 
 	dr.EXPECT().AppendToAuditLog(
 		ctx,
@@ -351,17 +316,16 @@ func Test_deleteOneButNotAllMLCs(t *testing.T) {
 	assert.Nil(t, err)
 }
 
-func newLockEngine(t *testing.T) (*lockengine.LockEngine, *mock_lockengine.MockDeviceController, *mock_lockengine.MockDeviceRepository, *mock_lockengine.MockPropertyRepository) {
+func newLockEngine(t *testing.T) (*lockengine.LockEngine, *mock_lockengine.MockDeviceController, *mock_lockengine.MockDeviceRepository) {
 	ctrl := gomock.NewController(t)
 
 	dc := mock_lockengine.NewMockDeviceController(ctrl)
 	dr := mock_lockengine.NewMockDeviceRepository(ctrl)
 	es := mock_lockengine.NewMockEmailService(ctrl)
-	pr := mock_lockengine.NewMockPropertyRepository(ctrl)
 
 	// This is probably temporary so we'll just completely mock it out all the way for now.
 	es.EXPECT().SendEamil(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes()
 
-	le := lockengine.NewLockEngine(dc, dr, es, "", pr, time.UTC)
-	return le, dc, dr, pr
+	le := lockengine.NewLockEngine(dc, dr, es, "", time.UTC)
+	return le, dc, dr
 }

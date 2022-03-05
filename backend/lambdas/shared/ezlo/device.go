@@ -19,12 +19,12 @@ func NewDeviceController(cp *ConnectionPool) *DeviceController {
 	}
 }
 
-func (d *DeviceController) AddLockCode(ctx context.Context, prop shared.Property, device shared.Device, code string) error {
-	if prop.ControllerID == "" {
-		return fmt.Errorf("property doesn't have a controller ID")
+func (d *DeviceController) AddLockCode(ctx context.Context, device shared.Device, code string) error {
+	if device.ControllerID == "" {
+		return fmt.Errorf("device doesn't have a controller ID")
 	}
 
-	ws, err := d.connectionPool.GetConnection(ctx, prop.ControllerID)
+	ws, err := d.connectionPool.GetConnection(ctx, device.ControllerID)
 	if err != nil {
 		return fmt.Errorf("error getting websocket: %s", err.Error())
 	}
@@ -59,12 +59,12 @@ func (d *DeviceController) AddLockCode(ctx context.Context, prop shared.Property
 	return nil
 }
 
-func (d *DeviceController) GetDevices(ctx context.Context, prop shared.Property) ([]shared.RawDevice, error) {
-	if prop.ControllerID == "" {
+func (d *DeviceController) GetDevices(ctx context.Context, controllerID string) ([]shared.RawDevice, error) {
+	if controllerID == "" {
 		return nil, nil
 	}
 
-	ws, err := d.connectionPool.GetConnection(ctx, prop.ControllerID)
+	ws, err := d.connectionPool.GetConnection(ctx, controllerID)
 	if err != nil {
 		return []shared.RawDevice{}, fmt.Errorf("error getting websocket: %s", err.Error())
 	}
@@ -77,13 +77,13 @@ func (d *DeviceController) GetDevices(ctx context.Context, prop shared.Property)
 	return devices, nil
 }
 
-func (d *DeviceController) RemoveLockCode(ctx context.Context, prop shared.Property, device shared.Device, code string) error {
+func (d *DeviceController) RemoveLockCode(ctx context.Context, device shared.Device, code string) error {
 	// TODO: if multiple codes for the same device are getting removed within a short period of time, might we end up removing the wrong code?
-	if prop.ControllerID == "" {
-		return fmt.Errorf("property doesn't have a controller ID")
+	if device.ControllerID == "" {
+		return fmt.Errorf("device doesn't have a controller ID")
 	}
 
-	ws, err := d.connectionPool.GetConnection(ctx, prop.ControllerID)
+	ws, err := d.connectionPool.GetConnection(ctx, device.ControllerID)
 	if err != nil {
 		return fmt.Errorf("error getting websocket: %s", err.Error())
 	}

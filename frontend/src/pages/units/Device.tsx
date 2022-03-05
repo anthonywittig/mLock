@@ -1,7 +1,6 @@
 import React from 'react';
 import { Button } from 'react-bootstrap';
 import { useHistory } from 'react-router-dom';
-import { StandardFetch } from '../utils/FetchHelper';
 import { History } from 'history';
 
 type IdAction = (id: string) => void;

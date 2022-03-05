@@ -6,12 +6,6 @@ import { LockCode } from './components/LockCode';
 import { Loading } from '../utils/Loading';
 import { StandardFetch } from '../utils/FetchHelper';
 
-type Property = {
-    id: string,
-    name: string,
-    updatedBy: string,
-}
-
 type MatchParams = {id: string};
 
 const Endpoint = "devices";
@@ -19,7 +13,6 @@ const Endpoint = "devices";
 export const Detail = () => {
     const [entity, setEntity] = React.useState<DeviceT>({
         id: "",
-        propertyId: "",
         unitId: "",
         lastRefreshedAt: "",
         lastWentOfflineAt: null,
@@ -38,7 +31,6 @@ export const Detail = () => {
     });
     const [loading, setLoading] = React.useState<boolean>(true);
     const [auditLog, setAuditLog] = React.useState<AuditLogT>({id: "", entries: []});
-    const [properties, setProperties] = React.useState<Property[]>([]);
     const [units, setUnits] = React.useState<UnitT[]>([]);
     const [unmanagedLockCodes, setUnmanagedLockCodes] = React.useState<DeviceLockCodeT[]>([]);
 
@@ -60,7 +52,6 @@ export const Detail = () => {
             setEntity(response.entity);
             setLoading(false);
             setAuditLog(response.extra.auditLog);
-            setProperties(response.extra.properties);
             setUnits(response.extra.units);
             setUnmanagedLockCodes(response.extra.unmanagedLockCodes);
         })
@@ -197,24 +188,11 @@ export const Detail = () => {
                     <Form.Control type="text" value={entity.rawDevice.status} disabled={true}/>
                 </Form.Group>
 
-                <Form.Group controlId="property">
-                    <Form.Label>Property</Form.Label>
-                    <Form.Control as="select" disabled={true}>
-                        {properties.map(property =>
-                            <option value={property.id} selected={property.id === entity.propertyId}>
-                                {property.name}
-                            </option>
-                        )}
-                    </Form.Control>
-                </Form.Group>
-
                 <Form.Group controlId="unit">
                     <Form.Label>Unit</Form.Label>
                     <Form.Control as="select" onChange={evt => detailFormUnitChange(evt as any)}>
                         <option></option>
-                        {units.filter(unit =>
-                            unit.propertyId === entity.propertyId
-                        ).map(unit =>
+                        {units.map(unit =>
                             <option value={unit.id} selected={unit.id === entity.unitId}>
                                 {unit.name}
                             </option>

@@ -10,7 +10,6 @@ import (
 	reflect "reflect"
 
 	gomock "github.com/golang/mock/gomock"
-	uuid "github.com/google/uuid"
 )
 
 // MockDeviceController is a mock of DeviceController interface.
@@ -37,31 +36,31 @@ func (m *MockDeviceController) EXPECT() *MockDeviceControllerMockRecorder {
 }
 
 // AddLockCode mocks base method.
-func (m *MockDeviceController) AddLockCode(ctx context.Context, prop shared.Property, device shared.Device, code string) error {
+func (m *MockDeviceController) AddLockCode(ctx context.Context, device shared.Device, code string) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "AddLockCode", ctx, prop, device, code)
+	ret := m.ctrl.Call(m, "AddLockCode", ctx, device, code)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // AddLockCode indicates an expected call of AddLockCode.
-func (mr *MockDeviceControllerMockRecorder) AddLockCode(ctx, prop, device, code interface{}) *gomock.Call {
+func (mr *MockDeviceControllerMockRecorder) AddLockCode(ctx, device, code interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddLockCode", reflect.TypeOf((*MockDeviceController)(nil).AddLockCode), ctx, prop, device, code)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddLockCode", reflect.TypeOf((*MockDeviceController)(nil).AddLockCode), ctx, device, code)
 }
 
 // RemoveLockCode mocks base method.
-func (m *MockDeviceController) RemoveLockCode(ctx context.Context, prop shared.Property, device shared.Device, code string) error {
+func (m *MockDeviceController) RemoveLockCode(ctx context.Context, device shared.Device, code string) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "RemoveLockCode", ctx, prop, device, code)
+	ret := m.ctrl.Call(m, "RemoveLockCode", ctx, device, code)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // RemoveLockCode indicates an expected call of RemoveLockCode.
-func (mr *MockDeviceControllerMockRecorder) RemoveLockCode(ctx, prop, device, code interface{}) *gomock.Call {
+func (mr *MockDeviceControllerMockRecorder) RemoveLockCode(ctx, device, code interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RemoveLockCode", reflect.TypeOf((*MockDeviceController)(nil).RemoveLockCode), ctx, prop, device, code)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RemoveLockCode", reflect.TypeOf((*MockDeviceController)(nil).RemoveLockCode), ctx, device, code)
 }
 
 // MockDeviceRepository is a mock of DeviceRepository interface.
@@ -166,43 +165,4 @@ func (m *MockEmailService) SendEamil(ctx context.Context, subject, body string) 
 func (mr *MockEmailServiceMockRecorder) SendEamil(ctx, subject, body interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SendEamil", reflect.TypeOf((*MockEmailService)(nil).SendEamil), ctx, subject, body)
-}
-
-// MockPropertyRepository is a mock of PropertyRepository interface.
-type MockPropertyRepository struct {
-	ctrl     *gomock.Controller
-	recorder *MockPropertyRepositoryMockRecorder
-}
-
-// MockPropertyRepositoryMockRecorder is the mock recorder for MockPropertyRepository.
-type MockPropertyRepositoryMockRecorder struct {
-	mock *MockPropertyRepository
-}
-
-// NewMockPropertyRepository creates a new mock instance.
-func NewMockPropertyRepository(ctrl *gomock.Controller) *MockPropertyRepository {
-	mock := &MockPropertyRepository{ctrl: ctrl}
-	mock.recorder = &MockPropertyRepositoryMockRecorder{mock}
-	return mock
-}
-
-// EXPECT returns an object that allows the caller to indicate expected use.
-func (m *MockPropertyRepository) EXPECT() *MockPropertyRepositoryMockRecorder {
-	return m.recorder
-}
-
-// GetCached mocks base method.
-func (m *MockPropertyRepository) GetCached(ctx context.Context, id uuid.UUID) (shared.Property, bool, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetCached", ctx, id)
-	ret0, _ := ret[0].(shared.Property)
-	ret1, _ := ret[1].(bool)
-	ret2, _ := ret[2].(error)
-	return ret0, ret1, ret2
-}
-
-// GetCached indicates an expected call of GetCached.
-func (mr *MockPropertyRepositoryMockRecorder) GetCached(ctx, id interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetCached", reflect.TypeOf((*MockPropertyRepository)(nil).GetCached), ctx, id)
 }

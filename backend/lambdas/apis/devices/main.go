@@ -9,7 +9,6 @@ import (
 	"mlock/lambdas/shared"
 	"mlock/lambdas/shared/dynamo/auditlog"
 	"mlock/lambdas/shared/dynamo/device"
-	"mlock/lambdas/shared/dynamo/property"
 	"mlock/lambdas/shared/dynamo/unit"
 	"net/http"
 	"regexp"
@@ -49,7 +48,6 @@ type UpdateResponse struct {
 
 type ExtraEntities struct {
 	AuditLog           shared.AuditLog            `json:"auditLog"`
-	Properties         []shared.Property          `json:"properties"`
 	Units              []shared.Unit              `json:"units"`
 	UnmanagedLockCodes []shared.RawDeviceLockCode `json:"unmanagedLockCodes"`
 }
@@ -140,11 +138,6 @@ func list(ctx context.Context, req events.APIGatewayProxyRequest) (*shared.APIRe
 		return nil, fmt.Errorf("error getting entities: %s", err.Error())
 	}
 
-	properties, err := property.NewRepository().List(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("error getting properties: %s", err.Error())
-	}
-
 	units, err := unit.NewRepository().List(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("error getting units: %s", err.Error())
@@ -153,8 +146,7 @@ func list(ctx context.Context, req events.APIGatewayProxyRequest) (*shared.APIRe
 	return shared.NewAPIResponse(http.StatusOK, ListResponse{
 		Entities: entities,
 		Extra: ExtraEntities{
-			Properties: properties,
-			Units:      units,
+			Units: units,
 		},
 	})
 }
@@ -192,11 +184,6 @@ func detail(ctx context.Context, req events.APIGatewayProxyRequest, id string) (
 		auditLog.Entries[i], auditLog.Entries[opp] = auditLog.Entries[opp], auditLog.Entries[i]
 	}
 
-	properties, err := property.NewRepository().List(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("error getting properties: %s", err.Error())
-	}
-
 	units, err := unit.NewRepository().List(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("error getting units: %s", err.Error())
@@ -206,7 +193,6 @@ func detail(ctx context.Context, req events.APIGatewayProxyRequest, id string) (
 		Entity: entity,
 		Extra: ExtraEntities{
 			AuditLog:           auditLog,
-			Properties:         properties,
 			Units:              units,
 			UnmanagedLockCodes: entity.GenerateUnmanagedLockCodes(),
 		},
@@ -231,21 +217,6 @@ func update(ctx context.Context, req events.APIGatewayProxyRequest) (*shared.API
 	}
 	if !ok {
 		return nil, fmt.Errorf("entity not found: %s", parsedID)
-	}
-
-	if body.UnitID != nil {
-		// Just verify that it exists and has the right property ID (TODO: don't allow a unit to change its property ID if a device is assigned to it).
-		unit, ok, err := unit.NewRepository().Get(ctx, *body.UnitID)
-		if err != nil {
-			return nil, fmt.Errorf("error getting unit: %s", err.Error())
-		}
-		if !ok {
-			return nil, fmt.Errorf("unit not found: %s", parsedID)
-		}
-
-		if unit.PropertyID != entity.PropertyID {
-			return nil, fmt.Errorf("property IDs don't match")
-		}
 	}
 
 	entity.UnitID = body.UnitID
