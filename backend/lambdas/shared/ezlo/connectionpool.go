@@ -62,7 +62,7 @@ func (cp *ConnectionPool) connect(ctx context.Context, controllerID string) (*we
 
 	device, err := getDeviceByID(ctx, authData, controllerID)
 	if err != nil {
-		return nil, fmt.Errorf("error getting devices: %s", err.Error())
+		return nil, fmt.Errorf("error getting device by ID (%s): %s", controllerID, err.Error())
 	}
 
 	deviceResponse, err := getDevice(ctx, authData, device)

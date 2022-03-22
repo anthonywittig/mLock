@@ -122,14 +122,14 @@ func updateDevicesFromController(
 ) error {
 	rds, err := deviceController.GetDevices(ctx, controllerID)
 	if err != nil {
-		return fmt.Errorf("error getting devices: %s", err.Error())
+		return fmt.Errorf("error getting devices from controller: %s", err.Error())
 	}
 
 	deviceRepository := device.NewRepository()
 
 	eds, err := deviceRepository.List(ctx)
 	if err != nil {
-		return fmt.Errorf("error getting devices: %s", err.Error())
+		return fmt.Errorf("error getting devices from repository: %s", err.Error())
 	}
 
 	transitioningToOfflineDevices := []shared.Device{}

@@ -31,8 +31,8 @@ func Test_GetDevices(t *testing.T) {
 	ds, err := dc.GetDevices(context.Background(), "92001809")
 	assert.Nil(t, err)
 
-	// Just check that we have one device (fragile).
-	assert.Greater(t, len(ds), 1)
+	// Just check that we have at least one device (fragile).
+	assert.Greater(t, len(ds), 0)
 	assert.Equal(t, ds[0].Category, "siren")
 
 	// Uncomment to see everything in an error
