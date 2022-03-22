@@ -135,13 +135,17 @@ func (l *LockEngine) calculateAndSendLockCommands(ctx context.Context, device sh
 					}
 				}
 			} else if len(ls.RequestToRemove) > 0 {
-				if err := l.deviceController.RemoveLockCode(ctx, device, code); err != nil {
-					return nil, fmt.Errorf("error removing lock code: %s", err.Error())
+				note := "Attempting to remove lock code."
+				err := l.deviceController.RemoveLockCode(ctx, device, code)
+				if err != nil {
+					// TODO: log metric?
+					fmt.Printf("error removing lock code: %s", err.Error())
+					note = "Error attempting to remove lock code."
 				}
 
 				for _, mlc := range ls.RequestToRemove {
 					mlc.Status = shared.DeviceManagedLockCodeStatus4Removing
-					mlc.Note = "Attempting to remove lock code."
+					mlc.Note = note
 					needToSave = append(needToSave, mlc)
 				}
 			}
