@@ -105,8 +105,11 @@ func (l *LockEngine) UpdateLocks(ctx context.Context) error {
 				return fmt.Errorf("error putting device: %s", err.Error())
 			}
 
-			if err := l.sendEmailForAuditLogs(ctx, d, needToSave); err != nil {
-				return fmt.Errorf("error sending email: %s", err.Error())
+			// We already get an email for when devices go offline, so don't send us any audit logs. (It might be nice to get an email when a device comes online.)
+			if d.RawDevice.Status != shared.DeviceStatusOffline {
+				if err := l.sendEmailForAuditLogs(ctx, d, needToSave); err != nil {
+					return fmt.Errorf("error sending email: %s", err.Error())
+				}
 			}
 		}
 	}
