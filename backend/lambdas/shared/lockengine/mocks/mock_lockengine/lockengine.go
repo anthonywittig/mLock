@@ -100,19 +100,19 @@ func (mr *MockDeviceRepositoryMockRecorder) AppendToAuditLog(ctx, device, manage
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AppendToAuditLog", reflect.TypeOf((*MockDeviceRepository)(nil).AppendToAuditLog), ctx, device, managedLockCodes)
 }
 
-// List mocks base method.
-func (m *MockDeviceRepository) List(ctx context.Context) ([]shared.Device, error) {
+// ListActive mocks base method.
+func (m *MockDeviceRepository) ListActive(ctx context.Context) ([]shared.Device, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "List", ctx)
+	ret := m.ctrl.Call(m, "ListActive", ctx)
 	ret0, _ := ret[0].([]shared.Device)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// List indicates an expected call of List.
-func (mr *MockDeviceRepositoryMockRecorder) List(ctx interface{}) *gomock.Call {
+// ListActive indicates an expected call of ListActive.
+func (mr *MockDeviceRepositoryMockRecorder) ListActive(ctx interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "List", reflect.TypeOf((*MockDeviceRepository)(nil).List), ctx)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListActive", reflect.TypeOf((*MockDeviceRepository)(nil).ListActive), ctx)
 }
 
 // Put mocks base method.

@@ -151,6 +151,29 @@ func (r *Repository) List(ctx context.Context) ([]shared.Device, error) {
 	return items, nil
 }
 
+func (r *Repository) ListActive(ctx context.Context) ([]shared.Device, error) {
+	all, err := r.List(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("error getting devices: %s", err.Error())
+	}
+
+	active := []shared.Device{}
+	for _, d := range all {
+		if d.RawDevice.Status != shared.DeviceStatusOnline {
+			continue
+		}
+
+		awhileAgo := time.Now().Add(-2 * time.Hour)
+		if d.LastRefreshedAt.Before(awhileAgo) {
+			continue
+		}
+
+		active = append(active, d)
+	}
+
+	return active, nil
+}
+
 func (r *Repository) ListByUnit(ctx context.Context) (map[uuid.UUID][]shared.Device, error) {
 	all, err := r.List(ctx)
 	if err != nil {

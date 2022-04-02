@@ -49,7 +49,7 @@ func Test_AddLockCode(t *testing.T) {
 
 	dc.EXPECT().AddLockCode(ctx, device, code).Return(nil)
 
-	dr.EXPECT().List(ctx).Return(
+	dr.EXPECT().ListActive(ctx).Return(
 		[]shared.Device{device},
 		nil,
 	)
@@ -97,7 +97,7 @@ func Test_LeaveLockCode_MultipleMLC(t *testing.T) {
 
 	le, _, dr := newLockEngine(t)
 
-	dr.EXPECT().List(ctx).Return(
+	dr.EXPECT().ListActive(ctx).Return(
 		[]shared.Device{device},
 		nil,
 	)
@@ -136,7 +136,7 @@ func Test_LeaveLockCode_SingleMLC(t *testing.T) {
 
 	le, _, dr := newLockEngine(t)
 
-	dr.EXPECT().List(ctx).Return(
+	dr.EXPECT().ListActive(ctx).Return(
 		[]shared.Device{device},
 		nil,
 	)
@@ -152,7 +152,7 @@ func Test_NoDevices(t *testing.T) {
 
 	ctx := context.Background()
 	le, _, dr := newLockEngine(t)
-	dr.EXPECT().List(ctx).Return([]shared.Device{}, nil)
+	dr.EXPECT().ListActive(ctx).Return([]shared.Device{}, nil)
 
 	err := le.UpdateLocks(ctx)
 	assert.Nil(t, err)
@@ -187,7 +187,7 @@ func Test_RemoveLockCode(t *testing.T) {
 
 	dc.EXPECT().RemoveLockCode(ctx, device, code).Return(nil)
 
-	dr.EXPECT().List(ctx).Return(
+	dr.EXPECT().ListActive(ctx).Return(
 		[]shared.Device{device},
 		nil,
 	)
@@ -263,7 +263,7 @@ func Test_deleteOneButNotAllMLCs(t *testing.T) {
 
 	le, _, dr := newLockEngine(t)
 
-	dr.EXPECT().List(ctx).Return(
+	dr.EXPECT().ListActive(ctx).Return(
 		[]shared.Device{device},
 		nil,
 	)

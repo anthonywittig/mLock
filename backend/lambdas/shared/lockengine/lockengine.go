@@ -15,7 +15,7 @@ type DeviceController interface {
 
 type DeviceRepository interface {
 	AppendToAuditLog(ctx context.Context, device shared.Device, managedLockCodes []*shared.DeviceManagedLockCode) error
-	List(ctx context.Context) ([]shared.Device, error)
+	ListActive(ctx context.Context) ([]shared.Device, error)
 	Put(ctx context.Context, item shared.Device) (shared.Device, error)
 }
 
@@ -54,7 +54,7 @@ func NewLockEngine(
 }
 
 func (l *LockEngine) UpdateLocks(ctx context.Context) error {
-	ds, err := l.deviceRepository.List(ctx)
+	ds, err := l.deviceRepository.ListActive(ctx)
 	if err != nil {
 		return fmt.Errorf("error getting devices: %s", err.Error())
 	}
@@ -105,11 +105,8 @@ func (l *LockEngine) UpdateLocks(ctx context.Context) error {
 				return fmt.Errorf("error putting device: %s", err.Error())
 			}
 
-			// We already get an email for when devices go offline, so don't send us any audit logs. (It might be nice to get an email when a device comes online.)
-			if d.RawDevice.Status != shared.DeviceStatusOffline {
-				if err := l.sendEmailForAuditLogs(ctx, d, needToSave); err != nil {
-					return fmt.Errorf("error sending email: %s", err.Error())
-				}
+			if err := l.sendEmailForAuditLogs(ctx, d, needToSave); err != nil {
+				return fmt.Errorf("error sending email: %s", err.Error())
 			}
 		}
 	}

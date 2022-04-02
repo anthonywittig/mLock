@@ -342,7 +342,7 @@ func (s *singleMLCLifecycleTest) generateLockengineSingleMLCLifecycleTest(codeEx
 
 	s.le, s.dc, s.dr = newLockEngine(s.t)
 
-	s.dr.EXPECT().List(s.ctx).Return(
+	s.dr.EXPECT().ListActive(s.ctx).Return(
 		[]shared.Device{s.d},
 		nil,
 	)
