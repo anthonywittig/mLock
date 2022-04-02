@@ -39,6 +39,34 @@ func Test_GetDevices(t *testing.T) {
 	//assert.Nil(t, ds)
 }
 
+func Test_TemporarySearchDevices(t *testing.T) {
+	assert.Nil(t, loadConfig())
+
+	/*
+		for _, cID := range []string{
+			"90010778",
+			"90010799",
+			"92001809",
+		} {
+			cp := NewConnectionPool()
+			defer cp.Close()
+			dc := NewDeviceController(cp)
+
+			ds, err := dc.GetDevices(context.Background(), cID)
+			assert.Nil(t, err)
+
+			for _, d := range ds {
+				if d.DeviceTypeID == "0_0_0" || d.Name == "06B Lock 849749 (1BE469)" {
+					fmt.Printf("%s - %s - %+v\n", d.DeviceTypeID, d.Status, d)
+				}
+			}
+		}
+
+		// Uncomment to see everything in an error
+		assert.Nil(t, "hi")
+	*/
+}
+
 func Test_AddLockCode(t *testing.T) {
 	assert.Nil(t, loadConfig())
 

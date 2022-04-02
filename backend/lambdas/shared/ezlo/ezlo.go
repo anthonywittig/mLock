@@ -196,7 +196,8 @@ func getRawDevices(ws *websocket.Conn) ([]shared.RawDevice, error) {
 	result := []shared.RawDevice{}
 	for _, d := range deviceListResp.Result.Devices {
 		status := shared.DeviceStatusOffline
-		if d.Reachable && d.Status != "broken" {
+		deviceInitialized := d.DeviceTypeID != "0_0_0"
+		if d.Reachable && deviceInitialized && d.Status != "broken" {
 			status = shared.DeviceStatusOnline
 		}
 
@@ -204,10 +205,11 @@ func getRawDevices(ws *websocket.Conn) ([]shared.RawDevice, error) {
 			Battery: shared.RawDeviceBattery{
 				BatteryPowered: d.Reachable && d.BatteryPowered,
 			},
-			Category: d.Category,
-			ID:       d.ID,
-			Name:     d.Name,
-			Status:   status,
+			Category:     d.Category,
+			DeviceTypeID: d.DeviceTypeID,
+			ID:           d.ID,
+			Name:         d.Name,
+			Status:       status,
 		}
 
 		for _, item := range itemsByDevice[d.ID] {

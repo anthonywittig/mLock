@@ -30,12 +30,13 @@ type DeviceHistory struct {
 }
 
 type RawDevice struct {
-	Battery   RawDeviceBattery    `json:"battery"`
-	Category  string              `json:"category"`
-	ID        string              `json:"id"`
-	LockCodes []RawDeviceLockCode `json:"lockCodes"`
-	Name      string              `json:"name"`
-	Status    string              `json:"status"`
+	Battery      RawDeviceBattery    `json:"battery"`
+	Category     string              `json:"category"`
+	DeviceTypeID string              `json:"deviceTypeId"`
+	ID           string              `json:"id"`
+	LockCodes    []RawDeviceLockCode `json:"lockCodes"`
+	Name         string              `json:"name"`
+	Status       string              `json:"status"`
 }
 
 type RawDeviceBattery struct {
