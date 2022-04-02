@@ -113,7 +113,7 @@ func delete(ctx context.Context, req events.APIGatewayProxyRequest) (*shared.API
 
 	if !ok {
 		return shared.NewAPIResponse(http.StatusBadRequest, DeleteResponse{
-			Error: fmt.Sprintf("device can't be deleted because it was recently refreshed and/or the device status"),
+			Error: "device can't be deleted because it was recently refreshed and/or the device status",
 		})
 	}
 
