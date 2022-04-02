@@ -164,7 +164,6 @@ func detail(ctx context.Context, req events.APIGatewayProxyRequest, id string) (
 	if !ok {
 		return nil, fmt.Errorf("entity not found: %s", parsedID)
 	}
-	entity.SortManagedLockCodes()
 
 	auditLog, found, err := auditlog.Get(ctx, entity.ID)
 	if err != nil {

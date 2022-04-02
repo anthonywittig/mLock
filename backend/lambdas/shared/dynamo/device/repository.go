@@ -221,6 +221,8 @@ func (r *Repository) Put(ctx context.Context, item shared.Device) (shared.Device
 		return shared.Device{}, fmt.Errorf("an ID is required")
 	}
 
+	item.ManagedLockCodes = r.sortManagedLockCodes(item.ManagedLockCodes)
+
 	av, err := dynamo.MarshalMapWithOptions(item)
 	if err != nil {
 		return shared.Device{}, fmt.Errorf("error marshalling map: %s", err.Error())
@@ -245,6 +247,25 @@ func (r *Repository) Put(ctx context.Context, item shared.Device) (shared.Device
 	}
 
 	return entity, nil
+}
+
+func (r *Repository) sortManagedLockCodes(mlcs []*shared.DeviceManagedLockCode) []*shared.DeviceManagedLockCode {
+	// This is really just here so that we end up with an empty array instead of null when marshalling.
+	if mlcs == nil {
+		mlcs = []*shared.DeviceManagedLockCode{}
+	}
+
+	sort.Slice(
+		mlcs,
+		func(a, b int) bool {
+			if mlcs[a].EndAt.Equal(mlcs[b].EndAt) {
+				return mlcs[a].StartAt.After(mlcs[b].StartAt)
+			}
+			return mlcs[a].EndAt.After(mlcs[b].EndAt)
+		},
+	)
+
+	return mlcs
 }
 
 func Migrate(ctx context.Context) error {

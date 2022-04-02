@@ -90,20 +90,3 @@ func (d *Device) GetManagedLockCode(id uuid.UUID) *DeviceManagedLockCode {
 	}
 	return nil
 }
-
-func (d *Device) SortManagedLockCodes() {
-	// This is really just here so that we end up with an empty array instead of null when marshalling.
-	if d.ManagedLockCodes == nil {
-		d.ManagedLockCodes = []*DeviceManagedLockCode{}
-	}
-
-	sort.Slice(
-		d.ManagedLockCodes,
-		func(a, b int) bool {
-			if d.ManagedLockCodes[a].EndAt.Equal(d.ManagedLockCodes[b].EndAt) {
-				return d.ManagedLockCodes[a].StartAt.After(d.ManagedLockCodes[b].StartAt)
-			}
-			return d.ManagedLockCodes[a].EndAt.After(d.ManagedLockCodes[b].EndAt)
-		},
-	)
-}
