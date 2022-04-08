@@ -68,6 +68,10 @@ func HandleRequest(ctx context.Context, event MyEvent) (Response, error) {
 
 	// TODO: get the list of controller IDs from the "devices" API.
 	for _, c := range []string{
+		"84901957",
+		"84902125",
+		"84902278",
+		"84911082",
 		"90010778",
 		"90010799",
 		"92001809",
