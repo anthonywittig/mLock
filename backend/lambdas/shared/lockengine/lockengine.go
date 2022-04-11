@@ -117,6 +117,11 @@ func (l *LockEngine) UpdateLocks(ctx context.Context) error {
 func (l *LockEngine) calculateAndSendLockCommands(ctx context.Context, device shared.Device, lockStates map[string]*lockState) ([]*shared.DeviceManagedLockCode, error) {
 	needToSave := []*shared.DeviceManagedLockCode{}
 
+	enhancedLogging := device.RawDevice.Name == ""
+	if enhancedLogging {
+		fmt.Printf("vvv calculateAndSendLockCommands for %s vvv\n", device.RawDevice.Name)
+	}
+
 	for code, ls := range lockStates {
 		if ls.Exists {
 			if len(ls.RequestToAdd) > 0 {
@@ -179,6 +184,13 @@ func (l *LockEngine) calculateAndSendLockCommands(ctx context.Context, device sh
 				}
 			}
 		}
+	}
+
+	if enhancedLogging {
+		for _, n := range needToSave {
+			fmt.Printf("---- calculateAndSendLockCommands; need to save: %+v\n", n)
+		}
+		fmt.Printf("^^^ calculateAndSendLockCommands for %s - need to save: %+v ^^^\n", device.RawDevice.Name, needToSave)
 	}
 
 	return needToSave, nil

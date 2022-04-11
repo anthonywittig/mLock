@@ -198,6 +198,11 @@ func wsGetLockCodesForDevice(ws *websocket.Conn, deviceID string) ([]shared.RawD
 				return []shared.RawDeviceLockCode{}, wsItem{}, fmt.Errorf("error getting lock codes: %s", err.Error())
 			}
 
+			if item.ElementsMaxNumber == 0 {
+				// We didn't get an max number, assume 10.
+				item.ElementsMaxNumber = 10
+			}
+
 			return lockCodes, item, nil
 		}
 	}
