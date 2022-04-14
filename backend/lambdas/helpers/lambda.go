@@ -41,7 +41,7 @@ func handlerWrapper(
 ) func(context.Context, events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
 
 	return func(ctx context.Context, req events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
-		ctx, cancel := context.WithTimeout(ctx, 20*time.Second)
+		ctx, cancel := context.WithTimeout(ctx, 40*time.Second)
 		defer cancel()
 
 		c := make(chan handlerResponse)

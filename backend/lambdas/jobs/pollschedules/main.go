@@ -32,9 +32,6 @@ func main() {
 }
 
 func HandleRequest(ctx context.Context, event MyEvent) (Response, error) {
-	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
-	defer cancel()
-
 	ctx = shared.CreateContextData(ctx)
 
 	log.Printf("starting poll\n")
@@ -76,7 +73,10 @@ func HandleRequest(ctx context.Context, event MyEvent) (Response, error) {
 		"90010799",
 		"92001809",
 	} {
-		if err := updateDevicesFromController(ctx, emailService, c, deviceController); err != nil {
+		ctxUpdateDevices, cancel := context.WithTimeout(ctx, 10*time.Second)
+		defer cancel()
+
+		if err := updateDevicesFromController(ctxUpdateDevices, emailService, c, deviceController); err != nil {
 			if err2 := emailService.SendEamil(
 				ctx,
 				"MursetLock - Error updating devices from controller.",
