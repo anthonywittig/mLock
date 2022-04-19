@@ -155,7 +155,7 @@ export const List = () => {
         const warnings: JSX.Element[] = [];
 
         const lr = Date.parse(entity.lastRefreshedAt);
-        const recently = sub(new Date(), {minutes: 20});
+        const recently = sub(new Date(), {minutes: 70});
 
         if (isBefore(lr, recently)) {
             const distance = formatDistance(lr, new Date(), { addSuffix: true });
