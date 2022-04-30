@@ -127,14 +127,18 @@ func (l *LockEngine) calculateAndSendLockCommands(ctx context.Context, device sh
 			if len(ls.RequestToAdd) > 0 {
 				for _, mlc := range ls.RequestToRemove {
 					if mlc.Status != shared.DeviceManagedLockCodeStatus5Complete {
-						mlc.Status = shared.DeviceManagedLockCodeStatus5Complete
+						if err := mlc.SetStatus(shared.DeviceManagedLockCodeStatus5Complete); err != nil {
+							return []*shared.DeviceManagedLockCode{}, err
+						}
 						mlc.Note = "Leaving lock code as it's in use."
 						needToSave = append(needToSave, mlc)
 					}
 				}
 				for _, mlc := range ls.RequestToAdd {
 					if mlc.Status != shared.DeviceManagedLockCodeStatus3Enabled {
-						mlc.Status = shared.DeviceManagedLockCodeStatus3Enabled
+						if err := mlc.SetStatus(shared.DeviceManagedLockCodeStatus3Enabled); err != nil {
+							return []*shared.DeviceManagedLockCode{}, err
+						}
 						mlc.Note = "Lock code present."
 						needToSave = append(needToSave, mlc)
 					}
@@ -149,7 +153,9 @@ func (l *LockEngine) calculateAndSendLockCommands(ctx context.Context, device sh
 				}
 
 				for _, mlc := range ls.RequestToRemove {
-					mlc.Status = shared.DeviceManagedLockCodeStatus4Removing
+					if err := mlc.SetStatus(shared.DeviceManagedLockCodeStatus4Removing); err != nil {
+						return []*shared.DeviceManagedLockCode{}, err
+					}
 					mlc.Note = note
 					needToSave = append(needToSave, mlc)
 				}
@@ -165,7 +171,9 @@ func (l *LockEngine) calculateAndSendLockCommands(ctx context.Context, device sh
 				}
 
 				for _, mlc := range ls.RequestToAdd {
-					mlc.Status = shared.DeviceManagedLockCodeStatus2Adding
+					if err := mlc.SetStatus(shared.DeviceManagedLockCodeStatus2Adding); err != nil {
+						return []*shared.DeviceManagedLockCode{}, err
+					}
 					mlc.Note = note
 					needToSave = append(needToSave, mlc)
 				}
@@ -173,8 +181,9 @@ func (l *LockEngine) calculateAndSendLockCommands(ctx context.Context, device sh
 
 			for _, mlc := range ls.RequestToRemove {
 				if mlc.Status != shared.DeviceManagedLockCodeStatus5Complete {
-					mlc.Status = shared.DeviceManagedLockCodeStatus5Complete
-
+					if err := mlc.SetStatus(shared.DeviceManagedLockCodeStatus5Complete); err != nil {
+						return []*shared.DeviceManagedLockCode{}, err
+					}
 					mlc.Note = "Code was removed."
 					if len(ls.RequestToAdd) > 0 {
 						mlc.Note = "Code is currently in use; nothing more to do."
