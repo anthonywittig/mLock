@@ -21,7 +21,7 @@ type DeviceT = {
     lastRefreshedAt: string,
     lastWentOfflineAt: string | null,
     lastWentOnlineAt: string | null,
-    managedLockCodes: DeviceManagedLockCode[],
+    managedLockCodes: DeviceManagedLockCodeT[],
     rawDevice: {
         battery: {
             batteryPowered: boolean,
@@ -43,6 +43,10 @@ type DeviceManagedLockCodeT = {
     status: string,
     startAt: string,
     endAt: string,
+    startedAddingAt: string | null,
+    wasEnabledAt: string | null,
+    startedRemovingAt: string | null,
+    wasCompletedAt: string | null,
 }
 
 type DeviceManagedLockCodeReservationT = {

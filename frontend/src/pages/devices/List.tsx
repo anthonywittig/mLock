@@ -120,6 +120,7 @@ export const List = () => {
         const warnings = getLastRefreshedWarnings(entity);
         warnings.push.apply(warnings, getStatusInfoWarning(entity));
         warnings.push.apply(warnings, getLastWentOfflineWarnings(entity));
+        warnings.push.apply(warnings, getLockResponsivenessWarnings(entity));
 
         return (
             <ul>
@@ -183,6 +184,43 @@ export const List = () => {
         } else if (isAfter(lwond, recently)) {
             const distance = formatDistance(lwond, new Date(), { addSuffix: true });
             warnings.push(<Badge variant="danger">Went Online: { distance }</Badge>);
+        }
+
+        return warnings;
+    };
+
+    const getLockResponsivenessWarnings = (entity: DeviceT) => {
+        const warnings: JSX.Element[] = [];
+
+        if (entity.rawDevice.status !== "ONLINE") {
+            return warnings;
+        }
+
+        const tooSoon = sub(new Date(), {minutes: 10});
+        const expectedResponseInMinutes = 20;
+
+        for (let i = 0; i < entity.managedLockCodes.length; i++) {
+            const lc = entity.managedLockCodes[i];
+
+            // We really should consider the `startedRemovingAt` and `wasCompletedAt` timestamps, but right now we're only syncing every hour during the time that most codes are being removed.
+            if (lc.startedAddingAt) {
+                const sa = Date.parse(lc.startedAddingAt);
+                if (isBefore(sa, tooSoon)) {
+                    if (lc.wasEnabledAt) {
+                        const wc = Date.parse(lc.wasEnabledAt);
+                        const minutesBetween = (wc - sa) / 1000 / 60;
+                        if (expectedResponseInMinutes < minutesBetween) {
+                            const distance = formatDistance(sa, wc);
+                            warnings.push(<Badge variant="danger">Slow to Respond ({ distance } for code { lc.code })</Badge>);
+                        }
+                    } else {
+                        warnings.push(<Badge variant="danger">Not Responding (for code { lc.code })</Badge>);
+                    }
+
+                    // We'll only consider the most recent lock code that is old enough.
+                    break;
+                }
+            }
         }
 
         return warnings;

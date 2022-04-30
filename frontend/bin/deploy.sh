@@ -7,8 +7,7 @@ cd "$(dirname "$0")"
 # move up one level
 cd ../
 
-npm install
-CI=true npm run build
+./bin/build.sh
 
 aws --profile=mLock-dev s3 cp build s3://mlock-site --recursive
 
