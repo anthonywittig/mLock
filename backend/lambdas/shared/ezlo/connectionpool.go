@@ -35,6 +35,9 @@ func (cp *ConnectionPool) GetConnection(ctx context.Context, controllerID string
 		return ws, nil
 	}
 
+	// Connecting to the ws should be quick.
+	ctx, cancel := context.WithTimeout(ctx, 2*time.Second)
+	defer cancel()
 	ws, err := cp.connect(ctx, controllerID)
 	if err != nil {
 		return nil, fmt.Errorf("error connecting: %s", err.Error())
