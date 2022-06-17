@@ -166,8 +166,9 @@ func (l *LockEngine) calculateAndSendLockCommands(ctx context.Context, device sh
 				err := l.deviceController.AddLockCode(ctx, device, code)
 				if err != nil {
 					// TODO: log metric?
-					fmt.Printf("error adding lock code: %s", err.Error())
-					note = "Error attempting to add lock code."
+					msg := fmt.Sprintf("error adding lock code: %s", err.Error())
+					fmt.Print(msg)
+					note = msg
 				}
 
 				for _, mlc := range ls.RequestToAdd {

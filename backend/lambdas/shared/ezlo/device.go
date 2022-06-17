@@ -35,7 +35,7 @@ func (d *DeviceController) AddLockCode(ctx context.Context, device shared.Device
 	}
 
 	if len(lockCodes) >= item.ElementsMaxNumber {
-		return fmt.Errorf("max number of lock codes already set")
+		return fmt.Errorf("max number of lock codes already set (%d)", item.ElementsMaxNumber)
 	}
 
 	for _, lc := range lockCodes {

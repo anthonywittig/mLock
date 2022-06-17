@@ -84,7 +84,7 @@ func HandleRequest(ctx context.Context, event MyEvent) (Response, error) {
 		"90010799",
 		"92001809",
 	} {
-		ctxUpdateDevices, cancel := context.WithTimeout(ctx, 20*time.Second)
+		ctxUpdateDevices, cancel := context.WithTimeout(ctx, 40*time.Second)
 		defer cancel()
 
 		if err := updateDevicesFromController(ctxUpdateDevices, emailService, c, deviceController); err != nil {
