@@ -19,7 +19,7 @@ func main() {
 
 func HandleRequest(ctx context.Context, event MyEvent) (Response, error) {
 	return Response{
-		Messages: []string{"no migrations run - we should create a migration tracking table and only run them once, probably. And we should run the migrations on every deploy, probably."},
+		Messages: []string{"no migrations run; we should create a migration tracking table and only run them once, probably. And we should run the migrations on every deploy, probably."},
 	}, nil
 
 	// Old code as a reference to what we once did:

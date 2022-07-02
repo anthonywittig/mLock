@@ -2,6 +2,7 @@
 .env
 .env.test
 backend/onprem/dist/
+/build
 ezlo/env/
 ezlo/node_modules/
 *\.swp
