@@ -1,8 +1,9 @@
+*\.swp
 .DS_Store
 .env
 .env.test
-backend/onprem/dist/
+/bin/deploy-lambda/main
 /build
+backend/onprem/dist/
 ezlo/env/
 ezlo/node_modules/
-*\.swp
