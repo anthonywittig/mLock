@@ -199,8 +199,8 @@ func wsGetLockCodesForDevice(ws *websocket.Conn, deviceID string) ([]shared.RawD
 			}
 
 			if item.ElementsMaxNumber == 0 {
-				// We didn't get an max number, assume 10.
-				item.ElementsMaxNumber = 10
+				// We didn't get an max number, some locks are as low as 6, but it's probably better to not artificially limit them.
+				item.ElementsMaxNumber = 30
 			}
 
 			return lockCodes, item, nil
