@@ -101,7 +101,8 @@ export const List = () => {
 
     const renderDeleteButton = (entity: DeviceT) => {
         const lr = Date.parse(entity.lastRefreshedAt);
-        const recently = sub(new Date(), {minutes: 20});
+        // This should really be something much smaller, like 20 minutes, but since we have periods of time where we don't sync for an hour, we need something at least 60 minutes long.
+        const recently = sub(new Date(), {minutes: 125});
 
         if (isAfter(lr, recently)) {
             return (
@@ -206,6 +207,10 @@ export const List = () => {
             if (lc.startedAddingAt) {
                 const sa = Date.parse(lc.startedAddingAt);
                 if (isBefore(sa, tooSoon)) {
+                    if (warnings.length && lc.status !== "Adding") {
+                        // Once we have one warning, we'll only add additional ones for `Adding` codes.
+                        continue;
+                    }
                     if (lc.wasEnabledAt) {
                         const wc = Date.parse(lc.wasEnabledAt);
                         const minutesBetween = (wc - sa) / 1000 / 60;
@@ -216,9 +221,6 @@ export const List = () => {
                     } else {
                         warnings.push(<Badge variant="danger">Not Responding (for code { lc.code })</Badge>);
                     }
-
-                    // We'll only consider the most recent lock code that is old enough.
-                    break;
                 }
             }
         }
