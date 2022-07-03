@@ -102,7 +102,7 @@ export const List = () => {
     const renderDeleteButton = (entity: DeviceT) => {
         const lr = Date.parse(entity.lastRefreshedAt);
         // This should really be something much smaller, like 20 minutes, but since we have periods of time where we don't sync for an hour, we need something at least 60 minutes long.
-        const recently = sub(new Date(), {minutes: 125});
+        const recently = sub(new Date(), {minutes: 130});
 
         if (isAfter(lr, recently)) {
             return (
