@@ -80,14 +80,32 @@ func HandleRequest(ctx context.Context, event MyEvent) (Response, error) {
 		"84908450",
 		"84909917",
 		"84911082",
+		"90000849",
+		"90001483",
+		"90001613",
+		"90001793",
+		"90001871",
+		"90002061",
+		"90002779",
+		"90003204",
+		"90003500",
+		"90003526",
+		"90003983",
 		"90010778",
 		"90010799",
+		"90010815",
+		"90011629",
+		"90012570",
 		"92001809",
 	} {
 		ctxUpdateDevices, cancel := context.WithTimeout(ctx, 40*time.Second)
 		defer cancel()
 
 		if err := updateDevicesFromController(ctxUpdateDevices, emailService, c, deviceController); err != nil {
+			if strings.Contains(err.Error(), "cloud.error.controller_not_connected") {
+				// We get a ton of these when we're swapping out controllers. This should be temporary (but we know how that goes)...
+				continue
+			}
 			if err2 := emailService.SendEamil(
 				ctx,
 				"MursetLock - Error updating devices from controller.",
