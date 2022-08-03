@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"log"
-	mshared "mlock/shared"
 	"net/url"
 	"regexp"
 	"time"
@@ -48,27 +47,17 @@ func (cp *ConnectionPool) GetConnection(ctx context.Context, controllerID string
 }
 
 func (cp *ConnectionPool) connect(ctx context.Context, controllerID string) (*websocket.Conn, error) {
-	username, err := mshared.GetConfig("EZLO_USERNAME")
+	ad, err := getAuthData(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("error getting username: %s", err.Error())
+		return nil, fmt.Errorf("error getting auth data: %s", err.Error())
 	}
 
-	password, err := mshared.GetConfig("EZLO_PASSWORD")
-	if err != nil {
-		return nil, fmt.Errorf("error getting password: %s", err.Error())
-	}
-
-	authData, err := authenticate(ctx, username, password)
-	if err != nil {
-		return nil, fmt.Errorf("error authenticating: %s", err.Error())
-	}
-
-	device, err := getDeviceByID(ctx, authData, controllerID)
+	device, err := getDeviceByID(ctx, ad, controllerID)
 	if err != nil {
 		return nil, fmt.Errorf("error getting device by ID (%s): %s", controllerID, err.Error())
 	}
 
-	deviceResponse, err := getDevice(ctx, authData, device)
+	deviceResponse, err := getDevice(ctx, ad, device)
 	if err != nil {
 		return nil, fmt.Errorf("error getting device: %s", err.Error())
 	}
@@ -94,7 +83,7 @@ func (cp *ConnectionPool) connect(ctx context.Context, controllerID string) (*we
 		return nil, fmt.Errorf("setting read deadline: %s", err.Error())
 	}
 
-	if err := wsLogIn(ws, authData.Response); err != nil {
+	if err := wsLogIn(ws, ad.Response); err != nil {
 		return nil, fmt.Errorf("login: %s", err.Error())
 	}
 

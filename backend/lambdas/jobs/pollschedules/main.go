@@ -63,45 +63,50 @@ func HandleRequest(ctx context.Context, event MyEvent) (Response, error) {
 	reservationRepository := reservation.NewRepository(tz)
 	unitRepository := unit.NewRepository()
 
-	// TODO: get the list of controller IDs from the "devices" API.
-	for _, c := range []string{
-		"84900483",
-		"84901957",
-		"84902073",
-		"84902125",
-		"84902278",
-		"84902829",
-		"84903155",
-		"84903375",
-		"84904595",
-		"84905147",
-		"84907280",
-		"84907380",
-		"84908450",
-		"84909917",
-		"84911082",
-		"90000849",
-		"90001483",
-		"90001613",
-		"90001793",
-		"90001871",
-		"90002061",
-		"90002779",
-		"90003204",
-		"90003500",
-		"90003526",
-		"90003983",
-		"90010778",
-		"90010799",
-		"90010815",
-		"90011629",
-		"90012570",
-		"92001809",
-	} {
+	// Should probably create a repository for this, but we're just listing them for now.
+	controllers, err := ezlo.GetControllers(ctx)
+	if err != nil {
+		return Response{}, fmt.Errorf("error getting controllers: %s", err.Error())
+	}
+
+	// Old list, might be handy when transitioning to the API.
+	// "84900483",
+	// "84901957",
+	// "84902073",
+	// "84902125",
+	// "84902278",
+	// "84902829",
+	// "84903155",
+	// "84903375",
+	// "84904595",
+	// "84905147",
+	// "84907280",
+	// "84907380",
+	// "84908450",
+	// "84909917",
+	// "84911082",
+	// "90000849",
+	// "90001483",
+	// "90001613",
+	// "90001793",
+	// "90001871",
+	// "90002061",
+	// "90002779",
+	// "90003204",
+	// "90003500",
+	// "90003526",
+	// "90003983",
+	// "90010778",
+	// "90010799",
+	// "90010815",
+	// "90011629",
+	// "90012570",
+	// "92001809",
+	for _, c := range controllers {
 		ctxUpdateDevices, cancel := context.WithTimeout(ctx, 40*time.Second)
 		defer cancel()
 
-		if err := updateDevicesFromController(ctxUpdateDevices, emailService, c, deviceController); err != nil {
+		if err := updateDevicesFromController(ctxUpdateDevices, emailService, c.PKDevice, deviceController); err != nil {
 			if strings.Contains(err.Error(), "cloud.error.controller_not_connected") {
 				// We get a ton of these when we're swapping out controllers. This should be temporary (but we know how that goes)...
 				continue
@@ -109,9 +114,9 @@ func HandleRequest(ctx context.Context, event MyEvent) (Response, error) {
 			if err2 := emailService.SendEamil(
 				ctx,
 				"MursetLock - Error updating devices from controller.",
-				fmt.Sprintf("Controller ID: %s; error: %s", c, err.Error()),
+				fmt.Sprintf("Controller ID: %s; error: %s", c.PKDevice, err.Error()),
 			); err2 != nil {
-				return Response{}, fmt.Errorf("error sending error email for updating devices for controller: %s, error: %s", c, err.Error())
+				return Response{}, fmt.Errorf("error sending error email for updating devices for controller: %s, error: %s", c.PKDevice, err.Error())
 			}
 		}
 	}

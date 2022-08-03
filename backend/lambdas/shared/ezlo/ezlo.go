@@ -81,9 +81,9 @@ type deviceResponse struct {
 	//HasWifi: "0"
 	//LinuxFirmware: 1
 	//MacAddress: "..."
-	//NMAControllerStatus: 1
+	NMAControllerStatus int `json:"NMAControllerStatus"`
 	//NMAUuid: "..."
-	//PK_Device: "..."
+	PKDevice    string `json:"PK_Device"`
 	ServerRelay string `json:"Server_Relay"`
 	//UI: "4"
 	//public_key_android: ""
@@ -321,12 +321,26 @@ func getDevice(ctx context.Context, ad authData, d device) (deviceResponse, erro
 }
 
 func getDeviceByID(ctx context.Context, ad authData, controllerID string) (device, error) {
+	devices, err := getDevices(ctx, ad)
+	if err != nil {
+		return device{}, fmt.Errorf("error getting devices: %s", err.Error())
+	}
+
+	for _, d := range devices {
+		if d.PKDevice == controllerID {
+			return d, nil
+		}
+	}
+
+	return device{}, fmt.Errorf("unable to find device: %+v", devices)
+}
+func getDevices(ctx context.Context, ad authData) ([]device, error) {
 	// TODO: we probably need to use the same domain that we used to auth.
 	url := fmt.Sprintf("https://vera-us-oem-account11.mios.com/account/account/account/%d/devices", ad.Identity.PKAccount)
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
-		return device{}, fmt.Errorf("error creating request: %s", err.Error())
+		return []device{}, fmt.Errorf("error creating request: %s", err.Error())
 	}
 
 	req.Header.Set("mmsAuth", ad.Response.Identity)
@@ -338,27 +352,21 @@ func getDeviceByID(ctx context.Context, ad authData, controllerID string) (devic
 
 	resp, err := client.Do(req)
 	if err != nil {
-		return device{}, fmt.Errorf("error doing request: %s", err.Error())
+		return []device{}, fmt.Errorf("error doing request: %s", err.Error())
 	}
 	defer resp.Body.Close()
 
 	respBody, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return device{}, fmt.Errorf("error reading body: %s", err.Error())
+		return []device{}, fmt.Errorf("error reading body: %s", err.Error())
 	}
 
 	body := devicesResponse{}
 	if err := json.Unmarshal(respBody, &body); err != nil {
-		return device{}, fmt.Errorf("error unmarshalling body: %s; url: %s; authData: %+v; error: %s", string(respBody), url, ad, err.Error())
+		return []device{}, fmt.Errorf("error unmarshalling body: %s; url: %s; authData: %+v; error: %s", string(respBody), url, ad, err.Error())
 	}
 
-	for _, d := range body.Devices {
-		if d.PKDevice == controllerID {
-			return d, nil
-		}
-	}
-
-	return device{}, fmt.Errorf("unable to find device: %+v", body.Devices)
+	return body.Devices, nil
 }
 
 func wsSendCommand(ws *websocket.Conn, id string, request interface{}, outResponse interface{}) error {
