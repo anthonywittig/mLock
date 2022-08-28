@@ -153,16 +153,16 @@ func (m *MockEmailService) EXPECT() *MockEmailServiceMockRecorder {
 	return m.recorder
 }
 
-// SendEamil mocks base method.
-func (m *MockEmailService) SendEamil(ctx context.Context, subject, body string) error {
+// SendEmailToDevelopers mocks base method.
+func (m *MockEmailService) SendEmailToDevelopers(ctx context.Context, subject, body string) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "SendEamil", ctx, subject, body)
+	ret := m.ctrl.Call(m, "SendEmailToDevelopers", ctx, subject, body)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
-// SendEamil indicates an expected call of SendEamil.
-func (mr *MockEmailServiceMockRecorder) SendEamil(ctx, subject, body interface{}) *gomock.Call {
+// SendEmailToDevelopers indicates an expected call of SendEmailToDevelopers.
+func (mr *MockEmailServiceMockRecorder) SendEmailToDevelopers(ctx, subject, body interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SendEamil", reflect.TypeOf((*MockEmailService)(nil).SendEamil), ctx, subject, body)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SendEmailToDevelopers", reflect.TypeOf((*MockEmailService)(nil).SendEmailToDevelopers), ctx, subject, body)
 }

@@ -20,7 +20,7 @@ type DeviceRepository interface {
 }
 
 type EmailService interface {
-	SendEamil(ctx context.Context, subject string, body string) error
+	SendEmailToDevelopers(ctx context.Context, subject string, body string) error
 }
 
 type LockEngine struct {
@@ -251,8 +251,8 @@ func (l *LockEngine) sendEmailForAuditLogs(ctx context.Context, d shared.Device,
 	startOfWeek := now.AddDate(0, 0, -1*int(now.Weekday()))
 	weekOf := startOfWeek.Format("week of 01/02/2006")
 
-	subject := fmt.Sprintf("MursetLock - Added Audit Log Entries - %s - %s", d.RawDevice.Name, weekOf)
-	if err := l.emailService.SendEamil(ctx, subject, sb.String()); err != nil {
+	subject := fmt.Sprintf("zcclock - Added Audit Log Entries - %s - %s", d.RawDevice.Name, weekOf)
+	if err := l.emailService.SendEmailToDevelopers(ctx, subject, sb.String()); err != nil {
 		return fmt.Errorf("error sending email: %s", err.Error())
 	}
 

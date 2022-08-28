@@ -48,14 +48,36 @@ func getClient(ctx context.Context) (*ses.Client, error) {
 	return cd.SES, nil
 }
 
-func (s *EmailService) SendEamil(ctx context.Context, subject string, body string) error {
+func (s *EmailService) SendEmailToAdmins(ctx context.Context, subject string, body string) error {
+	return s.SendEmail(
+		ctx,
+		subject,
+		body,
+		strings.Split(mshared.GetConfigUnsafe("EMAIL_TO_ADMINS"), ";"),
+	)
+}
+
+func (s *EmailService) SendEmailToDevelopers(ctx context.Context, subject string, body string) error {
+	return s.SendEmail(
+		ctx,
+		subject,
+		body,
+		strings.Split(mshared.GetConfigUnsafe("EMAIL_TO_DEVELOPERS"), ";"),
+	)
+}
+
+func (s *EmailService) SendEmail(
+	ctx context.Context,
+	subject string,
+	body string,
+	tos []string,
+) error {
 	from, err := mshared.GetConfig("EMAIL_FROM_ADDRESS")
 	if err != nil {
 		return fmt.Errorf("empty from address")
 	}
 
 	characterSet := "UTF-8"
-	tos := strings.Split(mshared.GetConfigUnsafe("EMAIL_TO_ADDRESSES"), ";")
 
 	_, err = s.c.SendEmail(ctx, &ses.SendEmailInput{
 		Source: &from,
