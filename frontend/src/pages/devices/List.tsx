@@ -74,6 +74,7 @@ export const List = () => {
                 <thead>
                     <tr>
                         <th scope="col">Name</th>
+                        <th scope="col">Online</th>
                         <th scope="col">Status</th>
                         <th scope="col">Battery</th>
                         <th scope="col">Unit</th>
@@ -88,6 +89,7 @@ export const List = () => {
                                     { entity.rawDevice.name }
                                 </Button>
                             </th>
+                            <td>{ renderOnline(entity) }</td>
                             <td>{ renderEntityStatus(entity) }</td>
                             <td>{ renderEntityBatteryLevel(entity) }</td>
                             <td>{ units.find(e => e.id === entity.unitId )?.name }</td>
@@ -151,6 +153,13 @@ export const List = () => {
         }
 
         return <>{ level }%</>;
+    };
+
+    const renderOnline = (entity: DeviceT) => {
+        if (entity.rawDevice.status === "ONLINE") {
+            return <Badge>Online</Badge>;
+        }
+        return <Badge variant="danger">Offline</Badge>;
     };
 
     const getLastRefreshedWarnings = (entity : DeviceT) => {
