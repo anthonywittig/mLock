@@ -157,9 +157,9 @@ export const List = () => {
 
     const renderOnline = (entity: DeviceT) => {
         if (entity.rawDevice.status === "ONLINE") {
-            return <Badge variant="success">Online!</Badge>;
+            return <p>Online</p>;
         }else if (entity.rawDevice.status !== "ONLINE") {
-            return <Badge variant="danger">Offline...</Badge>;
+            return <Badge variant="danger">Offline</Badge>;
         }else{
             return <Badge variant="warning">Error!</Badge>;
         }
