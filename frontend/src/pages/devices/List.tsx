@@ -215,10 +215,10 @@ export const List = () => {
                         const minutesBetween = (wc - sa) / 1000 / 60;
                         if (expectedResponseInMinutes < minutesBetween) {
                             const distance = formatDistance(sa, wc);
-                            warnings.push(<p>Slow to Respond (took { distance } to add code { lc.code })</p>);
+                            warnings.push(<Badge>Slow to Respond (took { distance } to add code { lc.code })</Badge>);
                         }
                     } else {
-                        warnings.push(<p>Not Responding (for code { lc.code })</p>);
+                        warnings.push(<Badge>Not Responding (for code { lc.code })</Badge>);
                     }
                 }
             }
