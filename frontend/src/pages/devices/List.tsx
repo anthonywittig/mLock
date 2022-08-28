@@ -158,9 +158,8 @@ export const List = () => {
     const renderOnline = (entity: DeviceT) => {
         if (entity.rawDevice.status === "ONLINE") {
             return <Badge>Online</Badge>;
-        }else{
-            return <Badge variant="danger">Offline</Badge>;
         }
+        return <Badge variant="danger">Offline</Badge>;
     };
 
     const getLastRefreshedWarnings = (entity : DeviceT) => {
