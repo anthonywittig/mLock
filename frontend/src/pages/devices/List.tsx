@@ -160,7 +160,7 @@ export const List = () => {
 
         if (isBefore(lr, recently)) {
             const distance = formatDistance(lr, new Date(), { addSuffix: true });
-            warnings.push(<Badge variant="danger">Last Data Sync: { distance }</Badge>);
+            warnings.push(<Badge>Last Data Sync: { distance }</Badge>);
         }
 
         return warnings;
@@ -180,10 +180,10 @@ export const List = () => {
 
         if (entity.rawDevice.status !== "ONLINE") {
             const distance = formatDistance(lwoffd, new Date(), { addSuffix: true });
-            warnings.push(<Badge variant="danger">Went Offline: { distance }</Badge>);
+            warnings.push(<Badge>Went Offline: { distance }</Badge>);
         } else if (isAfter(lwond, recently)) {
             const distance = formatDistance(lwond, new Date(), { addSuffix: true });
-            warnings.push(<Badge variant="danger">Went Online: { distance }</Badge>);
+            warnings.push(<Badge>Went Online: { distance }</Badge>);
         }
 
         return warnings;
