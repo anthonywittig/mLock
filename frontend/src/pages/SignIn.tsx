@@ -137,7 +137,7 @@ export class SignIn extends React.Component<Props, State> {
             if (next != null && next !== "") {
                 return <Redirect  to={next} />;
             }
-            return <Redirect  to="/units/" />;
+            return <Redirect  to="/devices/" />;
         }
 
         let innerContent = this.renderNonProcessing();
