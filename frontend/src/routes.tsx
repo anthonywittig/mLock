@@ -19,30 +19,30 @@ export const Routes = () => {
             <Navigation />
             <div>
                 <Switch>
-                <Route path="/devices">
-                    <DeviceRoutes />
-                </Route>
-                <Route path="/properties">
-                    <Properties />
-                </Route>
-                <Route path="/privacy-policy">
-                    <PrivacyPolicy />
-                </Route>
-                <Route path="/sign-in">
-                    <SignIn />
-                </Route>
-                <Route path="/terms-of-service">
-                    <TermsOfService/>
-                </Route>
-                <Route path="/units">
-                    <UnitRoutes />
-                </Route>
-                <Route path="/users">
-                    <Users />
-                </Route>
-                <Route path="/">
-                    <Redirect to="/sign-in" />
-                </Route>
+                    <Route path="/devices">
+                        <DeviceRoutes />
+                    </Route>
+                    <Route path="/properties">
+                        <Properties />
+                    </Route>
+                    <Route path="/privacy-policy">
+                        <PrivacyPolicy />
+                    </Route>
+                    <Route path="/sign-in">
+                        <SignIn />
+                    </Route>
+                    <Route path="/terms-of-service">
+                        <TermsOfService/>
+                    </Route>
+                    <Route path="/units">
+                        <UnitRoutes />
+                    </Route>
+                    <Route path="/users">
+                        <Users />
+                    </Route>
+                    <Route path="/">
+                        <Redirect to="/sign-in" />
+                    </Route>
                 </Switch>
             </div>
         </Router>
