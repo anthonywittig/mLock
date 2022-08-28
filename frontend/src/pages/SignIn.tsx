@@ -135,9 +135,9 @@ export class SignIn extends React.Component<Props, State> {
         if (this.state.successfullyLoggedIn) {
             const next = new URLSearchParams(window.location.search).get('next');
             if (next != null && next !== "") {
-                return <Redirect  to={next} />;
+                return <Redirect to={next} />;
             }
-            return <Redirect  to="/units/" />;
+            return <Redirect to="/units/" />;
         }
 
         let innerContent = this.renderNonProcessing();

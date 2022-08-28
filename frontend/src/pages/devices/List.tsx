@@ -119,7 +119,6 @@ export const List = () => {
 
     const renderEntityStatus = (entity: DeviceT) => {
         const warnings = getLastRefreshedWarnings(entity);
-        warnings.push.apply(warnings, getStatusInfoWarning(entity));
         warnings.push.apply(warnings, getLastWentOfflineWarnings(entity));
         warnings.push.apply(warnings, getLockResponsivenessWarnings(entity));
 
@@ -198,7 +197,7 @@ export const List = () => {
         }
 
         const tooSoon = sub(new Date(), {minutes: 10});
-        const expectedResponseInMinutes = 20;
+        const expectedResponseInMinutes = 60;
 
         for (let i = 0; i < entity.managedLockCodes.length; i++) {
             const lc = entity.managedLockCodes[i];
@@ -216,10 +215,10 @@ export const List = () => {
                         const minutesBetween = (wc - sa) / 1000 / 60;
                         if (expectedResponseInMinutes < minutesBetween) {
                             const distance = formatDistance(sa, wc);
-                            warnings.push(<Badge variant="danger">Slow to Respond (took { distance } to add code { lc.code })</Badge>);
+                            warnings.push(<p className="font-weight-bold">Slow to Respond (took { distance } to add code { lc.code })</p>);
                         }
                     } else {
-                        warnings.push(<Badge variant="danger">Not Responding (for code { lc.code })</Badge>);
+                        warnings.push(<p className="font-weight-bold">Not Responding (for code { lc.code })</p>);
                     }
                 }
             }
@@ -227,17 +226,5 @@ export const List = () => {
 
         return warnings;
     };
-
-    const getStatusInfoWarning = (entity: DeviceT) => {
-        const warnings: JSX.Element[] = [];
-
-        const s = entity.rawDevice.status;
-        if (s !== "ONLINE") {
-            warnings.push(<Badge variant="danger">{ s[0].toUpperCase() + s.slice(1) }</Badge>);
-        }
-
-        return warnings;
-    };
-
     return render();
 };
