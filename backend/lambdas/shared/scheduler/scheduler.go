@@ -84,7 +84,7 @@ func (s *Scheduler) processDevice(ctx context.Context, device shared.Device, res
 
 	// We want the lock codes to start and end with a buffer.
 	for id, r := range relevantReservations {
-		r.Start = r.Start.Add(-30 * time.Minute)
+		r.Start = r.Start.Add(-60 * time.Minute)
 		r.End = r.End.Add(30 * time.Minute)
 		relevantReservations[id] = r
 	}
