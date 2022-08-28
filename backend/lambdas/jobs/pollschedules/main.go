@@ -111,9 +111,9 @@ func HandleRequest(ctx context.Context, event MyEvent) (Response, error) {
 				// We get a ton of these when we're swapping out controllers. This should be temporary (but we know how that goes)...
 				continue
 			}
-			if err2 := emailService.SendEamil(
+			if err2 := emailService.SendEmailToDevelopers(
 				ctx,
-				"MursetLock - Error updating devices from controller.",
+				"zcclock - Error updating devices from controller.",
 				fmt.Sprintf("Controller ID: %s; error: %s", c.PKDevice, err.Error()),
 			); err2 != nil {
 				return Response{}, fmt.Errorf("error sending error email for updating devices for controller: %s, error: %s", c.PKDevice, err.Error())
@@ -261,7 +261,7 @@ func sendOfflineDeviceEmail(ctx context.Context, emailService *ses.EmailService,
 	}
 	sb.WriteString("</ul>")
 
-	if err := emailService.SendEamil(ctx, "MursetLock - Devices That Recently Went Offline", sb.String()); err != nil {
+	if err := emailService.SendEmailToAdmins(ctx, "zcclock - Devices That Recently Went Offline", sb.String()); err != nil {
 		return fmt.Errorf("error sending email: %s", err.Error())
 	}
 
