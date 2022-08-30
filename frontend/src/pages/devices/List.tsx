@@ -121,7 +121,6 @@ export const List = () => {
 
     const renderEntityStatus = (entity: DeviceT) => {
         const warnings = getLastRefreshedWarnings(entity);
-        warnings.push.apply(warnings, getStatusInfoWarning(entity));
         warnings.push.apply(warnings, getLastWentOfflineWarnings(entity));
         warnings.push.apply(warnings, getLockResponsivenessWarnings(entity));
 
@@ -170,7 +169,7 @@ export const List = () => {
 
         if (isBefore(lr, recently)) {
             const distance = formatDistance(lr, new Date(), { addSuffix: true });
-            warnings.push(<Badge variant="danger">Last Data Sync: { distance }</Badge>);
+            warnings.push(<Badge>Last Data Sync: { distance }</Badge>);
         }
 
         return warnings;
@@ -190,10 +189,10 @@ export const List = () => {
 
         if (entity.rawDevice.status !== "ONLINE") {
             const distance = formatDistance(lwoffd, new Date(), { addSuffix: true });
-            warnings.push(<Badge variant="danger">Went Offline: { distance }</Badge>);
+            warnings.push(<Badge>Went Offline: { distance }</Badge>);
         } else if (isAfter(lwond, recently)) {
             const distance = formatDistance(lwond, new Date(), { addSuffix: true });
-            warnings.push(<Badge variant="danger">Went Online: { distance }</Badge>);
+            warnings.push(<Badge>Went Online: { distance }</Badge>);
         }
 
         return warnings;
@@ -207,7 +206,7 @@ export const List = () => {
         }
 
         const tooSoon = sub(new Date(), {minutes: 10});
-        const expectedResponseInMinutes = 20;
+        const expectedResponseInMinutes = 60;
 
         for (let i = 0; i < entity.managedLockCodes.length; i++) {
             const lc = entity.managedLockCodes[i];
@@ -225,10 +224,10 @@ export const List = () => {
                         const minutesBetween = (wc - sa) / 1000 / 60;
                         if (expectedResponseInMinutes < minutesBetween) {
                             const distance = formatDistance(sa, wc);
-                            warnings.push(<Badge variant="danger">Slow to Respond (took { distance } to add code { lc.code })</Badge>);
+                            warnings.push(<Badge>Slow to Respond (took { distance } to add code { lc.code })</Badge>);
                         }
                     } else {
-                        warnings.push(<Badge variant="danger">Not Responding (for code { lc.code })</Badge>);
+                        warnings.push(<Badge>Not Responding (for code { lc.code })</Badge>);
                     }
                 }
             }
@@ -236,17 +235,5 @@ export const List = () => {
 
         return warnings;
     };
-
-    const getStatusInfoWarning = (entity: DeviceT) => {
-        const warnings: JSX.Element[] = [];
-
-        const s = entity.rawDevice.status;
-        if (s !== "ONLINE") {
-            warnings.push(<Badge variant="danger">{ s[0].toUpperCase() + s.slice(1) }</Badge>);
-        }
-
-        return warnings;
-    };
-
     return render();
 };
