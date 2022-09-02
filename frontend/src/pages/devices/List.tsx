@@ -118,10 +118,13 @@ export const List = () => {
         warnings.push.apply(warnings, getLastWentOfflineWarnings(entity));
         warnings.push.apply(warnings, getLockResponsivenessWarnings(entity));
 
+        if (warnings.length === 1) {
+            return <>{ warnings[0] }</>;
+        }
         return (
             <ul>
                 { warnings.map(warn =>
-                    <p>{ warn }</p>
+                    <li>{ warn }</li>
                 )}
             </ul>
         );
