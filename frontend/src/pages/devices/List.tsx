@@ -69,7 +69,6 @@ export const List = () => {
                 <thead>
                     <tr>
                         <th scope="col">Name</th>
-                        <th scope="col">Reachability</th>
                         <th scope="col">Status</th>
                         <th scope="col">Battery</th>
                         <th scope="col">Unit</th>
@@ -84,7 +83,6 @@ export const List = () => {
                                     <Button variant="link">{ entity.rawDevice.name }</Button>
                                 </Link>
                             </th>
-                            <td>{ renderOnline(entity) }</td>
                             <td>{ renderEntityStatus(entity) }</td>
                             <td>{ renderEntityBatteryLevel(entity) }</td>
                             <td>{ units.find(e => e.id === entity.unitId )?.name }</td>
@@ -115,7 +113,8 @@ export const List = () => {
     };
 
     const renderEntityStatus = (entity: DeviceT) => {
-        const warnings = getLastRefreshedWarnings(entity);
+        const warnings = getOfflineWarnings(entity);
+        warnings.push.apply(warnings, getLastRefreshedWarnings(entity));
         warnings.push.apply(warnings, getLastWentOfflineWarnings(entity));
         warnings.push.apply(warnings, getLockResponsivenessWarnings(entity));
 
@@ -152,11 +151,14 @@ export const List = () => {
         return <>{ level }%</>;
     };
 
-    const renderOnline = (entity: DeviceT) => {
-        if (entity.rawDevice.status === "ONLINE") {
-            return <Badge variant="light">Online</Badge>;
+    const getOfflineWarnings = (entity: DeviceT) => {
+        const warnings: JSX.Element[] = [];
+
+        if (entity.rawDevice.status !== "ONLINE") {
+            warnings.push(<Badge variant="danger">Offline</Badge>);
         }
-        return <Badge variant="danger">Offline</Badge>;
+
+        return warnings;
     };
 
     const getLastRefreshedWarnings = (entity : DeviceT) => {
