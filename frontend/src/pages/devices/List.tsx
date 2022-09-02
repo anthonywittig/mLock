@@ -70,7 +70,6 @@ export const List = () => {
                     <tr>
                         <th scope="col">Name</th>
                         <th scope="col">Status</th>
-                        <th scope="col">Battery</th>
                         <th scope="col">Unit</th>
                         <th scope="col">Actions</th>
                     </tr>
@@ -84,7 +83,6 @@ export const List = () => {
                                 </Link>
                             </th>
                             <td>{ renderEntityStatus(entity) }</td>
-                            <td>{ renderEntityBatteryLevel(entity) }</td>
                             <td>{ units.find(e => e.id === entity.unitId )?.name }</td>
                             <td>{ renderDeleteButton(entity) }</td>
                         </tr>
@@ -128,27 +126,6 @@ export const List = () => {
                 )}
             </ul>
         );
-    };
-
-    const renderEntityBatteryLevel = (entity : DeviceT) => {
-        if (!entity.rawDevice.battery.batteryPowered) {
-            return <></>;
-        }
-
-        const lu = entity.lastRefreshedAt;
-        const lud = Date.parse(lu);
-        const recently = sub(new Date(), {days: 1, hours: 12});
-        const level = entity.rawDevice.battery.level;
-
-        if (isBefore(lud, recently) || level === null) {
-            return <Badge variant="danger">Unknown</Badge>;
-        }
-
-        if (level < 25) {
-            return <Badge variant="danger">{ level }%</Badge>;
-        }
-
-        return <>{ level }%</>;
     };
 
     const getOfflineWarnings = (entity: DeviceT) => {
