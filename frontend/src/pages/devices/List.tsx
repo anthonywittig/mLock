@@ -2,8 +2,8 @@ import React from 'react';
 import { Badge, Button, OverlayTrigger, Tooltip } from 'react-bootstrap';
 import { Loading } from '../utils/Loading';
 import { StandardFetch } from '../utils/FetchHelper';
-import { useHistory } from 'react-router';
 import { formatDistance, isAfter, isBefore, sub } from 'date-fns';
+import {Link} from 'react-router-dom';
 
 const Endpoint = "devices";
 
@@ -11,7 +11,6 @@ export const List = () => {
     const [entities, setEntities] = React.useState<DeviceT[]>([]);
     const [loading, setLoading] = React.useState<boolean>(true);
     const [units, setUnits] = React.useState<UnitT[]>([]);
-    const history = useHistory();
 
     React.useEffect(() => {
         setLoading(true);
@@ -48,10 +47,6 @@ export const List = () => {
         });
     };
 
-    const labelClick = (id: string) => {
-        history.push('/' + Endpoint + '/' + id);
-    };
-
     const render = () => {
         return (
             <>
@@ -74,7 +69,7 @@ export const List = () => {
                 <thead>
                     <tr>
                         <th scope="col">Name</th>
-                        <th scope="col">Online</th>
+                        <th scope="col">Reachability</th>
                         <th scope="col">Status</th>
                         <th scope="col">Battery</th>
                         <th scope="col">Unit</th>
@@ -85,9 +80,9 @@ export const List = () => {
                     {entities.map(entity =>
                         <tr key={ entity.id }>
                             <th scope="row">
-                                <Button variant="link" onClick={evt => labelClick(entity.id)}>
-                                    { entity.rawDevice.name }
-                                </Button>
+                                <Link to={"/devices/" + entity.id}>
+                                    <Button variant="link">{ entity.rawDevice.name }</Button>
+                                </Link>
                             </th>
                             <td>{ renderOnline(entity) }</td>
                             <td>{ renderEntityStatus(entity) }</td>
@@ -124,6 +119,9 @@ export const List = () => {
         warnings.push.apply(warnings, getLastWentOfflineWarnings(entity));
         warnings.push.apply(warnings, getLockResponsivenessWarnings(entity));
 
+        if (warnings.length === 1) {
+            return <>{ warnings[0] }</>;
+        }
         return (
             <ul>
                 { warnings.map(warn =>
@@ -156,7 +154,7 @@ export const List = () => {
 
     const renderOnline = (entity: DeviceT) => {
         if (entity.rawDevice.status === "ONLINE") {
-            return <Badge>Online</Badge>;
+            return <Badge variant="light">Online</Badge>;
         }
         return <Badge variant="danger">Offline</Badge>;
     };
