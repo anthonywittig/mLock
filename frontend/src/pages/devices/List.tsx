@@ -80,8 +80,9 @@ export const List = () => {
                     {entities.map(entity =>
                         <tr key={ entity.id }>
                             <th scope="row">
-                                <Link to={"/devices/" + entity.id}><Button variant="link">{ entity.rawDevice.name }</Button></Link>
-                                
+                                <Link to={"/devices/" + entity.id}>
+                                    <Button variant="link">{ entity.rawDevice.name }</Button>
+                                </Link>
                             </th>
                             <td>{ renderOnline(entity) }</td>
                             <td>{ renderEntityStatus(entity) }</td>
