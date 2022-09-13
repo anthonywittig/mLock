@@ -1,11 +1,11 @@
 import {
     Route,
     Switch,
-  } from 'react-router-dom';
-import { Detail } from './Detail';
-import { List } from './List';
+  } from 'react-router-dom'
+import { Detail } from './Detail'
+import { List } from './List'
 
-const Endpoint = "devices";
+const Endpoint = "devices"
 
 export const DeviceRoutes = () => {
     return (
@@ -17,5 +17,5 @@ export const DeviceRoutes = () => {
             <List />
         </Route>
         </Switch>
-    );
-};
+    )
+}

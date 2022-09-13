@@ -1,12 +1,12 @@
-import React from 'react';
-import { Button } from 'react-bootstrap';
-import { Link, useHistory } from 'react-router-dom';
-import { StandardFetch } from '../utils/FetchHelper';
-import { History } from 'history';
+import React from 'react'
+import { Button } from 'react-bootstrap'
+import { Link, useHistory } from 'react-router-dom'
+import { StandardFetch } from '../utils/FetchHelper'
+import { History } from 'history'
 
 
-type Adder = (id:string, name: string, propertyId: string, updatedBy: string) => void;
-type IdAction = (id: string) => void;
+type Adder = (id:string, name: string, propertyId: string, updatedBy: string) => void
+type IdAction = (id: string) => void
 
 type Device = {
     id: string,
@@ -28,7 +28,7 @@ type Props = {
     properties: Property[],
     addEntity: Adder|null,
     removeEntity: IdAction|null,
-};
+}
 
 type State = {
     entityFieldsDisabled: boolean,
@@ -40,21 +40,21 @@ type State = {
     entityState: string,
     setEntityState: React.Dispatch<React.SetStateAction<string>>,
     history: History,
-};
+}
 
-const Endpoint = "units";
+const Endpoint = "units"
 
 export const Unit = (props: Props) => {
-    const state = GetState(props);
-    return render(props, state);
-};
+    const state = GetState(props)
+    return render(props, state)
+}
 
 function GetState(props: Props): State{
-    const [entityFieldsDisabled, setEntityFieldsDisabled] = React.useState<boolean>(false);
-    const [entityName, setEntityName] = React.useState<string>(props.entityName);
-    const [propertyId, setPropertyId] = React.useState<string>(props.propertyId);
-    const [entityState, setEntityState] = React.useState<string>(props.entityName ? "exists" : "new");
-    const history = useHistory();
+    const [entityFieldsDisabled, setEntityFieldsDisabled] = React.useState<boolean>(false)
+    const [entityName, setEntityName] = React.useState<string>(props.entityName)
+    const [propertyId, setPropertyId] = React.useState<string>(props.propertyId)
+    const [entityState, setEntityState] = React.useState<string>(props.entityName ? "exists" : "new")
+    const history = useHistory()
     return {
         entityFieldsDisabled,
         setEntityFieldsDisabled,
@@ -65,15 +65,15 @@ function GetState(props: Props): State{
         entityState,
         setEntityState,
         history,
-    };
+    }
 }
 
 function resetState(props: Props, state: State) {
     // Some dupliation from `getState`...
-    state.setEntityFieldsDisabled(false);
-    state.setEntityName(props.entityName);
-    state.setPropertyId(props.propertyId);
-    state.setEntityState(props.entityId ? "exists" : "new");
+    state.setEntityFieldsDisabled(false)
+    state.setEntityName(props.entityName)
+    state.setPropertyId(props.propertyId)
+    state.setEntityState(props.entityId ? "exists" : "new")
 }
 
 function removeClick(props: Props, id: string) {
@@ -81,37 +81,37 @@ function removeClick(props: Props, id: string) {
     .then(response => {
         if (response.status === 200) {
             if (props.removeEntity) {
-                props.removeEntity(id);
+                props.removeEntity(id)
             } else {
-                throw new Error("removeEntry is null");
+                throw new Error("removeEntry is null")
             }
         }
     })
     .catch(err => {
         // TODO: need to indicate error.
-        console.log("error: " + err);
-    });
+        console.log("error: " + err)
+    })
 }
 
 function nameClick(state: State, id: string) {
-    state.history.push('/units/' + id);
+    state.history.push('/units/' + id)
 }
 
 function updateEntityName(state: State, evt: React.ChangeEvent<HTMLInputElement>) {
-    state.setEntityName(evt.target.value);
+    state.setEntityName(evt.target.value)
 }
 
 function updatePropertyId(state: State, evt: React.ChangeEvent<HTMLSelectElement>) {
-    state.setPropertyId(evt.target.value);
+    state.setPropertyId(evt.target.value)
 }
 
 function newEntitySubmit(props: Props, state: State) {
     if (!state.entityName || !state.propertyId) {
         // TODO: indicate error.
-        return;
+        return
     }
 
-    state.setEntityFieldsDisabled(true);
+    state.setEntityFieldsDisabled(true)
 
     StandardFetch(Endpoint, {
         method: "POST",
@@ -120,18 +120,18 @@ function newEntitySubmit(props: Props, state: State) {
     .then(response => response.json())
     .then(response => {
         // add to parent
-        let e = response.entity;
+        let e = response.entity
         if (props.addEntity) {
-            props.addEntity(e.id, e.name, e.propertyId, e.updatedBy);
-            resetState(props, state);
+            props.addEntity(e.id, e.name, e.propertyId, e.updatedBy)
+            resetState(props, state)
         } else {
-            throw new Error("addEntity is null");
+            throw new Error("addEntity is null")
         }
     })
     .catch(err => {
         // TODO: indicate error.
-        state.setEntityFieldsDisabled(false);
-    });
+        state.setEntityFieldsDisabled(false)
+    })
 }
 
 function render(props: Props, state: State) {
@@ -168,18 +168,18 @@ function render(props: Props, state: State) {
                 </td>
                 <td><Button variant="secondary" onClick={() => newEntitySubmit(props, state)} disabled={state.entityFieldsDisabled}>Create</Button></td>
             </tr>
-        );
+        )
     }
 
-    let devices = <></>;
+    let devices = <></>
     if (props.devices.length === 1) {
-        devices = <Link to={"/devices/" + props.devices[0].id}><Button variant="link">{props.devices[0].name}</Button></Link>;
+        devices = <Link to={"/devices/" + props.devices[0].id}><Button variant="link">{props.devices[0].name}</Button></Link>
     } else {
         devices= (<ul>
             {props.devices.map(device =>
                 <li><Link to={"/devices/" + device.id}><Button variant="link">{device.name}</Button></Link></li>
             )}
-        </ul>);
+        </ul>)
     }
 
     return (
@@ -193,5 +193,5 @@ function render(props: Props, state: State) {
             <td>{ props.properties.find(e => e.id === props.propertyId )?.name }</td>
             <td><Button variant="secondary" onClick={evt => removeClick(props, props.entityId)}>Delete</Button></td>
         </tr>
-    );
+    )
 }

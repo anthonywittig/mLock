@@ -1,14 +1,14 @@
-import React from 'react';
-import { Alert, Button, Form} from 'react-bootstrap';
-import { format, formatDistance, parseISO } from 'date-fns';
-import { useHistory, useRouteMatch } from 'react-router-dom';
-import { LockCode } from './components/LockCode';
-import { Loading } from '../utils/Loading';
-import { StandardFetch } from '../utils/FetchHelper';
+import React from 'react'
+import { Alert, Button, Form} from 'react-bootstrap'
+import { format, formatDistance, parseISO } from 'date-fns'
+import { useHistory, useRouteMatch } from 'react-router-dom'
+import { LockCode } from './components/LockCode'
+import { Loading } from '../utils/Loading'
+import { StandardFetch } from '../utils/FetchHelper'
 
-type MatchParams = {id: string};
+type MatchParams = {id: string}
 
-const Endpoint = "devices";
+const Endpoint = "devices"
 
 export const Detail = () => {
     const [entity, setEntity] = React.useState<DeviceT>({
@@ -28,54 +28,54 @@ export const Detail = () => {
             name: "",
             status: "",
         }
-    });
-    const [loading, setLoading] = React.useState<boolean>(true);
-    const [auditLog, setAuditLog] = React.useState<AuditLogT>({id: "", entries: []});
-    const [units, setUnits] = React.useState<UnitT[]>([]);
-    const [unmanagedLockCodes, setUnmanagedLockCodes] = React.useState<DeviceLockCodeT[]>([]);
+    })
+    const [loading, setLoading] = React.useState<boolean>(true)
+    const [auditLog, setAuditLog] = React.useState<AuditLogT>({id: "", entries: []})
+    const [units, setUnits] = React.useState<UnitT[]>([])
+    const [unmanagedLockCodes, setUnmanagedLockCodes] = React.useState<DeviceLockCodeT[]>([])
 
     // `revision` is just to tell us when to pull the latest from the API.
-    const [revision, setRevision] = React.useState<number>(0);
-    const incrementRevision = () => {setRevision(revision + 1);};
+    const [revision, setRevision] = React.useState<number>(0)
+    const incrementRevision = () => {setRevision(revision + 1)}
 
-    const m = useRouteMatch('/' + Endpoint + '/:id');
-    const mp = m?.params as MatchParams;
-    const id = mp.id;
-    const history = useHistory();
+    const m = useRouteMatch('/' + Endpoint + '/:id')
+    const mp = m?.params as MatchParams
+    const id = mp.id
+    const history = useHistory()
 
     React.useEffect(() => {
-        setLoading(true);
+        setLoading(true)
 
         StandardFetch(Endpoint + "/" + id, {method: "GET"})
         .then(response => response.json())
         .then(response => {
-            setEntity(response.entity);
-            setLoading(false);
-            setAuditLog(response.extra.auditLog);
-            setUnits(response.extra.units);
-            setUnmanagedLockCodes(response.extra.unmanagedLockCodes);
+            setEntity(response.entity)
+            setLoading(false)
+            setAuditLog(response.extra.auditLog)
+            setUnits(response.extra.units)
+            setUnmanagedLockCodes(response.extra.unmanagedLockCodes)
         })
         .catch(err => {
             // TODO: indicate error.
-            console.log(err);
-        });
-    }, [id, revision]);
+            console.log(err)
+        })
+    }, [id, revision])
 
     const detailFormUnitChange = (evt: React.ChangeEvent<HTMLSelectElement>) => {
-        let val: (string | null) = evt.target.value;
+        let val: (string | null) = evt.target.value
         if (val === "") {
-            val = null;
+            val = null
         }
         setEntity({
             ...entity,
             unitId: val,
-        });
-    };
+        })
+    }
 
     const formSubmit = (evt: React.FormEvent<HTMLFormElement>) => {
-        evt.preventDefault();
+        evt.preventDefault()
 
-        setLoading(true);
+        setLoading(true)
 
         StandardFetch(Endpoint + "/" + id, {
             method: "PUT",
@@ -83,15 +83,15 @@ export const Detail = () => {
         })
         .then(response => response.json())
         .then(response => {
-            setEntity(response.entity);
-            setLoading(false);
-            history.push('/' + Endpoint + '/' + response.entity.id);
+            setEntity(response.entity)
+            setLoading(false)
+            history.push('/' + Endpoint + '/' + response.entity.id)
         })
         .catch(err => {
             // TODO: indicate error.
-            console.log(err);
-        });
-    };
+            console.log(err)
+        })
+    }
 
     const render = () => {
         return (
@@ -142,16 +142,16 @@ export const Detail = () => {
                     </div>
                 </div>
             </>
-        );
-    };
+        )
+    }
 
     const renderCurrentLockCodes = () => {
         if (loading) {
-            return <Loading />;
+            return <Loading />
         }
 
         if (entity.managedLockCodes.length === 0) {
-            return <p>There are no lock codes currently set.</p>;
+            return <p>There are no lock codes currently set.</p>
         }
 
         return (
@@ -160,16 +160,16 @@ export const Detail = () => {
                     entity.managedLockCodes.map((lc) => {
                         return (
                             <div><LockCode deviceId={entity.id} managedLockCode={lc} managedLockCodesUpdated={incrementRevision}/><br/></div>
-                        );
+                        )
                     })
                 }
             </>
-        );
-    };
+        )
+    }
 
     const renderEntity = () => {
         if (loading) {
-            return <Loading />;
+            return <Loading />
         }
         return (
             <Form onSubmit={evt => formSubmit(evt)}>
@@ -207,8 +207,8 @@ export const Detail = () => {
                     Update
                 </Button>
             </Form>
-        );
-    };
+        )
+    }
 
-    return render();
-};
+    return render()
+}

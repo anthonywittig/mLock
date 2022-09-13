@@ -1,35 +1,35 @@
-import React from 'react';
-import { Badge, Button, OverlayTrigger, Tooltip } from 'react-bootstrap';
-import { Loading } from '../utils/Loading';
-import { StandardFetch } from '../utils/FetchHelper';
-import { formatDistance, isAfter, isBefore, sub } from 'date-fns';
-import {Link} from 'react-router-dom';
+import React from 'react'
+import { Badge, Button, OverlayTrigger, Tooltip } from 'react-bootstrap'
+import { Loading } from '../utils/Loading'
+import { StandardFetch } from '../utils/FetchHelper'
+import { formatDistance, isAfter, isBefore, sub } from 'date-fns'
+import {Link} from 'react-router-dom'
 
-const Endpoint = "devices";
+const Endpoint = "devices"
 
 export const List = () => {
-    const [entities, setEntities] = React.useState<DeviceT[]>([]);
-    const [loading, setLoading] = React.useState<boolean>(true);
-    const [units, setUnits] = React.useState<UnitT[]>([]);
+    const [entities, setEntities] = React.useState<DeviceT[]>([])
+    const [loading, setLoading] = React.useState<boolean>(true)
+    const [units, setUnits] = React.useState<UnitT[]>([])
 
     React.useEffect(() => {
-        setLoading(true);
+        setLoading(true)
 
         StandardFetch(Endpoint, {method: "GET"})
         .then(response => response.json())
         .then(response => {
-            setEntities(response.entities);
-            setLoading(false);
-            setUnits(response.extra.units);
+            setEntities(response.entities)
+            setLoading(false)
+            setUnits(response.extra.units)
         })
         .catch(err => {
             // TODO: indicate error.
-            console.log(err);
-        });
-    }, [entities.length]);
+            console.log(err)
+        })
+    }, [entities.length])
 
     const deleteDevice = (id: string) => {
-        setLoading(true);
+        setLoading(true)
 
         StandardFetch(Endpoint + "/" + id, {
             method: "DELETE",
@@ -37,15 +37,15 @@ export const List = () => {
         .then(_ => {
             setEntities(
                 entities.filter(value => {
-                    return value.id !== id;
+                    return value.id !== id
                 }),
-            );
+            )
         })
         .catch(err => {
             // TODO: indicate error.
-            console.log(err);
-        });
-    };
+            console.log(err)
+        })
+    }
 
     const render = () => {
         return (
@@ -57,12 +57,12 @@ export const List = () => {
                     </div>
                 </div>
             </>
-        );
-    };
+        )
+    }
 
     const renderEntities = () => {
         if (loading) {
-            return <Loading />;
+            return <Loading />
         }
         return (
             <table className="table table-responsive-sm">
@@ -89,13 +89,13 @@ export const List = () => {
                     )}
                 </tbody>
             </table>
-        );
-    };
+        )
+    }
 
     const renderDeleteButton = (entity: DeviceT) => {
-        const lr = Date.parse(entity.lastRefreshedAt);
+        const lr = Date.parse(entity.lastRefreshedAt)
         // This should really be something much smaller, like 20 minutes, but since we have periods of time where we don't sync for an hour, we need something at least 60 minutes long.
-        const recently = sub(new Date(), {minutes: 130});
+        const recently = sub(new Date(), {minutes: 130})
 
         if (isAfter(lr, recently)) {
             return (
@@ -104,20 +104,20 @@ export const List = () => {
                         <Button variant="secondary" disabled style={{ pointerEvents: 'none' }}>Delete</Button>
                     </span>
                 </OverlayTrigger>
-            );
+            )
         }
 
-        return <Button variant="secondary" onClick={() => deleteDevice(entity.id)}>Delete</Button>;
-    };
+        return <Button variant="secondary" onClick={() => deleteDevice(entity.id)}>Delete</Button>
+    }
 
     const renderEntityStatus = (entity: DeviceT) => {
-        const warnings = getOfflineWarnings(entity);
-        warnings.push.apply(warnings, getLastRefreshedWarnings(entity));
-        warnings.push.apply(warnings, getLastWentOfflineWarnings(entity));
-        warnings.push.apply(warnings, getLockResponsivenessWarnings(entity));
+        const warnings = getOfflineWarnings(entity)
+        warnings.push.apply(warnings, getLastRefreshedWarnings(entity))
+        warnings.push.apply(warnings, getLastWentOfflineWarnings(entity))
+        warnings.push.apply(warnings, getLockResponsivenessWarnings(entity))
 
         if (warnings.length === 1) {
-            return <>{ warnings[0] }</>;
+            return <>{ warnings[0] }</>
         }
         return (
             <ul>
@@ -125,92 +125,92 @@ export const List = () => {
                     <li>{ warn }</li>
                 )}
             </ul>
-        );
-    };
+        )
+    }
 
     const getOfflineWarnings = (entity: DeviceT) => {
-        const warnings: JSX.Element[] = [];
+        const warnings: JSX.Element[] = []
 
         if (entity.rawDevice.status !== "ONLINE") {
-            warnings.push(<Badge variant="danger">Offline</Badge>);
+            warnings.push(<Badge variant="danger">Offline</Badge>)
         }
 
-        return warnings;
-    };
+        return warnings
+    }
 
     const getLastRefreshedWarnings = (entity : DeviceT) => {
-        const warnings: JSX.Element[] = [];
+        const warnings: JSX.Element[] = []
 
-        const lr = Date.parse(entity.lastRefreshedAt);
-        const recently = sub(new Date(), {minutes: 70});
+        const lr = Date.parse(entity.lastRefreshedAt)
+        const recently = sub(new Date(), {minutes: 70})
 
         if (isBefore(lr, recently)) {
-            const distance = formatDistance(lr, new Date(), { addSuffix: true });
-            warnings.push(<Badge>Last Data Sync: { distance }</Badge>);
+            const distance = formatDistance(lr, new Date(), { addSuffix: true })
+            warnings.push(<Badge>Last Data Sync: { distance }</Badge>)
         }
 
-        return warnings;
-    };
+        return warnings
+    }
 
     const getLastWentOfflineWarnings = (entity: DeviceT) => {
-        const warnings: JSX.Element[] = [];
+        const warnings: JSX.Element[] = []
 
-        const lwo = entity.lastWentOfflineAt;
+        const lwo = entity.lastWentOfflineAt
         if (lwo === null) {
-            return warnings;
+            return warnings
         }
 
-        const recently = sub(new Date(), {days: 1});
-        const lwond = Date.parse(entity.lastWentOnlineAt!);
-        const lwoffd = Date.parse(entity.lastWentOfflineAt!);
+        const recently = sub(new Date(), {days: 1})
+        const lwond = Date.parse(entity.lastWentOnlineAt!)
+        const lwoffd = Date.parse(entity.lastWentOfflineAt!)
 
         if (entity.rawDevice.status !== "ONLINE") {
-            const distance = formatDistance(lwoffd, new Date(), { addSuffix: true });
-            warnings.push(<Badge>Went Offline: { distance }</Badge>);
+            const distance = formatDistance(lwoffd, new Date(), { addSuffix: true })
+            warnings.push(<Badge>Went Offline: { distance }</Badge>)
         } else if (isAfter(lwond, recently)) {
-            const distance = formatDistance(lwond, new Date(), { addSuffix: true });
-            warnings.push(<Badge>Went Online: { distance }</Badge>);
+            const distance = formatDistance(lwond, new Date(), { addSuffix: true })
+            warnings.push(<Badge>Went Online: { distance }</Badge>)
         }
 
-        return warnings;
-    };
+        return warnings
+    }
 
     const getLockResponsivenessWarnings = (entity: DeviceT) => {
-        const warnings: JSX.Element[] = [];
+        const warnings: JSX.Element[] = []
 
         if (entity.rawDevice.status !== "ONLINE") {
-            return warnings;
+            return warnings
         }
 
-        const tooSoon = sub(new Date(), {minutes: 10});
-        const expectedResponseInMinutes = 60;
+        const tooSoon = sub(new Date(), {minutes: 10})
+        const expectedResponseInMinutes = 60
 
         for (let i = 0; i < entity.managedLockCodes.length; i++) {
-            const lc = entity.managedLockCodes[i];
+            const lc = entity.managedLockCodes[i]
 
             // We really should consider the `startedRemovingAt` and `wasCompletedAt` timestamps, but right now we're only syncing every hour during the time that most codes are being removed.
             if (lc.startedAddingAt) {
-                const sa = Date.parse(lc.startedAddingAt);
+                const sa = Date.parse(lc.startedAddingAt)
                 if (isBefore(sa, tooSoon)) {
                     if (warnings.length && lc.status !== "Adding") {
                         // Once we have one warning, we'll only add additional ones for `Adding` codes.
-                        continue;
+                        continue
                     }
                     if (lc.wasEnabledAt) {
-                        const wc = Date.parse(lc.wasEnabledAt);
-                        const minutesBetween = (wc - sa) / 1000 / 60;
+                        const wc = Date.parse(lc.wasEnabledAt)
+                        const minutesBetween = (wc - sa) / 1000 / 60
                         if (expectedResponseInMinutes < minutesBetween) {
-                            const distance = formatDistance(sa, wc);
-                            warnings.push(<Badge>Slow to Respond (took { distance } to add code { lc.code })</Badge>);
+                            const distance = formatDistance(sa, wc)
+                            warnings.push(<Badge>Slow to Respond (took { distance } to add code { lc.code })</Badge>)
                         }
                     } else {
-                        warnings.push(<Badge>Not Responding (for code { lc.code })</Badge>);
+                        warnings.push(<Badge>Not Responding (for code { lc.code })</Badge>)
                     }
                 }
             }
         }
 
-        return warnings;
-    };
-    return render();
-};
+        return warnings
+    }
+    return render()
+}

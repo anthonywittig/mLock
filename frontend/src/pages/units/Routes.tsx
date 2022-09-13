@@ -1,9 +1,9 @@
 import {
     Route,
     Switch,
-  } from 'react-router-dom';
-import { Detail } from './Detail';
-import { List } from './List';
+  } from 'react-router-dom'
+import { Detail } from './Detail'
+import { List } from './List'
 
 export const UnitRoutes = () => {
     return (
@@ -15,5 +15,5 @@ export const UnitRoutes = () => {
             <List />
         </Route>
         </Switch>
-    );
-};
+    )
+}

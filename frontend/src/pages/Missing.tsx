@@ -8,5 +8,5 @@ export const Missing = () => {
                 I can't find this page... :(
             </p>
         </div>
-    );
+    )
 }

@@ -1,9 +1,9 @@
-import React from 'react';
-import { Button } from 'react-bootstrap';
-import { useHistory } from 'react-router-dom';
-import { History } from 'history';
+import React from 'react'
+import { Button } from 'react-bootstrap'
+import { useHistory } from 'react-router-dom'
+import { History } from 'history'
 
-type IdAction = (id: string) => void;
+type IdAction = (id: string) => void
 
 type Props = {
     id: string,
@@ -11,7 +11,7 @@ type Props = {
     devices: DeviceT[],
     addEntity: IdAction|null,
     removeEntity: IdAction|null,
-};
+}
 
 type State = {
     entityFieldsDisabled: boolean,
@@ -19,19 +19,19 @@ type State = {
     entityId: string,
     setEntityId: React.Dispatch<React.SetStateAction<string>>,
     history: History,
-};
+}
 
-const Endpoint = "device";
+const Endpoint = "device"
 
 export const Device = (props: Props) => {
-    const state = GetState(props);
-    return render(props, state);
-};
+    const state = GetState(props)
+    return render(props, state)
+}
 
 function GetState(props: Props): State{
-    const [entityFieldsDisabled, setEntityFieldsDisabled] = React.useState<boolean>(false);
-    const [entityId, setEntityId] = React.useState<string>(props.id);
-    const history = useHistory();
+    const [entityFieldsDisabled, setEntityFieldsDisabled] = React.useState<boolean>(false)
+    const [entityId, setEntityId] = React.useState<string>(props.id)
+    const history = useHistory()
 
     return {
         entityFieldsDisabled,
@@ -39,44 +39,44 @@ function GetState(props: Props): State{
         entityId,
         setEntityId,
         history,
-    };
+    }
 }
 
 function resetState(props: Props, state: State) {
     // Some duplication from `getState`...
-    state.setEntityFieldsDisabled(false);
-    state.setEntityId(props.id);
+    state.setEntityFieldsDisabled(false)
+    state.setEntityId(props.id)
 }
 
 function updateEntityId(state: State, evt: React.ChangeEvent<HTMLSelectElement>) {
-    state.setEntityId(evt.target.value);
+    state.setEntityId(evt.target.value)
 }
 
 function addSubmit(props: Props, state: State) {
     if (!state.entityId) {
         // TODO: indicate error.
-        return;
+        return
     }
 
-    state.setEntityFieldsDisabled(true);
+    state.setEntityFieldsDisabled(true)
 
     if (!props.addEntity) {
-        throw new Error("addEntity is null");
+        throw new Error("addEntity is null")
     }
-    props.addEntity(props.id);
+    props.addEntity(props.id)
 
-    resetState(props, state);
+    resetState(props, state)
 }
 
 function labelClick(state: State, id: string) {
-    state.history.push('/' + Endpoint + '/' + id);
+    state.history.push('/' + Endpoint + '/' + id)
 }
 
 function removeClick(props: Props, id: string) {
     if (!props.removeEntity) {
-        throw new Error("removeEntry is null");
+        throw new Error("removeEntry is null")
     }
-    props.removeEntity(id);
+    props.removeEntity(id)
 }
 
 function render(props: Props, state: State) {
@@ -100,7 +100,7 @@ function render(props: Props, state: State) {
                 </th>
                 <td><Button variant="secondary" onClick={() => addSubmit(props, state)} disabled={state.entityFieldsDisabled}>Add</Button></td>
             </tr>
-        );
+        )
     }
 
     return (
@@ -112,5 +112,5 @@ function render(props: Props, state: State) {
             </th>
             <td><Button variant="secondary" onClick={evt => removeClick(props, props.id)}>Remove</Button></td>
         </tr>
-    );
+    )
 }

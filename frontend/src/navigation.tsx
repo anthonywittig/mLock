@@ -1,12 +1,12 @@
-import React from 'react';
-import { Navbar, Nav } from 'react-bootstrap';
-import { useLocation } from 'react-router-dom';
+import React from 'react'
+import { Navbar, Nav } from 'react-bootstrap'
+import { useLocation } from 'react-router-dom'
 
 export const Navigation = () => {
-    let location = useLocation();
+    let location = useLocation()
 
     if (location.pathname.startsWith("/sign-in")) {
-        return null;
+        return null
     }
 
     return (
@@ -22,5 +22,5 @@ export const Navigation = () => {
                 </Nav>
             </Navbar.Collapse>
         </Navbar>
-    );
-};
+    )
+}
