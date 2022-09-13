@@ -132,24 +132,24 @@ export const List = () => {
 
     const renderEntityBatteryLevel = (entity : DeviceT) => {
         if (!entity.rawDevice.battery.batteryPowered) {
-            return <></>;
+            return <></>
         }
 
-        const lu = entity.lastRefreshedAt;
-        const lud = Date.parse(lu);
-        const recently = sub(new Date(), {days: 1, hours: 12});
-        const level = entity.rawDevice.battery.level;
+        const lu = entity.lastRefreshedAt
+        const lud = Date.parse(lu)
+        const recently = sub(new Date(), {days: 1, hours: 12})
+        const level = entity.rawDevice.battery.level
 
         if (isBefore(lud, recently) || level === null) {
-            return <Badge variant="danger">Unknown</Badge>;
+            return <Badge variant="danger">Unknown</Badge>
         }
 
         if (level < 25) {
-            return <Badge variant="danger">{ level }%</Badge>;
+            return <Badge variant="danger">{ level }%</Badge>
         }
 
-        return <>{ level }%</>;
-    };
+        return <>{ level }%</>
+    }
 
     const getOfflineWarnings = (entity: DeviceT) => {
         const warnings: JSX.Element[] = []
