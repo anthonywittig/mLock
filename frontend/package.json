@@ -34,8 +34,7 @@
       "react-app/jest"
     ],
     "rules": {
-      "semi": [
-        2, "never"]
+      "semi": [2, "never"]
     }
   },
   "browserslist": {
