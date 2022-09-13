@@ -1,4 +1,4 @@
-import React from 'react';
+import React from 'react'
 
 export const TermsOfService = () => {
     return (
@@ -71,5 +71,5 @@ export const TermsOfService = () => {
                 We reserve all rights to terminate accounts, edit or remove content and cancel orders in their sole discretion.
             </p>
         </div>
-    );
-};
+    )
+}

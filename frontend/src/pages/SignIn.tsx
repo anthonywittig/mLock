@@ -1,28 +1,28 @@
-import React from 'react';
+import React from 'react'
 import {
     GoogleLogin,
     GoogleLoginResponse,
     GoogleLoginResponseOffline,
     GoogleLogout,
-} from 'react-google-login';
+} from 'react-google-login'
 import {
     Redirect,
     //useLocation,
-} from 'react-router-dom';
-import { StandardFetch } from './utils/FetchHelper';
+} from 'react-router-dom'
+import { StandardFetch } from './utils/FetchHelper'
 
-type Props = {};
+type Props = {}
 
 type State = {
-    message: string;
-    messageClass: string;
-    processing: boolean;
-    successfullyLoggedIn: boolean;
-};
+    message: string
+    messageClass: string
+    processing: boolean
+    successfullyLoggedIn: boolean
+}
 
-const ERROR_NOT_AUTHORIZED = 'not authorized';
-const ERROR_NOT_AUTHENTICATED = 'not authenticated';
-const ERROR_UNKNOWN = 'unknown';
+const ERROR_NOT_AUTHORIZED = 'not authorized'
+const ERROR_NOT_AUTHENTICATED = 'not authenticated'
+const ERROR_UNKNOWN = 'unknown'
 
 export class SignIn extends React.Component<Props, State> {
     state: Readonly<State> = {
@@ -30,25 +30,25 @@ export class SignIn extends React.Component<Props, State> {
         messageClass: "",
         processing: false,
         successfullyLoggedIn: false,
-    };
+    }
 
     componentDidMount() {
-        const state = new URLSearchParams(window.location.search).get('state');
+        const state = new URLSearchParams(window.location.search).get('state')
         if (state === "401") {
-            this.setAlert("", ERROR_NOT_AUTHENTICATED);
+            this.setAlert("", ERROR_NOT_AUTHENTICATED)
         } else if (state === "403") {
-            this.setAlert("", ERROR_NOT_AUTHORIZED);
+            this.setAlert("", ERROR_NOT_AUTHORIZED)
         }
     }
 
     responseGoogleSuccess(response: GoogleLoginResponse | GoogleLoginResponseOffline) {
-        this.setAlert("", "");
+        this.setAlert("", "")
 
         if ((response as GoogleLoginResponse).profileObj) {
-            const user = response as GoogleLoginResponse;
-            const gToken = user.getAuthResponse().id_token;
+            const user = response as GoogleLoginResponse
+            const gToken = user.getAuthResponse().id_token
 
-            this.setState({processing: true});
+            this.setState({processing: true})
             StandardFetch("sign-in", {
                 method: "POST",
                 body: JSON.stringify({googleToken: gToken}),
@@ -56,45 +56,45 @@ export class SignIn extends React.Component<Props, State> {
             .then(response => {
                 switch(response.status) {
                     case 403:
-                        this.setAlert("", ERROR_NOT_AUTHORIZED);
-                        return;
+                        this.setAlert("", ERROR_NOT_AUTHORIZED)
+                        return
                     case 200:
-                        this.setState({successfullyLoggedIn: true});
-                        return;
+                        this.setState({successfullyLoggedIn: true})
+                        return
                     default:
-                        console.log("unhandled response code: " + response.status);
-                        this.setAlert("", ERROR_UNKNOWN);
-                        return;
+                        console.log("unhandled response code: " + response.status)
+                        this.setAlert("", ERROR_UNKNOWN)
+                        return
                 }
 
             }).catch(err => {
-                console.log(err);
-                this.setAlert("", ERROR_UNKNOWN);
+                console.log(err)
+                this.setAlert("", ERROR_UNKNOWN)
             }).finally(() => {
-                this.setState({processing: false});
-            });
+                this.setState({processing: false})
+            })
         } else {
-            this.setAlert("", ERROR_UNKNOWN);
+            this.setAlert("", ERROR_UNKNOWN)
         }
     }
 
     responseGoogleFailure(response: any) {
-        this.setAlert("", ERROR_UNKNOWN);
-        console.log(response);
+        this.setAlert("", ERROR_UNKNOWN)
+        console.log(response)
     }
 
     signOut() {
-        this.setAlert("", "");
-        this.setState({processing: true});
+        this.setAlert("", "")
+        this.setState({processing: true})
         StandardFetch("sign-in", {method: "DELETE"})
         .then(response => {
-            this.setAlert("Signed out successfully", "");
+            this.setAlert("Signed out successfully", "")
         }).catch(err => {
-            console.log(err);
-            this.setAlert("", ERROR_UNKNOWN);
+            console.log(err)
+            this.setAlert("", ERROR_UNKNOWN)
         }).finally(() => {
-            this.setState({processing: false});
-        });
+            this.setState({processing: false})
+        })
     }
 
     setAlert(message: string, errorCode: string) {
@@ -102,58 +102,58 @@ export class SignIn extends React.Component<Props, State> {
             this.setState({
                 message: "",
                 messageClass: "",
-            });
-            return;
+            })
+            return
         }
 
-        let messageClass = "alert-primary";
+        let messageClass = "alert-primary"
         if (message === "") {
-            messageClass = "alert-danger";
+            messageClass = "alert-danger"
             switch(errorCode) {
                 case "":
                     // Do nothing.
-                    break;
+                    break
                 case ERROR_NOT_AUTHORIZED:
-                    message = "Not Authorized - request access from an administrator";
-                    break;
+                    message = "Not Authorized - request access from an administrator"
+                    break
                 case ERROR_NOT_AUTHENTICATED:
-                    message = "Not Authenticated - log in to authenticate";
-                    break;
+                    message = "Not Authenticated - log in to authenticate"
+                    break
                 default: // Includes `ERROR_UNKNOWN`.
-                    message = "An error has occurred";
+                    message = "An error has occurred"
             }
         }
 
         this.setState({
             message: message,
             messageClass: messageClass,
-        });
+        })
     }
 
     render() {
 
         if (this.state.successfullyLoggedIn) {
-            const next = new URLSearchParams(window.location.search).get('next');
+            const next = new URLSearchParams(window.location.search).get('next')
             if (next != null && next !== "") {
-                return <Redirect to={next} />;
+                return <Redirect to={next} />
             }
-            return <Redirect  to="/devices/" />;
+            return <Redirect  to="/devices/" />
         }
 
-        let innerContent = this.renderNonProcessing();
+        let innerContent = this.renderNonProcessing()
         if (this.state.processing) {
-            innerContent = this.renderProcessing();
+            innerContent = this.renderProcessing()
         }
 
         return (<div>
             <h2>Sign In</h2>
             <br />
             {innerContent}
-        </div>);
+        </div>)
     }
 
     renderProcessing() {
-        return <div>Processing...</div>;
+        return <div>Processing...</div>
     }
 
     renderNonProcessing() {
@@ -178,6 +178,6 @@ export class SignIn extends React.Component<Props, State> {
                 buttonText="Logout"
                 onLogoutSuccess={this.signOut.bind(this)}
             />
-        </div>);
+        </div>)
     }
 }

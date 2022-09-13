@@ -1,4 +1,4 @@
-import React from 'react';
+import React from 'react'
 
 export const PrivacyPolicy = () => {
     return (
@@ -62,5 +62,5 @@ export const PrivacyPolicy = () => {
                 If you have any questions about this Privacy Policy, please contact us.
             </p>
         </div>
-    );
-};
+    )
+}

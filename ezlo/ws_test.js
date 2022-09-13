@@ -1,10 +1,10 @@
-const WebSocket = require('ws');
+const WebSocket = require('ws')
 const url = "wss://nma-server6-ui-cloud.ezlo.com/"
 const connection = new WebSocket(url)
 
 connection.onopen = () => {
 	console.log("onopen")
-	sendMessage();
+	sendMessage()
 }
 
 connection.onerror = error => {

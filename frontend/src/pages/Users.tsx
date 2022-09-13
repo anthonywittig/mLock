@@ -1,23 +1,23 @@
-import React from 'react';
-import { Button } from 'react-bootstrap';
-import { Loading } from './utils/Loading';
-import { StandardFetch } from './utils/FetchHelper';
+import React from 'react'
+import { Button } from 'react-bootstrap'
+import { Loading } from './utils/Loading'
+import { StandardFetch } from './utils/FetchHelper'
 
 type User = {
-    id: string;
-    email: string;
-    updatedBy: string;
+    id: string
+    email: string
+    updatedBy: string
 }
 
-type Props = {};
+type Props = {}
 
 type State = {
-    users: User[];
-    newUser: string;
-    newUserFieldEnabled: boolean;
-    newUserButtonEnabled: boolean;
-    loadingUsers: boolean;
-};
+    users: User[]
+    newUser: string
+    newUserFieldEnabled: boolean
+    newUserButtonEnabled: boolean
+    loadingUsers: boolean
+}
 
 export class Users extends React.Component<Props, State> {
     state: Readonly<State> = {
@@ -26,7 +26,7 @@ export class Users extends React.Component<Props, State> {
         newUserFieldEnabled: true,
         newUserButtonEnabled: false,
         loadingUsers: true,
-    };
+    }
 
     componentDidMount() {
         StandardFetch("users", {method: "GET"})
@@ -35,36 +35,36 @@ export class Users extends React.Component<Props, State> {
             this.setState({
                 loadingUsers: false,
                 users: response.Users
-            });
+            })
         })
         .catch(err => {
             // Might want to retry once on failure.
-            console.log(err);
-        });
+            console.log(err)
+        })
     }
 
     removeUserClick(id: string) {
-        this.setState({loadingUsers: true});
+        this.setState({loadingUsers: true})
 
         StandardFetch("users/" + id, {method: "DELETE"})
         .then(response => response.json())
         .then(response => {
             if (response.Users) {
-                this.setState({users: response.Users});
+                this.setState({users: response.Users})
             }
-            this.setState({loadingUsers: false});
+            this.setState({loadingUsers: false})
         })
         .catch(err => {
             // Need to indicate error...
-            console.log("error: " + err);
-        });
+            console.log("error: " + err)
+        })
     }
 
     newUserClick() {
         this.setState({
             newUserFieldEnabled: false,
             newUserButtonEnabled: false,
-        });
+        })
 
         StandardFetch("users", {
             method: "POST",
@@ -76,27 +76,27 @@ export class Users extends React.Component<Props, State> {
                 users: response.Users,
                 newUser: "",
                 newUserFieldEnabled: true,
-            });
+            })
         })
         .catch(err => {
             // Need to indicate error...
             this.setState({
                 newUserFieldEnabled: true,
                 newUserButtonEnabled: true, // Not that helpful but probably less confusing?
-            });
-        });
+            })
+        })
     }
 
     updateNewUserValue(evt: React.ChangeEvent<HTMLInputElement>) {
         this.setState({
             newUser: evt.target.value,
             newUserButtonEnabled: evt.target.value !== "",
-        });
+        })
     }
 
     renderUsersTable() {
         if (this.state.loadingUsers) {
-            return <Loading />;
+            return <Loading />
         }
         return (
             <table className="table table-responsive-sm">
@@ -124,7 +124,7 @@ export class Users extends React.Component<Props, State> {
                     </tr>
                 </tbody>
             </table>
-        );
+        )
     }
 
 
@@ -138,6 +138,6 @@ export class Users extends React.Component<Props, State> {
                     </div>
                 </div>
             </div>
-        );
+        )
     }
 }

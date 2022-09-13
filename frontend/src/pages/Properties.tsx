@@ -1,26 +1,26 @@
-import React from 'react';
-import { Loading } from './utils/Loading';
-import { StandardFetch } from './utils/FetchHelper';
-import { Property } from './components/Property';
+import React from 'react'
+import { Loading } from './utils/Loading'
+import { StandardFetch } from './utils/FetchHelper'
+import { Property } from './components/Property'
 
 type Entity = {
-    id: string;
-    name: string;
-    updatedBy: string;
+    id: string
+    name: string
+    updatedBy: string
 }
 
-type Props = {};
+type Props = {}
 
 type State = {
-    entities: Entity[];
-    loadingEntities: boolean;
-};
+    entities: Entity[]
+    loadingEntities: boolean
+}
 
 export class Properties extends React.Component<Props, State> {
     state: Readonly<State> = {
         entities: [],
         loadingEntities: true,
-    };
+    }
 
     componentDidMount() {
         StandardFetch("properties", {method: "GET"})
@@ -29,20 +29,20 @@ export class Properties extends React.Component<Props, State> {
             this.setState({
                 loadingEntities: false,
                 entities: response.entities,
-            });
+            })
         })
         .catch(err => {
             // TODO: indicate error.
-            console.log(err);
-        });
+            console.log(err)
+        })
     }
 
     removeEntity(id: string) {
         this.setState({
             entities: this.state.entities.filter(value => {
-                return value.id !== id;
+                return value.id !== id
             }),
-        });
+        })
     }
 
     addEntity(id: string, name: string, updatedBy: string) {
@@ -52,12 +52,12 @@ export class Properties extends React.Component<Props, State> {
                 name,
                 updatedBy,
             }]),
-        });
+        })
     }
 
     renderEntitiesTable() {
         if (this.state.loadingEntities) {
-            return <Loading />;
+            return <Loading />
         }
         return (
             <table className="table table-responsive-sm">
@@ -75,7 +75,7 @@ export class Properties extends React.Component<Props, State> {
                     <Property entityId="" entityName="" updatedBy="" removeEntity={id => console.log("should never happen")} addEntity={(id, name, updatedBy) => this.addEntity(id, name, updatedBy)}/>
                 </tbody>
             </table>
-        );
+        )
     }
 
     render() {
@@ -88,6 +88,6 @@ export class Properties extends React.Component<Props, State> {
                     </div>
                 </div>
             </div>
-        );
+        )
     }
 }

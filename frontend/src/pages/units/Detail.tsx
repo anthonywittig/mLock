@@ -1,10 +1,10 @@
-import React from 'react';
-import { Button, Form} from 'react-bootstrap';
-import { useRouteMatch } from 'react-router-dom';
-import { format, parseISO } from 'date-fns';
-import { useHistory } from 'react-router-dom';
-import { Loading } from '../utils/Loading';
-import { StandardFetch } from '../utils/FetchHelper';
+import React from 'react'
+import { Button, Form} from 'react-bootstrap'
+import { useRouteMatch } from 'react-router-dom'
+import { format, parseISO } from 'date-fns'
+import { useHistory } from 'react-router-dom'
+import { Loading } from '../utils/Loading'
+import { StandardFetch } from '../utils/FetchHelper'
 
 type Reservation = {
     id: string,
@@ -22,9 +22,9 @@ type Property = {
     updatedBy: string,
 }
 
-type MatchParams = {id: string};
+type MatchParams = {id: string}
 
-const Endpoint = "units";
+const Endpoint = "units"
 
 export const Detail = () => {
     const [entity, setEntity] = React.useState<UnitT>({
@@ -33,68 +33,68 @@ export const Detail = () => {
         propertyId: "",
         calendarUrl: "",
         updatedBy: "",
-    });
-    const [loading, setLoading] = React.useState<boolean>(true);
-    const [properties, setProperties] = React.useState<Property[]>([]);
-    const [devices, setDevices] = React.useState<DeviceT[]>([]);
-    const [reservations, setReservations] = React.useState<Reservation[]>([]);
-    const history = useHistory();
+    })
+    const [loading, setLoading] = React.useState<boolean>(true)
+    const [properties, setProperties] = React.useState<Property[]>([])
+    const [devices, setDevices] = React.useState<DeviceT[]>([])
+    const [reservations, setReservations] = React.useState<Reservation[]>([])
+    const history = useHistory()
 
-    const m = useRouteMatch('/' + Endpoint + '/:id');
-    const mp = m?.params as MatchParams;
-    const id = mp.id;
+    const m = useRouteMatch('/' + Endpoint + '/:id')
+    const mp = m?.params as MatchParams
+    const id = mp.id
 
     React.useEffect(() => {
-        setLoading(true);
+        setLoading(true)
 
         StandardFetch(Endpoint + "/" + id, {method: "GET"})
         .then(response => response.json())
         .then(response => {
-            setEntity(response.entity);
-            setLoading(false);
-            setProperties(response.extra.properties);
+            setEntity(response.entity)
+            setLoading(false)
+            setProperties(response.extra.properties)
 
-            let reservations = response.extra.reservations as Reservation[];
+            let reservations = response.extra.reservations as Reservation[]
             reservations.forEach(r => {
                 // The dates are naive, so cut off the zone.
-                r.startDate = parseISO(r.start.slice(0, -1));
-                r.endDate = parseISO(r.end.slice(0, -1));
-            });
-            setReservations(reservations);
+                r.startDate = parseISO(r.start.slice(0, -1))
+                r.endDate = parseISO(r.end.slice(0, -1))
+            })
+            setReservations(reservations)
 
-            setDevices(response.extra.devices as DeviceT[]);
+            setDevices(response.extra.devices as DeviceT[])
         })
         .catch(err => {
             // TODO: indicate error.
-            console.log(err);
-        });
-    }, [id]);
+            console.log(err)
+        })
+    }, [id])
 
     const detailFormNameChange = (evt: React.ChangeEvent<HTMLInputElement>) => {
         setEntity({
             ...entity,
             name: evt.target.value,
-        });
-    };
+        })
+    }
 
     const detailFormPropertyChange = (evt: React.ChangeEvent<HTMLSelectElement>) => {
         setEntity({
             ...entity,
             propertyId: evt.target.value,
-        });
-    };
+        })
+    }
 
     const detailFormCalendarUrlChange = (evt: React.ChangeEvent<HTMLSelectElement>) => {
         setEntity({
             ...entity,
             calendarUrl: evt.target.value,
-        });
-    };
+        })
+    }
 
     const detailFormSubmit = (evt: React.FormEvent<HTMLFormElement>) => {
-        evt.preventDefault();
+        evt.preventDefault()
 
-        setLoading(true);
+        setLoading(true)
 
         StandardFetch(Endpoint + "/" + id, {
             method: "PUT",
@@ -102,15 +102,15 @@ export const Detail = () => {
         })
         .then(response => response.json())
         .then(response => {
-            setEntity(response.entity);
-            setLoading(false);
-            history.push('/' + Endpoint + '/' + response.entity.id);
+            setEntity(response.entity)
+            setLoading(false)
+            history.push('/' + Endpoint + '/' + response.entity.id)
         })
         .catch(err => {
             // TODO: indicate error.
-            console.log(err);
-        });
-    };
+            console.log(err)
+        })
+    }
 
     const render = () => {
         return (
@@ -134,12 +134,12 @@ export const Detail = () => {
                     </div>
                 </div>
             </>
-        );
-    };
+        )
+    }
 
     const renderCalendar = () => {
         if (loading) {
-            return <Loading />;
+            return <Loading />
         }
         return (
             <table className="table table-responsive-sm">
@@ -160,12 +160,12 @@ export const Detail = () => {
                     )}
                 </tbody>
             </table>
-        );
-    };
+        )
+    }
 
     const renderDevices = () => {
         if (loading) {
-            return <Loading />;
+            return <Loading />
         }
         return (
             <table className="table table-responsive-sm">
@@ -182,12 +182,12 @@ export const Detail = () => {
                     )}
                 </tbody>
             </table>
-        );
-    };
+        )
+    }
 
     const renderEntity = () => {
         if (loading) {
-            return <Loading />;
+            return <Loading />
         }
         return (
             <Form onSubmit={evt => detailFormSubmit(evt)}>
@@ -216,8 +216,8 @@ export const Detail = () => {
                     Submit
                 </Button>
             </Form>
-        );
-    };
+        )
+    }
 
-    return render();
-};
+    return render()
+}

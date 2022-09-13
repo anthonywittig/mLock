@@ -3,15 +3,15 @@ import {
     Redirect,
     Route,
     Switch,
-  } from 'react-router-dom';
-import { DeviceRoutes } from './pages/devices/Routes';
-import { Navigation } from './navigation';
-import { Properties } from './pages/Properties';
-import { PrivacyPolicy } from './pages/PrivacyPolicy';
-import { TermsOfService } from './pages/TermsOfService';
-import { SignIn } from './pages/SignIn';
-import { UnitRoutes } from './pages/units/Routes';
-import { Users } from './pages/Users';
+  } from 'react-router-dom'
+import { DeviceRoutes } from './pages/devices/Routes'
+import { Navigation } from './navigation'
+import { Properties } from './pages/Properties'
+import { PrivacyPolicy } from './pages/PrivacyPolicy'
+import { TermsOfService } from './pages/TermsOfService'
+import { SignIn } from './pages/SignIn'
+import { UnitRoutes } from './pages/units/Routes'
+import { Users } from './pages/Users'
 
 export const Routes = () => {
     return (
@@ -46,5 +46,5 @@ export const Routes = () => {
                 </Switch>
             </div>
         </Router>
-    );
-};
+    )
+}

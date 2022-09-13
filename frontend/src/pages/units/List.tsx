@@ -1,7 +1,7 @@
-import React from 'react';
-import { Loading } from '../utils/Loading';
-import { StandardFetch } from '../utils/FetchHelper';
-import { Unit } from './Unit';
+import React from 'react'
+import { Loading } from '../utils/Loading'
+import { StandardFetch } from '../utils/FetchHelper'
+import { Unit } from './Unit'
 
 
 type Device = {
@@ -23,22 +23,22 @@ type Property = {
     updatedBy: string,
 }
 
-type Props = {};
+type Props = {}
 
 type State = {
     entities: Entity[],
     loadingEntities: boolean,
     properties: Property[],
-};
+}
 
-const Endpoint = "units";
+const Endpoint = "units"
 
 export class List extends React.Component<Props, State> {
     state: Readonly<State> = {
         entities: [],
         loadingEntities: true,
         properties: [],
-    };
+    }
 
     componentDidMount() {
         StandardFetch(Endpoint, {method: "GET"})
@@ -48,24 +48,24 @@ export class List extends React.Component<Props, State> {
                 entities: response.entities,
                 loadingEntities: false,
                 properties: response.extra.properties,
-            });
+            })
         })
         .catch(err => {
             // TODO: indicate error.
-            console.log(err);
-        });
+            console.log(err)
+        })
     }
 
     removeEntity(id: string) {
         this.setState({
             entities: this.state.entities.filter(value => {
-                return value.id !== id;
+                return value.id !== id
             }),
-        });
+        })
     }
 
     addEntity(id: string, name: string, propertyId: string, updatedBy: string) {
-        const devices: Device[] = [];
+        const devices: Device[] = []
         this.setState({
             entities: this.state.entities.concat([{
                 devices,
@@ -74,12 +74,12 @@ export class List extends React.Component<Props, State> {
                 propertyId,
                 updatedBy,
             }]),
-        });
+        })
     }
 
     renderEntitiesTable() {
         if (this.state.loadingEntities) {
-            return <Loading />;
+            return <Loading />
         }
         return (
             <table className="table table-responsive-sm">
@@ -116,7 +116,7 @@ export class List extends React.Component<Props, State> {
                     />
                 </tbody>
             </table>
-        );
+        )
     }
 
     render() {
@@ -129,6 +129,6 @@ export class List extends React.Component<Props, State> {
                     </div>
                 </div>
             </div>
-        );
+        )
     }
 }
