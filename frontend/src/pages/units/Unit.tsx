@@ -190,7 +190,7 @@ function render(props: Props, state: State) {
                 </Button>
             </th>
             <td>{devices}</td>
-            <td>{ props.properties.find(e => e.id === props.propertyId )?.name }</td>
+            <td style={{padding:19.5}}>{ props.properties.find(e => e.id === props.propertyId )?.name }</td>
             <td><Button variant="secondary" onClick={evt => removeClick(props, props.entityId)}>Delete</Button></td>
         </tr>
     )
