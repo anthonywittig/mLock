@@ -83,8 +83,8 @@ export const List = () => {
                                     <Button variant="link">{ entity.rawDevice.name }</Button>
                                 </Link>
                             </th>
-                            <td style={{padding:19.5}}>{ renderEntityStatus(entity) }</td>
-                            <td style={{padding:19.5}}>{ renderEntityBatteryLevel(entity) }</td>
+                            <td>{ renderEntityStatus(entity) }</td>
+                            <td>{ renderEntityBatteryLevel(entity) }</td>
                             <th scope="row">
                                 <Link to={"/units/"+ entity.unitId}>
                                     <Button variant="link">{ units.find(e => e.id === entity.unitId )?.name }</Button>
