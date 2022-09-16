@@ -64,53 +64,33 @@ func HandleRequest(ctx context.Context, event MyEvent) (Response, error) {
 	unitRepository := unit.NewRepository()
 
 	// Should probably create a repository for this, but we're just listing them for now.
-	controllers, err := ezlo.GetControllers(ctx)
+	online, offline, err := ezlo.GetControllers(ctx)
 	if err != nil {
 		return Response{}, fmt.Errorf("error getting controllers: %s", err.Error())
 	}
-
-	// Old list, might be handy when transitioning to the API.
-	// "84900483",
-	// "84901957",
-	// "84902073",
-	// "84902125",
-	// "84902278",
-	// "84902829",
-	// "84903155",
-	// "84903375",
-	// "84904595",
-	// "84905147",
-	// "84907280",
-	// "84907380",
-	// "84908450",
-	// "84909917",
-	// "84911082",
-	// "90000849",
-	// "90001483",
-	// "90001613",
-	// "90001793",
-	// "90001871",
-	// "90002061",
-	// "90002779",
-	// "90003204",
-	// "90003500",
-	// "90003526",
-	// "90003983",
-	// "90010778",
-	// "90010799",
-	// "90010815",
-	// "90011629",
-	// "90012570",
-	// "92001809",
-	for _, c := range controllers {
+	for _, c := range online {
 		ctxUpdateDevices, cancel := context.WithTimeout(ctx, 40*time.Second)
 		defer cancel()
 
-		if err := updateDevicesFromController(ctxUpdateDevices, emailService, c.PKDevice, deviceController); err != nil {
+		if err := updateOnlineDevicesFromController(ctxUpdateDevices, emailService, c.PKDevice, deviceController); err != nil {
 			if strings.Contains(err.Error(), "cloud.error.controller_not_connected") {
 				// We get a ton of these when we're swapping out controllers. This should be temporary (but we know how that goes)...
 				continue
 			}
+			if err2 := emailService.SendEmailToDevelopers(
+				ctx,
+				"zcclock - Error updating devices from controller.",
+				fmt.Sprintf("Controller ID: %s; error: %s", c.PKDevice, err.Error()),
+			); err2 != nil {
+				return Response{}, fmt.Errorf("error sending error email for updating devices for controller: %s, error: %s", c.PKDevice, err.Error())
+			}
+		}
+	}
+	for _, c := range offline {
+		ctxUpdateDevices, cancel := context.WithTimeout(ctx, 40*time.Second)
+		defer cancel()
+
+		if err := updateOfflineDevicesFromController(ctxUpdateDevices, emailService, c.PKDevice, deviceController); err != nil {
 			if err2 := emailService.SendEmailToDevelopers(
 				ctx,
 				"zcclock - Error updating devices from controller.",
@@ -152,7 +132,72 @@ func HandleRequest(ctx context.Context, event MyEvent) (Response, error) {
 	}, nil
 }
 
-func updateDevicesFromController(
+func updateOfflineDevicesFromController(
+	ctx context.Context,
+	emailService *ses.EmailService,
+	controllerID string,
+	deviceController *ezlo.DeviceController,
+) error {
+	deviceRepository := device.NewRepository()
+
+	eds, err := deviceRepository.List(ctx)
+	if err != nil {
+		return fmt.Errorf("error getting devices from repository: %s", err.Error())
+	}
+
+	transitioningToOfflineDevices := []shared.Device{}
+	offlineDevices := []shared.Device{}
+
+	for _, ed := range eds {
+		if ed.ControllerID != controllerID {
+			continue
+		}
+
+		wasOffline := ed.RawDevice.Status == shared.DeviceStatusOffline
+		isOffline := true
+
+		if wasOffline && !isOffline {
+			now := time.Now()
+			ed.LastWentOnlineAt = &now
+		}
+
+		if isOffline {
+			offlineDevices = append(offlineDevices, ed)
+			if !wasOffline {
+				now := time.Now()
+				ed.LastWentOfflineAt = &now
+				transitioningToOfflineDevices = append(transitioningToOfflineDevices, ed)
+			}
+		}
+
+		ed.RawDevice.Status = shared.DeviceStatusOffline
+
+		maxHistoryCount := 1
+		historyStartIndex := len(ed.History) - maxHistoryCount
+		if historyStartIndex > 0 {
+			ed.History = ed.History[historyStartIndex:]
+		}
+		if ed.RawDevice.Status != shared.DeviceStatusOffline {
+			ed.History = append(ed.History, shared.DeviceHistory{
+				Description: "Status Changed",
+				RawDevice:   ed.RawDevice,
+				RecordedAt:  time.Now(),
+			})
+		}
+
+		if _, err := deviceRepository.Put(ctx, ed); err != nil {
+			return fmt.Errorf("error putting device: %s", err.Error())
+		}
+	}
+
+	if err := sendOfflineDeviceEmail(ctx, emailService, transitioningToOfflineDevices, offlineDevices); err != nil {
+		return fmt.Errorf("error sending offline device email: %s", err.Error())
+	}
+
+	return nil
+}
+
+func updateOnlineDevicesFromController(
 	ctx context.Context,
 	emailService *ses.EmailService,
 	controllerID string,
