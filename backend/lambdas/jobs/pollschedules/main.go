@@ -63,6 +63,11 @@ func HandleRequest(ctx context.Context, event MyEvent) (Response, error) {
 	reservationRepository := reservation.NewRepository(tz)
 	unitRepository := unit.NewRepository()
 
+	devices, err := deviceRepository.List(ctx)
+	if err != nil {
+		return Response{}, fmt.Errorf("error getting devices from repository: %s", err.Error())
+	}
+
 	// Should probably create a repository for this, but we're just listing them for now.
 	online, offline, err := ezlo.GetControllers(ctx)
 	if err != nil {
@@ -72,7 +77,14 @@ func HandleRequest(ctx context.Context, event MyEvent) (Response, error) {
 		ctxUpdateDevices, cancel := context.WithTimeout(ctx, 40*time.Second)
 		defer cancel()
 
-		if err := updateOnlineDevicesFromController(ctxUpdateDevices, emailService, c.PKDevice, deviceController); err != nil {
+		if err := updateOnlineDevicesFromController(
+			ctxUpdateDevices,
+			emailService,
+			c.PKDevice,
+			deviceController,
+			deviceRepository,
+			devices,
+		); err != nil {
 			if strings.Contains(err.Error(), "cloud.error.controller_not_connected") {
 				// We get a ton of these when we're swapping out controllers. This should be temporary (but we know how that goes)...
 				continue
@@ -90,7 +102,13 @@ func HandleRequest(ctx context.Context, event MyEvent) (Response, error) {
 		ctxUpdateDevices, cancel := context.WithTimeout(ctx, 40*time.Second)
 		defer cancel()
 
-		if err := updateOfflineDevicesFromController(ctxUpdateDevices, emailService, c.PKDevice, deviceController); err != nil {
+		if err := updateOfflineDevicesFromController(
+			ctxUpdateDevices,
+			emailService,
+			c.PKDevice,
+			deviceRepository,
+			devices,
+		); err != nil {
 			if err2 := emailService.SendEmailToDevelopers(
 				ctx,
 				"zcclock - Error updating devices from controller.",
@@ -136,19 +154,13 @@ func updateOfflineDevicesFromController(
 	ctx context.Context,
 	emailService *ses.EmailService,
 	controllerID string,
-	deviceController *ezlo.DeviceController,
+	deviceRepository *device.Repository,
+	devices []shared.Device,
 ) error {
-	deviceRepository := device.NewRepository()
-
-	eds, err := deviceRepository.List(ctx)
-	if err != nil {
-		return fmt.Errorf("error getting devices from repository: %s", err.Error())
-	}
-
 	transitioningToOfflineDevices := []shared.Device{}
 	offlineDevices := []shared.Device{}
 
-	for _, ed := range eds {
+	for _, ed := range devices {
 		if ed.ControllerID != controllerID {
 			continue
 		}
@@ -202,17 +214,12 @@ func updateOnlineDevicesFromController(
 	emailService *ses.EmailService,
 	controllerID string,
 	deviceController *ezlo.DeviceController,
+	deviceRepository *device.Repository,
+	eds []shared.Device,
 ) error {
 	rds, err := deviceController.GetDevices(ctx, controllerID)
 	if err != nil {
 		return fmt.Errorf("error getting devices from controller: %s", err.Error())
-	}
-
-	deviceRepository := device.NewRepository()
-
-	eds, err := deviceRepository.List(ctx)
-	if err != nil {
-		return fmt.Errorf("error getting devices from repository: %s", err.Error())
 	}
 
 	transitioningToOfflineDevices := []shared.Device{}
