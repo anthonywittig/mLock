@@ -1,9 +1,11 @@
 import React from 'react'
+import Table from 'react-bootstrap/Table'
 import { Badge, Button, OverlayTrigger, Tooltip } from 'react-bootstrap'
 import { Loading } from '../utils/Loading'
 import { StandardFetch } from '../utils/FetchHelper'
 import { formatDistance, isAfter, isBefore, sub } from 'date-fns'
 import {Link} from 'react-router-dom'
+
 
 const Endpoint = "devices"
 
@@ -65,7 +67,7 @@ export const List = () => {
             return <Loading />
         }
         return (
-            <table className="table table-responsive-sm">
+            <Table responsive>
                 <thead>
                     <tr>
                         <th scope="col">Name</th>
@@ -85,16 +87,16 @@ export const List = () => {
                             </th>
                             <td>{ renderEntityStatus(entity) }</td>
                             <td>{ renderEntityBatteryLevel(entity) }</td>
-                            <th scope="row">
+                            <td>
                                 <Link to={"/units/"+ entity.unitId}>
                                     <Button variant="link">{ units.find(e => e.id === entity.unitId )?.name }</Button>
                                 </Link>
-                            </th>
+                            </td>
                             <td>{ renderDeleteButton(entity) }</td>
                         </tr>
                     )}
                 </tbody>
-            </table>
+            </Table>
         )
     }
 

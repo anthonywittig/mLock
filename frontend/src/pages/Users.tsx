@@ -1,4 +1,5 @@
 import React from 'react'
+import Table from 'react-bootstrap/Table'
 import { Button } from 'react-bootstrap'
 import { Loading } from './utils/Loading'
 import { StandardFetch } from './utils/FetchHelper'
@@ -99,7 +100,7 @@ export class Users extends React.Component<Props, State> {
             return <Loading />
         }
         return (
-            <table className="table table-responsive-sm">
+            <Table responsive>
                 <thead>
                     <tr>
                         <th scope="col">Email Address</th>
@@ -123,7 +124,7 @@ export class Users extends React.Component<Props, State> {
                         <td><Button variant="secondary" onClick={() => this.newUserClick()} disabled={!this.state.newUserButtonEnabled}>Create</Button></td>
                     </tr>
                 </tbody>
-            </table>
+            </Table>
         )
     }
 
