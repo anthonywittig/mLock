@@ -223,16 +223,17 @@ export const List = () => {
                         // Once we have one warning, we'll only add additional ones for `Adding` codes.
                         continue
                     }
-                    if (lc.wasEnabledAt) {
-                        const wc = Date.parse(lc.wasEnabledAt)
-                        const minutesBetween = (wc - sa) / 1000 / 60
-                        if (expectedResponseInMinutes < minutesBetween) {
-                            const distance = formatDistance(sa, wc)
-                            warnings.push(<>Slow to Respond (took { distance } to add code { lc.code })</>)
-                        }
+                    if (lc.note === 'Lock code present.'){
+                        if (lc.wasEnabledAt) {
+                            const wc = Date.parse(lc.wasEnabledAt)
+                            const minutesBetween = (wc - sa) / 1000 / 60
+                            if (expectedResponseInMinutes < minutesBetween) {
+                                const distance = formatDistance(sa, wc)
+                                warnings.push(<>Slow to Respond (took { distance } to add code { lc.code })</>)
+                            }
                     } else {
                         warnings.push(<>Not Responding (for code { lc.code })</>)
-                    }
+                    }}
                 }
             }
         }
