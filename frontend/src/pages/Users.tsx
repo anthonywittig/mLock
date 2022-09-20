@@ -1,6 +1,5 @@
 import React from 'react'
-import Table from 'react-bootstrap/Table'
-import { Button } from 'react-bootstrap'
+import { Button, Table } from 'react-bootstrap'
 import { Loading } from './utils/Loading'
 import { StandardFetch } from './utils/FetchHelper'
 

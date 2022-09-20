@@ -1,6 +1,5 @@
 import React from 'react'
-import Table from 'react-bootstrap/Table'
-import { Badge, Button, OverlayTrigger, Tooltip } from 'react-bootstrap'
+import { Badge, Button, OverlayTrigger, Table, ListGroup, Tooltip } from 'react-bootstrap'
 import { Loading } from '../utils/Loading'
 import { StandardFetch } from '../utils/FetchHelper'
 import { formatDistance, isAfter, isBefore, sub } from 'date-fns'
@@ -80,19 +79,19 @@ export const List = () => {
                 <tbody>
                     {entities.map(entity =>
                         <tr key={ entity.id }>
-                            <th scope="row">
+                            <th className="align-middle">
                                 <Link to={"/devices/" + entity.id}>
                                     <Button variant="link">{ entity.rawDevice.name }</Button>
                                 </Link>
                             </th>
-                            <td>{ renderEntityStatus(entity) }</td>
-                            <td>{ renderEntityBatteryLevel(entity) }</td>
-                            <td>
+                            <td className="align-middle text-left">{renderEntityStatus(entity)}</td>
+                            <td className="align-middle">{ renderEntityBatteryLevel(entity) }</td>
+                            <td className="align-middle">
                                 <Link to={"/units/"+ entity.unitId}>
                                     <Button variant="link">{ units.find(e => e.id === entity.unitId )?.name }</Button>
                                 </Link>
                             </td>
-                            <td>{ renderDeleteButton(entity) }</td>
+                            <td className="align-middle">{ renderDeleteButton(entity) }</td>
                         </tr>
                     )}
                 </tbody>
@@ -125,14 +124,15 @@ export const List = () => {
         warnings.push.apply(warnings, getLockResponsivenessWarnings(entity))
 
         if (warnings.length === 1) {
-            return <>{ warnings[0] }</>
+
+            return <ListGroup.Item className="border-0">{ warnings[0] }</ListGroup.Item>
         }
         return (
-            <ul>
+            <ListGroup className="px-0">
                 { warnings.map(warn =>
-                    <li>{ warn }</li>
+                    <ListGroup.Item className="border-0">{ warn }</ListGroup.Item>
                 )}
-            </ul>
+            </ListGroup>
         )
     }
 
