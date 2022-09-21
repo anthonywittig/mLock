@@ -7,7 +7,7 @@ import {Link} from 'react-router-dom'
 
 const Endpoint = "devices"
 
-export const List = () => {
+const List = () => {
     const [entities, setEntities] = React.useState<DeviceT[]>([])
     const [loading, setLoading] = React.useState<boolean>(true)
     const [units, setUnits] = React.useState<UnitT[]>([])
@@ -202,42 +202,45 @@ export const List = () => {
         return warnings
     }
 
-    const getLockResponsivenessWarnings = (entity: DeviceT) => {
-        const warnings: JSX.Element[] = []
+    return render()
+}
 
-        if (entity.rawDevice.status !== "ONLINE") {
-            return warnings
-        }
+const getLockResponsivenessWarnings = (entity: DeviceT) => {
+    const warnings: JSX.Element[] = []
 
-        const tooSoon = sub(new Date(), {minutes: 10})
-        const expectedResponseInMinutes = 60
+    if (entity.rawDevice.status !== "ONLINE") {
+        return warnings
+    }
 
-        for (let i = 0; i < entity.managedLockCodes.length; i++) {
-            const lc = entity.managedLockCodes[i]
+    const tooSoon = sub(new Date(), {minutes: 10})
+    const expectedResponseInMinutes = 60
 
-            // We really should consider the `startedRemovingAt` and `wasCompletedAt` timestamps, but right now we're only syncing every hour during the time that most codes are being removed.
-            if (lc.startedAddingAt) {
-                const sa = Date.parse(lc.startedAddingAt)
-                if (isBefore(sa, tooSoon)) {
-                    if (warnings.length && lc.status !== "Adding") {
-                        // Once we have one warning, we'll only add additional ones for `Adding` codes.
-                        continue
+    for (let i = 0; i < entity.managedLockCodes.length; i++) {
+        const lc = entity.managedLockCodes[i]
+
+        // We really should consider the `startedRemovingAt` and `wasCompletedAt` timestamps, but right now we're only syncing every hour during the time that most codes are being removed.
+        if (lc.startedAddingAt) {
+            const sa = Date.parse(lc.startedAddingAt)
+            if (isBefore(sa, tooSoon)) {
+                if (warnings.length && lc.status !== "Adding") {
+                    // Once we have one warning, we'll only add additional ones for `Adding` codes.
+                    continue
+                }
+                if (lc.wasEnabledAt) {
+                    const wc = Date.parse(lc.wasEnabledAt)
+                    const minutesBetween = (wc - sa) / 1000 / 60
+                    if (expectedResponseInMinutes < minutesBetween) {
+                        const distance = formatDistance(sa, wc)
+                        warnings.push(<>Slow to Respond (took { distance } to add code { lc.code })</>)
                     }
-                    if (lc.wasEnabledAt) {
-                        const wc = Date.parse(lc.wasEnabledAt)
-                        const minutesBetween = (wc - sa) / 1000 / 60
-                        if (expectedResponseInMinutes < minutesBetween) {
-                            const distance = formatDistance(sa, wc)
-                            warnings.push(<>Slow to Respond (took { distance } to add code { lc.code })</>)
-                        }
-                    } else {
-                        warnings.push(<>Not Responding (for code { lc.code })</>)
-                    }
+                } else {
+                    warnings.push(<>Not Responding (for code { lc.code })</>)
                 }
             }
         }
-
-        return warnings
     }
-    return render()
+
+    return warnings
 }
+
+export { List, getLockResponsivenessWarnings }

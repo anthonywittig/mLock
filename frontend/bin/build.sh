@@ -9,3 +9,4 @@ cd ../
 
 npm install
 CI=true npm run build
+CI=true npm test
