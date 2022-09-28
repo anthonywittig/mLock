@@ -77,6 +77,39 @@ func (d *DeviceController) GetDevices(ctx context.Context, controllerID string) 
 	return devices, nil
 }
 
+func (d *DeviceController) RediscoverDevice(ctx context.Context, device shared.Device) error {
+	if device.ControllerID == "" {
+		return fmt.Errorf("device doesn't have a controller ID")
+	}
+
+	ws, err := d.connectionPool.GetConnection(ctx, device.ControllerID)
+	if err != nil {
+		return fmt.Errorf("error getting websocket: %s", err.Error())
+	}
+
+	settings, err := wsGetDeviceSettings(ws, device.RawDevice.ID)
+	if err != nil {
+		return fmt.Errorf("error getting device settings for \"%s\": %s", device.RawDevice.Name, err.Error())
+	}
+
+	rediscoverSettingID := ""
+	for _, setting := range settings {
+		if setting.Label.Text == "Rediscover device" {
+			rediscoverSettingID = setting.ID
+			break
+		}
+	}
+	if rediscoverSettingID == "" {
+		return fmt.Errorf("couldn't find rediscover setting")
+	}
+
+	if err := wsSetDeviceSetting(ws, rediscoverSettingID, ""); err != nil {
+		return fmt.Errorf("error rediscovering device: %s", err.Error())
+	}
+
+	return nil
+}
+
 func (d *DeviceController) RemoveLockCode(ctx context.Context, device shared.Device, code string) error {
 	// TODO: if multiple codes for the same device are getting removed within a short period of time, might we end up removing the wrong code?
 	if device.ControllerID == "" {

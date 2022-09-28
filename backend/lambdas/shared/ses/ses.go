@@ -49,7 +49,7 @@ func getClient(ctx context.Context) (*ses.Client, error) {
 }
 
 func (s *EmailService) SendEmailToAdmins(ctx context.Context, subject string, body string) error {
-	return s.SendEmail(
+	return s.sendEmail(
 		ctx,
 		subject,
 		body,
@@ -58,7 +58,7 @@ func (s *EmailService) SendEmailToAdmins(ctx context.Context, subject string, bo
 }
 
 func (s *EmailService) SendEmailToDevelopers(ctx context.Context, subject string, body string) error {
-	return s.SendEmail(
+	return s.sendEmail(
 		ctx,
 		subject,
 		body,
@@ -66,7 +66,7 @@ func (s *EmailService) SendEmailToDevelopers(ctx context.Context, subject string
 	)
 }
 
-func (s *EmailService) SendEmail(
+func (s *EmailService) sendEmail(
 	ctx context.Context,
 	subject string,
 	body string,
