@@ -98,9 +98,79 @@ func HandleRequest(ctx context.Context, event MyEvent) (Response, error) {
 		return Response{}, fmt.Errorf("error updating lock codes: %s", err.Error())
 	}
 
+	// Rediscover devices if needed.
+	if err := rediscoverUnresponsiveDevices(
+		ctx,
+		deviceController,
+		deviceRepository,
+		emailService,
+	); err != nil {
+		return Response{}, fmt.Errorf("error rediscovering unresponsive devices: %s", err.Error())
+	}
+
 	return Response{
 		Message: "ok",
 	}, nil
+}
+
+func rediscoverUnresponsiveDevices(
+	ctx context.Context,
+	deviceController *ezlo.DeviceController,
+	deviceRepository *device.Repository,
+	emailService *ses.EmailService,
+) error {
+	devices, err := deviceRepository.List(ctx)
+	if err != nil {
+		return fmt.Errorf("error listing devices: %s", err.Error())
+	}
+
+	for _, d := range devices {
+		if d.RawDevice.Status != shared.DeviceStatusOnline {
+			continue
+		}
+		if d.LastRediscoveredAt != nil && time.Since(*d.LastRediscoveredAt) < 4*time.Hour {
+			continue
+		}
+
+		var shouldRediscoverFor *shared.DeviceManagedLockCode = nil
+		for _, mlc := range d.ManagedLockCodes {
+			if mlc.Status != shared.DeviceManagedLockCodeStatus2Adding {
+				continue
+			}
+			if time.Since(*mlc.StartedAddingAt) < 5*time.Minute {
+				continue
+			}
+			shouldRediscoverFor = mlc
+		}
+		if shouldRediscoverFor == nil {
+			continue
+		}
+
+		fmt.Printf("Rediscovering device %s\n", d.RawDevice.Name)
+		if err := deviceController.RediscoverDevice(ctx, d); err != nil {
+			return fmt.Errorf("error rediscovering device %s: %s", d.RawDevice.Name, err.Error())
+		}
+
+		now := time.Now()
+		d.LastRediscoveredAt = &now
+		d, err := deviceRepository.Put(ctx, d)
+		if err != nil {
+			return fmt.Errorf("error saving device %s: %s", d.RawDevice.Name, err.Error())
+		}
+
+		shouldRediscoverFor.Note = "Rediscovering device."
+		if err := deviceRepository.AppendToAuditLog(ctx, d, []*shared.DeviceManagedLockCode{shouldRediscoverFor}); err != nil {
+			return fmt.Errorf("error appending to audit log: %s", err.Error())
+		}
+
+		emailService.SendEmailToDevelopers(
+			ctx,
+			"Rediscovering device",
+			fmt.Sprintf("Rediscovering device %s", d.RawDevice.Name),
+		)
+	}
+
+	return nil
 }
 
 func updateDevicesFromController(
