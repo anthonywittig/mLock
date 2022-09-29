@@ -98,15 +98,19 @@ func HandleRequest(ctx context.Context, event MyEvent) (Response, error) {
 		return Response{}, fmt.Errorf("error updating lock codes: %s", err.Error())
 	}
 
-	// Rediscover devices if needed.
-	if err := rediscoverUnresponsiveDevices(
-		ctx,
-		deviceController,
-		deviceRepository,
-		emailService,
-	); err != nil {
-		return Response{}, fmt.Errorf("error rediscovering unresponsive devices: %s", err.Error())
-	}
+	/*
+		This caused a few devices to get lost from their controllers, so we're disabling it for now.
+
+		// Rediscover devices if needed.
+		if err := rediscoverUnresponsiveDevices(
+			ctx,
+			deviceController,
+			deviceRepository,
+			emailService,
+		); err != nil {
+			return Response{}, fmt.Errorf("error rediscovering unresponsive devices: %s", err.Error())
+		}
+	*/
 
 	return Response{
 		Message: "ok",
