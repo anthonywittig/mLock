@@ -374,19 +374,19 @@ func updateOnlineDevicesFromController(
 		if found {
 			continue
 		}
+
 		if ed.RawDevice.Status == shared.DeviceStatusOffline {
-			continue
-		}
-
-		rd := ed.RawDevice
-		rd.Status = shared.DeviceStatusOffline // Fake an offline status.
-		d, tTOD, oDs := updateDeviceWithRawData(ed, rd)
-		d.RawDevice = rd
-		transitioningToOfflineDevices = append(transitioningToOfflineDevices, tTOD...)
-		offlineDevices = append(offlineDevices, oDs...)
-
-		if _, err := deviceRepository.Put(ctx, d); err != nil {
-			return transitioningToOfflineDevices, offlineDevices, fmt.Errorf("error putting device: %s", err.Error())
+			offlineDevices = append(offlineDevices, ed)
+		} else {
+			rd := ed.RawDevice
+			rd.Status = shared.DeviceStatusOffline // Fake an offline status.
+			d, tTOD, oDs := updateDeviceWithRawData(ed, rd)
+			d.RawDevice = rd
+			if _, err := deviceRepository.Put(ctx, d); err != nil {
+				return transitioningToOfflineDevices, offlineDevices, fmt.Errorf("error putting device: %s", err.Error())
+			}
+			transitioningToOfflineDevices = append(transitioningToOfflineDevices, tTOD...)
+			offlineDevices = append(offlineDevices, oDs...)
 		}
 	}
 
