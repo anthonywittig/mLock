@@ -182,6 +182,8 @@ type wsRegisterRequestParams struct {
 	Serial string `json:"serial"`
 }
 
+const ENHANCED_LOGGING = false
+
 func getRawDevices(ws *websocket.Conn) ([]shared.RawDevice, error) {
 	deviceListResp, err := wsDeviceList(ws)
 	if err != nil {
@@ -250,8 +252,6 @@ func authenticate(ctx context.Context, username string, password string) (authDa
 	client := &http.Client{
 		Timeout: 30 * time.Second,
 	}
-
-	fmt.Printf("%s %s\n", req.Host, req.URL.Path)
 
 	resp, err := client.Do(req)
 	if err != nil {
@@ -375,7 +375,9 @@ func wsSendCommand(ws *websocket.Conn, id string, request interface{}, outRespon
 		return fmt.Errorf("marshal: %s", err.Error())
 	}
 
-	fmt.Printf("sending: %s\n", string(jsonReq))
+	if ENHANCED_LOGGING {
+		fmt.Printf("sending: %s\n", string(jsonReq))
+	}
 
 	if err := ws.WriteMessage(websocket.TextMessage, jsonReq); err != nil {
 		return fmt.Errorf("write: %s", err.Error())
@@ -409,7 +411,9 @@ func wsSendCommand(ws *websocket.Conn, id string, request interface{}, outRespon
 			return fmt.Errorf("unmarshal: %s", err.Error())
 		}
 
-		fmt.Printf("received: %s\n", string(jsonResp))
+		if ENHANCED_LOGGING {
+			fmt.Printf("received: %s\n", string(jsonResp))
+		}
 
 		return nil
 	}
