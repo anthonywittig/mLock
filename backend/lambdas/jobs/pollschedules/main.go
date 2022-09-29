@@ -272,20 +272,12 @@ func updateOfflineDevicesFromController(
 		}
 
 		wasOffline := ed.RawDevice.Status == shared.DeviceStatusOffline
-		isOffline := true
 
-		if wasOffline && !isOffline {
+		offlineDevices = append(offlineDevices, ed)
+		if !wasOffline {
 			now := time.Now()
-			ed.LastWentOnlineAt = &now
-		}
-
-		if isOffline {
-			offlineDevices = append(offlineDevices, ed)
-			if !wasOffline {
-				now := time.Now()
-				ed.LastWentOfflineAt = &now
-				transitioningToOfflineDevices = append(transitioningToOfflineDevices, ed)
-			}
+			ed.LastWentOfflineAt = &now
+			transitioningToOfflineDevices = append(transitioningToOfflineDevices, ed)
 		}
 
 		ed.RawDevice.Status = shared.DeviceStatusOffline
@@ -346,39 +338,11 @@ func updateOnlineDevicesFromController(
 		for _, ed := range eds {
 			if ed.ControllerID == controllerID && ed.RawDevice.ID == rd.ID {
 				// We found a match.
-				d = ed
-
-				wasOffline := d.RawDevice.Status == shared.DeviceStatusOffline
-				isOffline := rd.Status == shared.DeviceStatusOffline
-
-				if wasOffline && !isOffline {
-					now := time.Now()
-					d.LastWentOnlineAt = &now
-				}
-
-				if isOffline {
-					offlineDevices = append(offlineDevices, d)
-					if !wasOffline {
-						now := time.Now()
-						d.LastWentOfflineAt = &now
-						transitioningToOfflineDevices = append(transitioningToOfflineDevices, d)
-					}
-				}
-
-				statusChanged := d.RawDevice.Status != rd.Status
-				if statusChanged {
-					d.History = append(d.History, shared.DeviceHistory{
-						Description: "Status Changed",
-						RawDevice:   rd,
-						RecordedAt:  time.Now(),
-					})
-				}
-
-				maxHistoryCount := 1
-				historyStartIndex := len(d.History) - maxHistoryCount
-				if historyStartIndex > 0 {
-					d.History = d.History[historyStartIndex:]
-				}
+				var tTOD []shared.Device
+				var oDs []shared.Device
+				d, tTOD, oDs = updateDeviceWithRawData(ed, rd)
+				transitioningToOfflineDevices = append(transitioningToOfflineDevices, tTOD...)
+				offlineDevices = append(offlineDevices, oDs...)
 			}
 		}
 
@@ -391,7 +355,81 @@ func updateOnlineDevicesFromController(
 		}
 	}
 
+	// Look for devices that no longer exist on the controller.
+	for _, ed := range eds {
+		if ed.ControllerID != controllerID {
+			continue
+		}
+		found := false
+		for _, rd := range rds {
+			if ed.RawDevice.ID == rd.ID {
+				found = true
+				break
+			}
+		}
+		if found {
+			continue
+		}
+		if ed.RawDevice.Status == shared.DeviceStatusOffline {
+			continue
+		}
+
+		rd := ed.RawDevice
+		rd.Status = shared.DeviceStatusOffline // Fake an offline status.
+		d, tTOD, oDs := updateDeviceWithRawData(ed, rd)
+		d.RawDevice = rd
+		transitioningToOfflineDevices = append(transitioningToOfflineDevices, tTOD...)
+		offlineDevices = append(offlineDevices, oDs...)
+
+		if _, err := deviceRepository.Put(ctx, d); err != nil {
+			return transitioningToOfflineDevices, offlineDevices, fmt.Errorf("error putting device: %s", err.Error())
+		}
+	}
+
 	return transitioningToOfflineDevices, offlineDevices, nil
+}
+
+func updateDeviceWithRawData(d shared.Device, rd shared.RawDevice) (
+	shared.Device,
+	[]shared.Device,
+	[]shared.Device,
+) {
+	transitioningToOfflineDevices := []shared.Device{}
+	offlineDevices := []shared.Device{}
+
+	wasOffline := d.RawDevice.Status == shared.DeviceStatusOffline
+	isOffline := rd.Status == shared.DeviceStatusOffline
+
+	if wasOffline && !isOffline {
+		now := time.Now()
+		d.LastWentOnlineAt = &now
+	}
+
+	if isOffline {
+		offlineDevices = append(offlineDevices, d)
+		if !wasOffline {
+			now := time.Now()
+			d.LastWentOfflineAt = &now
+			transitioningToOfflineDevices = append(transitioningToOfflineDevices, d)
+		}
+	}
+
+	statusChanged := d.RawDevice.Status != rd.Status
+	if statusChanged {
+		d.History = append(d.History, shared.DeviceHistory{
+			Description: "Status Changed",
+			RawDevice:   rd,
+			RecordedAt:  time.Now(),
+		})
+	}
+
+	maxHistoryCount := 1
+	historyStartIndex := len(d.History) - maxHistoryCount
+	if historyStartIndex > 0 {
+		d.History = d.History[historyStartIndex:]
+	}
+
+	return d, transitioningToOfflineDevices, offlineDevices
 }
 
 func sendOfflineDeviceEmail(ctx context.Context, emailService *ses.EmailService, transitioningToOfflineDevices []shared.Device, offlineDevices []shared.Device) error {
