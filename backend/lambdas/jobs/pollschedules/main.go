@@ -99,14 +99,16 @@ func HandleRequest(ctx context.Context, event MyEvent) (Response, error) {
 	}
 
 	// Rediscover devices if needed.
-	if err := rediscoverUnresponsiveDevices(
-		ctx,
-		deviceController,
-		deviceRepository,
-		emailService,
-	); err != nil {
-		return Response{}, fmt.Errorf("error rediscovering unresponsive devices: %s", err.Error())
-	}
+	/*
+		if err := rediscoverUnresponsiveDevices(
+			ctx,
+			deviceController,
+			deviceRepository,
+			emailService,
+		); err != nil {
+			return Response{}, fmt.Errorf("error rediscovering unresponsive devices: %s", err.Error())
+		}
+	*/
 
 	return Response{
 		Message: "ok",
