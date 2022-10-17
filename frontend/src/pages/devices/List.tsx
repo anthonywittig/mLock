@@ -158,7 +158,7 @@ export const List = () => {
     return (
       <ListGroup className="flush">
         {warnings.map((warn) => (
-          <ListGroup.Item className="flush">{warn}</ListGroup.Item>
+          <ListGroup.Item className="border-0">{warn}</ListGroup.Item>
         ))}
       </ListGroup>
     )
