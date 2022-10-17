@@ -1,187 +1,199 @@
-import { getLockResponsivenessWarnings } from '../../../pages/devices/List'
+import { getLockResponsivenessWarnings } from "../../../pages/devices/List"
 
-test('scheduled is ignored', () => {
+test("scheduled is ignored", () => {
   const warnings = getLockResponsivenessWarnings({
-      id: "",
-      unitId: "",
-      lastRefreshedAt: "",
-      lastWentOfflineAt: null,
-      lastWentOnlineAt: null,
-      managedLockCodes: [
-        {
-          "deviceId": "",
-          "code": "0000",
-          "endAt": "2022-10-13T01:00:00Z",
-          "id": "edfb9b4a-7ce8-4b6f-8dc3-8f0f30d511a8",
-          "note": "Added by awesomeiscooltoo@gmail.com.",
-          "reservation": {
-              "id": "",
-              "sync": false
-          },
-          "status": "Scheduled",
-          "startAt": "2022-10-11T01:44:00Z",
-          "startedAddingAt": null,
-          "wasEnabledAt": null,
-          "startedRemovingAt": null,
-          "wasCompletedAt": null
+    id: "",
+    unitId: "",
+    lastRefreshedAt: "",
+    lastWentOfflineAt: null,
+    lastWentOnlineAt: null,
+    managedLockCodes: [
+      {
+        deviceId: "",
+        code: "0000",
+        endAt: "2022-10-13T01:00:00Z",
+        id: "edfb9b4a-7ce8-4b6f-8dc3-8f0f30d511a8",
+        note: "Added by awesomeiscooltoo@gmail.com.",
+        reservation: {
+          id: "",
+          sync: false,
+        },
+        status: "Scheduled",
+        startAt: "2022-10-11T01:44:00Z",
+        startedAddingAt: null,
+        wasEnabledAt: null,
+        startedRemovingAt: null,
+        wasCompletedAt: null,
       },
-        {
-          deviceId: "",
-          "code": "9999",
-          "endAt": "2021-09-15T11:30:00-06:00",
-          "id": "81e8be93-6795-41ea-94d9-df76df002750",
-          "note": "Code was removed.",
-          "reservation": {
-            "id": "8833936@LiveRez.com",
-            "sync": true
-          },
-          "status": "Complete",
-          "startAt": "2021-09-13T15:00:00-06:00",
-          "startedAddingAt": "2021-09-13T00:00:00Z",
-          "wasEnabledAt": "2021-09-14T00:00:00Z",
-          "startedRemovingAt": "2021-09-15T00:00:00Z",
-          "wasCompletedAt": "2021-09-15T00:00:00Z"
+      {
+        deviceId: "",
+        code: "9999",
+        endAt: "2021-09-15T11:30:00-06:00",
+        id: "81e8be93-6795-41ea-94d9-df76df002750",
+        note: "Code was removed.",
+        reservation: {
+          id: "8833936@LiveRez.com",
+          sync: true,
         },
-      ],
-      rawDevice: {
-          battery: {
-              batteryPowered: true,
-              level: 0,
-          },
-          categoryId: "",
-          lockCodes: null,
-          name: "",
-          status: "ONLINE",
-      }
+        status: "Complete",
+        startAt: "2021-09-13T15:00:00-06:00",
+        startedAddingAt: "2021-09-13T00:00:00Z",
+        wasEnabledAt: "2021-09-14T00:00:00Z",
+        startedRemovingAt: "2021-09-15T00:00:00Z",
+        wasCompletedAt: "2021-09-15T00:00:00Z",
+      },
+    ],
+    rawDevice: {
+      battery: {
+        batteryPowered: true,
+        level: 0,
+      },
+      categoryId: "",
+      lockCodes: null,
+      name: "",
+      status: "ONLINE",
+    },
   })
-//there should not be any warnings here
+  //there should not be any warnings here
   expect(warnings.length).toBe(1)
-  expect(warnings[0]).toStrictEqual(<>Slow to Respond (took {"1 day"} to add code {"9999"})</>)
+  expect(warnings[0]).toStrictEqual(
+    <>
+      Slow to Respond (took {"1 day"} to add code {"9999"})
+    </>
+  )
 })
 
-test('warning for single none-responsive code', () => {
-    const warnings = getLockResponsivenessWarnings({
-        id: "",
-        unitId: "",
-        lastRefreshedAt: "",
-        lastWentOfflineAt: null,
-        lastWentOnlineAt: null,
-        managedLockCodes: [
-            {
-                deviceId: "",
-                code: "1234",
-                endAt: "2030-01-01T01:00:00Z",
-                id: "a25cd2cd-bf1b-4193-9c71-1d796d47aae7",
-                note: "Lock code present.",
-                reservation: {
-                    id: "",
-                    sync: false
-                },
-                status: "Enabled",
-                startAt: "2020-01-01T01:00:00Z",
-                startedAddingAt: "2020-01-01T01:00:00Z",
-                wasEnabledAt: "2020-01-02T01:00:00Z",
-                startedRemovingAt: null,
-                wasCompletedAt: null
-            },
-        ],
-        rawDevice: {
-            battery: {
-                batteryPowered: true,
-                level: 0,
-            },
-            categoryId: "",
-            lockCodes: null,
-            name: "",
-            status: "ONLINE",
-        }
-    })
-
-    expect(warnings.length).toBe(1)
-    expect(warnings[0]).toStrictEqual(<>Slow to Respond (took {"1 day"} to add code {"1234"})</>)
-})
-
-test('warning for single none-responsive completed code', () => {
+test("warning for single none-responsive code", () => {
   const warnings = getLockResponsivenessWarnings({
-      id: "",
-      unitId: "",
-      lastRefreshedAt: "",
-      lastWentOfflineAt: null,
-      lastWentOnlineAt: null,
-      managedLockCodes: [
-        {
-          deviceId: "",
-          "code": "3936",
-          "endAt": "2022-09-15T11:30:00-06:00",
-          "id": "81e8be93-6795-41ea-94d9-df76df002750",
-          "note": "Code was removed.",
-          "reservation": {
-            "id": "8833936@LiveRez.com",
-            "sync": true
-          },
-          "status": "Complete",
-          "startAt": "2022-09-13T15:00:00-06:00",
-          "startedAddingAt": "2022-09-13T21:01:35.24791605Z",
-          "wasEnabledAt": "2022-09-14T21:01:35.24791605Z",
-          "startedRemovingAt": "2022-09-15T18:11:12.388932124Z",
-          "wasCompletedAt": "2022-09-15T19:11:20.461120924Z"
+    id: "",
+    unitId: "",
+    lastRefreshedAt: "",
+    lastWentOfflineAt: null,
+    lastWentOnlineAt: null,
+    managedLockCodes: [
+      {
+        deviceId: "",
+        code: "1234",
+        endAt: "2030-01-01T01:00:00Z",
+        id: "a25cd2cd-bf1b-4193-9c71-1d796d47aae7",
+        note: "Lock code present.",
+        reservation: {
+          id: "",
+          sync: false,
         },
-      ],
-      rawDevice: {
-          battery: {
-              batteryPowered: true,
-              level: 0,
-          },
-          categoryId: "",
-          lockCodes: null,
-          name: "",
-          status: "ONLINE",
-      }
+        status: "Enabled",
+        startAt: "2020-01-01T01:00:00Z",
+        startedAddingAt: "2020-01-01T01:00:00Z",
+        wasEnabledAt: "2020-01-02T01:00:00Z",
+        startedRemovingAt: null,
+        wasCompletedAt: null,
+      },
+    ],
+    rawDevice: {
+      battery: {
+        batteryPowered: true,
+        level: 0,
+      },
+      categoryId: "",
+      lockCodes: null,
+      name: "",
+      status: "ONLINE",
+    },
   })
 
   expect(warnings.length).toBe(1)
-  expect(warnings[0]).toStrictEqual(<>Slow to Respond (took {"1 day"} to add code {"3936"})</>)
+  expect(warnings[0]).toStrictEqual(
+    <>
+      Slow to Respond (took {"1 day"} to add code {"1234"})
+    </>
+  )
 })
 
-test('no warning for single responsive code', () => {
-    const warnings = getLockResponsivenessWarnings({
-        id: "",
-        unitId: "",
-        lastRefreshedAt: "",
-        lastWentOfflineAt: null,
-        lastWentOnlineAt: null,
-        managedLockCodes: [
-            {
-                deviceId: "",
-                code: "1234",
-                endAt: "2030-01-01T01:00:00Z",
-                id: "a25cd2cd-bf1b-4193-9c71-1d796d47aae7",
-                note: "Lock code present.",
-                reservation: {
-                    id: "",
-                    sync: false
-                },
-                status: "Enabled",
-                startAt: "2020-01-01T01:00:00Z",
-                startedAddingAt: "2020-01-01T01:00:00Z",
-                wasEnabledAt: "2020-01-01T01:00:00Z",
-                startedRemovingAt: null,
-                wasCompletedAt: null
-            },
-        ],
-        rawDevice: {
-            battery: {
-                batteryPowered: true,
-                level: 0,
-            },
-            categoryId: "",
-            lockCodes: null,
-            name: "",
-            status: "ONLINE",
-        }
-    })
+test("warning for single none-responsive completed code", () => {
+  const warnings = getLockResponsivenessWarnings({
+    id: "",
+    unitId: "",
+    lastRefreshedAt: "",
+    lastWentOfflineAt: null,
+    lastWentOnlineAt: null,
+    managedLockCodes: [
+      {
+        deviceId: "",
+        code: "3936",
+        endAt: "2022-09-15T11:30:00-06:00",
+        id: "81e8be93-6795-41ea-94d9-df76df002750",
+        note: "Code was removed.",
+        reservation: {
+          id: "8833936@LiveRez.com",
+          sync: true,
+        },
+        status: "Complete",
+        startAt: "2022-09-13T15:00:00-06:00",
+        startedAddingAt: "2022-09-13T21:01:35.24791605Z",
+        wasEnabledAt: "2022-09-14T21:01:35.24791605Z",
+        startedRemovingAt: "2022-09-15T18:11:12.388932124Z",
+        wasCompletedAt: "2022-09-15T19:11:20.461120924Z",
+      },
+    ],
+    rawDevice: {
+      battery: {
+        batteryPowered: true,
+        level: 0,
+      },
+      categoryId: "",
+      lockCodes: null,
+      name: "",
+      status: "ONLINE",
+    },
+  })
 
-    expect(warnings.length).toBe(0)
+  expect(warnings.length).toBe(1)
+  expect(warnings[0]).toStrictEqual(
+    <>
+      Slow to Respond (took {"1 day"} to add code {"3936"})
+    </>
+  )
+})
+
+test("no warning for single responsive code", () => {
+  const warnings = getLockResponsivenessWarnings({
+    id: "",
+    unitId: "",
+    lastRefreshedAt: "",
+    lastWentOfflineAt: null,
+    lastWentOnlineAt: null,
+    managedLockCodes: [
+      {
+        deviceId: "",
+        code: "1234",
+        endAt: "2030-01-01T01:00:00Z",
+        id: "a25cd2cd-bf1b-4193-9c71-1d796d47aae7",
+        note: "Lock code present.",
+        reservation: {
+          id: "",
+          sync: false,
+        },
+        status: "Enabled",
+        startAt: "2020-01-01T01:00:00Z",
+        startedAddingAt: "2020-01-01T01:00:00Z",
+        wasEnabledAt: "2020-01-01T01:00:00Z",
+        startedRemovingAt: null,
+        wasCompletedAt: null,
+      },
+    ],
+    rawDevice: {
+      battery: {
+        batteryPowered: true,
+        level: 0,
+      },
+      categoryId: "",
+      lockCodes: null,
+      name: "",
+      status: "ONLINE",
+    },
+  })
+
+  expect(warnings.length).toBe(0)
 })
 /*
 test('jacob will give me a name', () => {
@@ -379,61 +391,65 @@ test('jacob will give me a name', () => {
     expect(warnings[0]).toStrictEqual(<>Slow to Respond (took {"about 7 hours"} to add code {"8226"})</>)
 })
 */
-test('no warning for old code', () => {
+test("no warning for old code", () => {
   const warnings = getLockResponsivenessWarnings({
-      id: "",
-      unitId: "",
-      lastRefreshedAt: "",
-      lastWentOfflineAt: null,
-      lastWentOnlineAt: null,
-      managedLockCodes: [
-        {
-          deviceId: "",
-          "code": "0000",
-          "endAt": "2022-09-15T11:30:00-06:00",
-          "id": "81e8be93-6795-41ea-94d9-df76df002750",
-          "note": "Code was removed.",
-          "reservation": {
-            "id": "8833936@LiveRez.com",
-            "sync": true
-          },
-          "status": "Complete",
-          "startAt": "2022-09-13T00:00:00-06:00",
-          "startedAddingAt": "2022-09-13T00:00:00Z",
-          "wasEnabledAt": "2022-09-13T00:00:00Z",
-          "startedRemovingAt": "2022-09-15T00:00:00Z",
-          "wasCompletedAt": "2022-09-15T00:00:00Z"
+    id: "",
+    unitId: "",
+    lastRefreshedAt: "",
+    lastWentOfflineAt: null,
+    lastWentOnlineAt: null,
+    managedLockCodes: [
+      {
+        deviceId: "",
+        code: "0000",
+        endAt: "2022-09-15T11:30:00-06:00",
+        id: "81e8be93-6795-41ea-94d9-df76df002750",
+        note: "Code was removed.",
+        reservation: {
+          id: "8833936@LiveRez.com",
+          sync: true,
         },
-        {
-          deviceId: "",
-          "code": "9999",
-          "endAt": "2021-09-15T11:30:00-06:00",
-          "id": "81e8be93-6795-41ea-94d9-df76df002750",
-          "note": "Code was removed.",
-          "reservation": {
-            "id": "8833936@LiveRez.com",
-            "sync": true
-          },
-          "status": "Complete",
-          "startAt": "2021-09-13T15:00:00-06:00",
-          "startedAddingAt": "2021-09-13T00:00:00Z",
-          "wasEnabledAt": "2021-09-14T00:00:00Z",
-          "startedRemovingAt": "2021-09-15T00:00:00Z",
-          "wasCompletedAt": "2021-09-15T00:00:00Z"
+        status: "Complete",
+        startAt: "2022-09-13T00:00:00-06:00",
+        startedAddingAt: "2022-09-13T00:00:00Z",
+        wasEnabledAt: "2022-09-13T00:00:00Z",
+        startedRemovingAt: "2022-09-15T00:00:00Z",
+        wasCompletedAt: "2022-09-15T00:00:00Z",
+      },
+      {
+        deviceId: "",
+        code: "9999",
+        endAt: "2021-09-15T11:30:00-06:00",
+        id: "81e8be93-6795-41ea-94d9-df76df002750",
+        note: "Code was removed.",
+        reservation: {
+          id: "8833936@LiveRez.com",
+          sync: true,
         },
-      ],
-      rawDevice: {
-          battery: {
-              batteryPowered: true,
-              level: 0,
-          },
-          categoryId: "",
-          lockCodes: null,
-          name: "",
-          status: "ONLINE",
-      }
+        status: "Complete",
+        startAt: "2021-09-13T15:00:00-06:00",
+        startedAddingAt: "2021-09-13T00:00:00Z",
+        wasEnabledAt: "2021-09-14T00:00:00Z",
+        startedRemovingAt: "2021-09-15T00:00:00Z",
+        wasCompletedAt: "2021-09-15T00:00:00Z",
+      },
+    ],
+    rawDevice: {
+      battery: {
+        batteryPowered: true,
+        level: 0,
+      },
+      categoryId: "",
+      lockCodes: null,
+      name: "",
+      status: "ONLINE",
+    },
   })
-//there should not be any warnings here
-  expect(warnings.length).toBe(1)
-  expect(warnings[0]).toStrictEqual(<>Slow to Respond (took {"1 day"} to add code {"9999"})</>)
+  //there should not be any warnings here
+  expect(warnings.length).toBe(0)
+  /*expect(warnings[0]).toStrictEqual(
+    <>
+      Slow to Respond (took {"1 day"} to add code {"9999"})
+    </>
+  )*/
 })
