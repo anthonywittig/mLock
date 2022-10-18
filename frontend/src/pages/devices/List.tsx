@@ -241,8 +241,6 @@ const getLockResponsivenessWarnings = (entity: DeviceT) => {
   for (let i = 0; i < entity.managedLockCodes.length; i++) {
     const lc = entity.managedLockCodes[i]
 
-    if (lc.status === "Scheduled") continue
-
     if (lc.status === "Complete") {
       if (!neverAddedCode) {
         if (!lc.wasEnabledAt) {
