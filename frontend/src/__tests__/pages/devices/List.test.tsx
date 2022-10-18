@@ -110,96 +110,92 @@ test("warning for single none-responsive code", () => {
 })
 
 test("warning for single none-responsive completed code", () => {
-    const warnings = getLockResponsivenessWarnings({
-      id: "",
-      unitId: "",
-      lastRefreshedAt: "",
-      lastWentOfflineAt: null,
-      lastWentOnlineAt: null,
-      managedLockCodes: [
-        {
-          deviceId: "",
-          code: "3936",
-          endAt: "2022-09-15T11:30:00-06:00",
-          id: "81e8be93-6795-41ea-94d9-df76df002750",
-          note: "Code was removed.",
-          reservation: {
-            id: "8833936@LiveRez.com",
-            sync: true,
-          },
-          status: "Complete",
-          startAt: "2022-09-13T15:00:00-06:00",
-          startedAddingAt: "2022-09-13T21:01:35.24791605Z",
-          wasEnabledAt: "2022-09-14T21:01:35.24791605Z",
-          startedRemovingAt: "2022-09-15T18:11:12.388932124Z",
-          wasCompletedAt: "2022-09-15T19:11:20.461120924Z",
+  const warnings = getLockResponsivenessWarnings({
+    id: "",
+    unitId: "",
+    lastRefreshedAt: "",
+    lastWentOfflineAt: null,
+    lastWentOnlineAt: null,
+    managedLockCodes: [
+      {
+        deviceId: "",
+        code: "3936",
+        endAt: "2022-09-15T11:30:00-06:00",
+        id: "81e8be93-6795-41ea-94d9-df76df002750",
+        note: "Code was removed.",
+        reservation: {
+          id: "8833936@LiveRez.com",
+          sync: true,
         },
-      ],
-      rawDevice: {
-        battery: {
-          batteryPowered: true,
-          level: 0,
-        },
-        categoryId: "",
-        lockCodes: null,
-        name: "",
-        status: "ONLINE",
+        status: "Complete",
+        startAt: "2022-09-13T15:00:00-06:00",
+        startedAddingAt: "2022-09-13T21:01:35.24791605Z",
+        wasEnabledAt: "2022-09-14T21:01:35.24791605Z",
+        startedRemovingAt: "2022-09-15T18:11:12.388932124Z",
+        wasCompletedAt: "2022-09-15T19:11:20.461120924Z",
       },
-    })
-
-    expect(warnings.length).toBe(1)
-    expect(warnings[0]).toStrictEqual(
-      <>
-        Slow to Respond (took {"1 day"} to add code {"3936"})
-      </>
-    )
+    ],
+    rawDevice: {
+      battery: {
+        batteryPowered: true,
+        level: 0,
+      },
+      categoryId: "",
+      lockCodes: null,
+      name: "",
+      status: "ONLINE",
+    },
   })
 
-  test("warning for single never added completed code", () => {
-    const warnings = getLockResponsivenessWarnings({
-      id: "",
-      unitId: "",
-      lastRefreshedAt: "",
-      lastWentOfflineAt: null,
-      lastWentOnlineAt: null,
-      managedLockCodes: [
-          {
-          deviceId: "",
-                      "code": "4622",
-                      "endAt": "2022-10-12T02:10:00Z",
-                      "id": "224818c5-735c-4911-b0ab-24c43c17d45e",
-                      "note": "Code was removed.",
-                      "reservation": {
-                          "id": "",
-                          "sync": false
-                      },
-                      "status": "Complete",
-                      "startAt": "2022-06-15T22:15:25.408Z",
-                      "startedAddingAt": "2022-10-12T01:36:00.600297352Z",
-                      "wasEnabledAt": null,
-                      "startedRemovingAt": null,
-                      "wasCompletedAt": "2022-10-12T02:10:59.840451195Z"
-          },
-      ],
-      rawDevice: {
-        battery: {
-          batteryPowered: true,
-          level: 0,
-        },
-        categoryId: "",
-        lockCodes: null,
-        name: "",
-        status: "ONLINE",
-      },
-    })
+  expect(warnings.length).toBe(1)
+  expect(warnings[0]).toStrictEqual(
+    <>
+      Slow to Respond (took {"1 day"} to add code {"3936"})
+    </>
+  )
+})
 
-    expect(warnings.length).toBe(1)
-    expect(warnings[0]).toStrictEqual(
-      <>
-        Not Responding (for code {"4622"})
-      </>
-    )
+test("warning for single never added completed code", () => {
+  const warnings = getLockResponsivenessWarnings({
+    id: "",
+    unitId: "",
+    lastRefreshedAt: "",
+    lastWentOfflineAt: null,
+    lastWentOnlineAt: null,
+    managedLockCodes: [
+      {
+        deviceId: "",
+        code: "4622",
+        endAt: "2022-10-12T02:10:00Z",
+        id: "224818c5-735c-4911-b0ab-24c43c17d45e",
+        note: "Code was removed.",
+        reservation: {
+          id: "",
+          sync: false,
+        },
+        status: "Complete",
+        startAt: "2022-06-15T22:15:25.408Z",
+        startedAddingAt: "2022-10-12T01:36:00.600297352Z",
+        wasEnabledAt: null,
+        startedRemovingAt: null,
+        wasCompletedAt: "2022-10-12T02:10:59.840451195Z",
+      },
+    ],
+    rawDevice: {
+      battery: {
+        batteryPowered: true,
+        level: 0,
+      },
+      categoryId: "",
+      lockCodes: null,
+      name: "",
+      status: "ONLINE",
+    },
   })
+
+  expect(warnings.length).toBe(1)
+  expect(warnings[0]).toStrictEqual(<>The code {"4622"} was never added</>)
+})
 
 test("no warning for single responsive code", () => {
   const warnings = getLockResponsivenessWarnings({
