@@ -238,8 +238,13 @@ const getLockResponsivenessWarnings = (entity: DeviceT) => {
   let goodCode = false
   let neverAddedCode = false
 
-  for (let i = 0; i < entity.managedLockCodes.length; i++) {
-    const lc = entity.managedLockCodes[i]
+  const sortedList = entity.managedLockCodes.sort((a, b) => {
+    // Might look something like this...
+    // return Date.parse(b.createdAt) - Date.parse(a.createdAt)
+  })
+
+  for (let i = 0; i < sortedList.length; i++) {
+    const lc = sortedList[i]
 
     if (lc.status === "Complete") {
       if (!neverAddedCode) {
