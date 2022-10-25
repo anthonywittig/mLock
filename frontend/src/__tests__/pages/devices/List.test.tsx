@@ -253,7 +253,7 @@ test("single warning for adding code (ignore an older completed code that never 
   })
 
   expect(warnings.length).toBe(1)
-  expect(warnings[0]).toStrictEqual(<>Slow to Respond (took {"1 day"} to add code {"1234"})</>)
+  expect(warnings[0]).toStrictEqual(<>Not Responding (for code {"1234"})</>)
 })
 
 test("no warning for a quickly added code (ignore an older completed code that never added)", () => {
