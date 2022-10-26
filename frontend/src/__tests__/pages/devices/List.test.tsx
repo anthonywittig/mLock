@@ -54,13 +54,72 @@ test("scheduled is ignored", () => {
       status: "ONLINE",
     },
   })
-  //there should not be any warnings here
+
   expect(warnings.length).toBe(1)
   expect(warnings[0]).toStrictEqual(
     <>
       Slow to Respond (took {"1 day"} to add code {"9999"})
     </>
   )
+})
+
+test("Warning for older adding code", () => {
+  const warnings = getLockResponsivenessWarnings({
+    id: "",
+    unitId: "",
+    lastRefreshedAt: "",
+    lastWentOfflineAt: null,
+    lastWentOnlineAt: null,
+    managedLockCodes: [
+      {
+        deviceId: "",
+        code: "0000",
+        endAt: "2021-09-15T11:30:00-06:00",
+        id: "81e8be93-6795-41ea-94d9-df76df002750",
+        note: "Code was removed.",
+        reservation: {
+          id: "8833936@LiveRez.com",
+          sync: true,
+        },
+        status: "Complete",
+        startAt: "2021-09-13T15:00:00-06:00",
+        startedAddingAt: "2021-09-13T00:00:00Z",
+        wasEnabledAt: "2021-09-13T00:00:00Z",
+        startedRemovingAt: "2021-09-15T00:00:00Z",
+        wasCompletedAt: "2021-09-15T00:00:00Z",
+      },
+      {
+        deviceId: "",
+        code: "9999",
+        endAt: "2022-09-15T11:30:00-06:00",
+        id: "91e8be93-6795-41ea-94d9-df76df002750",
+        note: "",
+        reservation: {
+          id: "8833936@LiveRez.com",
+          sync: true,
+        },
+        status: "Adding",
+        startAt: "2020-09-13T15:00:00-06:00",
+        startedAddingAt: "2020-09-13T00:00:00Z",
+        wasEnabledAt: null,
+        startedRemovingAt: null,
+        wasCompletedAt: null,
+      },
+    ],
+    rawDevice: {
+      battery: {
+        batteryPowered: true,
+        level: 0,
+      },
+      categoryId: "",
+      lockCodes: null,
+      name: "",
+      status: "ONLINE",
+    },
+  })
+
+  expect(warnings.length).toBe(1)
+  expect(warnings[0]).toStrictEqual(<>Not Responding (for code {"9999"})</>)
 })
 
 test("warning for single none-responsive code", () => {
@@ -662,11 +721,5 @@ test("no warning for old code", () => {
       status: "ONLINE",
     },
   })
-  //there should not be any warnings here
   expect(warnings.length).toBe(0)
-  /*expect(warnings[0]).toStrictEqual(
-    <>
-      Slow to Respond (took {"1 day"} to add code {"9999"})
-    </>
-  )*/
 })

@@ -236,8 +236,6 @@ const getLockResponsivenessWarnings = (entity: DeviceT) => {
   const tooSoon = sub(new Date(), { minutes: 10 })
   const expectedResponseInMinutes = 60
   let goodCode = false
-  let neverAddedCode = false
-  let newestMonth = 0
 
   const sortedList = entity.managedLockCodes.sort((a, b) => {
     return Date.parse(b.startAt) - Date.parse(a.startAt)
@@ -246,27 +244,18 @@ const getLockResponsivenessWarnings = (entity: DeviceT) => {
   for (let i = 0; i < sortedList.length; i++) {
     const lc = sortedList[i]
 
-    if (!lc.startedAddingAt) continue
-
-    const lockmonth =
-      parseInt(lc.startedAddingAt.slice(0, 4)) * 12 +
-      parseInt(lc.startedAddingAt.slice(5, 7))
-    if (newestMonth === 0 || newestMonth < lockmonth) newestMonth = lockmonth
-
-    if (lc.status === "Complete") {
-      if (!neverAddedCode && !lc.wasEnabledAt && newestMonth - lockmonth < 12) {
-        warnings.push(<>The code {lc.code} was never added</>)
-        neverAddedCode = true
-        continue
-      }
-      if (goodCode) continue
+    if (
+      (warnings.length && lc.status !== "Adding") ||
+      (goodCode && lc.status !== "Adding") ||
+      !lc.startedAddingAt //code is scheduled
+    ) {
+      continue
     }
-    // We really should consider the `startedRemovingAt` and `wasCompletedAt` timestamps, but right now we're only syncing every hour during the time that most codes are being removed.
 
     const sa = Date.parse(lc.startedAddingAt)
     if (isBefore(sa, tooSoon)) {
-      if (warnings.length && lc.status !== "Adding") {
-        // Once we have one warning, we'll only add additional ones for `Adding` codes.
+      if (lc.status === "Complete" && !lc.wasEnabledAt) {
+        warnings.push(<>The code {lc.code} was never added</>)
         continue
       }
       if (lc.wasEnabledAt) {
