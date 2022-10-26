@@ -1,5 +1,12 @@
 import React from "react"
-import { Badge, Button, OverlayTrigger, Tooltip } from "react-bootstrap"
+import {
+  Badge,
+  Button,
+  ListGroup,
+  OverlayTrigger,
+  Table,
+  Tooltip,
+} from "react-bootstrap"
 import { Loading } from "../utils/Loading"
 import { StandardFetch } from "../utils/FetchHelper"
 import { formatDistance, isAfter, isBefore, sub } from "date-fns"
@@ -50,10 +57,7 @@ const List = () => {
   const render = () => {
     return (
       <>
-        <div
-          className="card"
-          style={{ marginBottom: "1rem", marginTop: "1rem" }}
-        >
+        <div className="card">
           <div className="card-body">
             <h2 className="card-title">Devices</h2>
             {renderEntities()}
@@ -68,7 +72,7 @@ const List = () => {
       return <Loading />
     }
     return (
-      <table className="table table-responsive-sm">
+      <Table responsive>
         <thead>
           <tr>
             <th scope="col">Name</th>
@@ -88,18 +92,18 @@ const List = () => {
               </th>
               <td>{renderEntityStatus(entity)}</td>
               <td>{renderEntityBatteryLevel(entity)}</td>
-              <th scope="row">
+              <td>
                 <Link to={"/units/" + entity.unitId}>
                   <Button variant="link">
                     {units.find((e) => e.id === entity.unitId)?.name}
                   </Button>
                 </Link>
-              </th>
+              </td>
               <td>{renderDeleteButton(entity)}</td>
             </tr>
           ))}
         </tbody>
-      </table>
+      </Table>
     )
   }
 
@@ -143,15 +147,12 @@ const List = () => {
     warnings.push.apply(warnings, getLastWentOfflineWarnings(entity))
     warnings.push.apply(warnings, getLockResponsivenessWarnings(entity))
 
-    if (warnings.length === 1) {
-      return <>{warnings[0]}</>
-    }
     return (
-      <ul>
+      <ListGroup className="flush">
         {warnings.map((warn) => (
-          <li>{warn}</li>
+          <ListGroup.Item className="border-0">{warn}</ListGroup.Item>
         ))}
-      </ul>
+      </ListGroup>
     )
   }
 
