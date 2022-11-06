@@ -147,13 +147,7 @@ const List = () => {
     warnings.push.apply(warnings, getLastWentOfflineWarnings(entity))
     warnings.push.apply(warnings, getLockResponsivenessWarnings(entity))
 
-    return (
-      <ListGroup className="flush">
-        {warnings.map((warn) => (
-          <ListGroup.Item className="border-0">{warn}</ListGroup.Item>
-        ))}
-      </ListGroup>
-    )
+    return <ListGroup>{warnings.map((warn) => warn)}</ListGroup>
   }
 
   const renderEntityBatteryLevel = (entity: DeviceT) => {
@@ -181,7 +175,7 @@ const List = () => {
     const warnings: JSX.Element[] = []
 
     if (entity.rawDevice.status !== "ONLINE") {
-      warnings.push(<Badge variant="danger">Offline</Badge>)
+      warnings.push(<ListGroup.Item variant="danger">Offline</ListGroup.Item>)
     }
 
     return warnings
@@ -195,7 +189,11 @@ const List = () => {
 
     if (isBefore(lr, recently)) {
       const distance = formatDistance(lr, new Date(), { addSuffix: true })
-      warnings.push(<>Last Data Sync: {distance}</>)
+      warnings.push(
+        <ListGroup.Item variant="light">
+          Last Data Sync: {distance}
+        </ListGroup.Item>
+      )
     }
 
     return warnings
@@ -215,10 +213,16 @@ const List = () => {
 
     if (entity.rawDevice.status !== "ONLINE") {
       const distance = formatDistance(lwoffd, new Date(), { addSuffix: true })
-      warnings.push(<>Went Offline: {distance}</>)
+      warnings.push(
+        <ListGroup.Item variant="light">
+          Went Offline: {distance}
+        </ListGroup.Item>
+      )
     } else if (isAfter(lwond, recently)) {
       const distance = formatDistance(lwond, new Date(), { addSuffix: true })
-      warnings.push(<>Went Online: {distance}</>)
+      warnings.push(
+        <ListGroup.Item variant="light">Went Online: {distance}</ListGroup.Item>
+      )
     }
 
     return warnings
@@ -256,7 +260,11 @@ const getLockResponsivenessWarnings = (entity: DeviceT) => {
     const sa = Date.parse(lc.startedAddingAt)
     if (isBefore(sa, tooSoon)) {
       if (lc.status === "Complete" && !lc.wasEnabledAt) {
-        warnings.push(<>The code {lc.code} was never added</>)
+        warnings.push(
+          <ListGroup.Item variant="light">
+            The code {lc.code} was never added
+          </ListGroup.Item>
+        )
         continue
       }
       if (lc.wasEnabledAt) {
@@ -265,9 +273,9 @@ const getLockResponsivenessWarnings = (entity: DeviceT) => {
         if (expectedResponseInMinutes < minutesBetween) {
           const distance = formatDistance(sa, wc)
           warnings.push(
-            <>
+            <ListGroup.Item variant="light">
               Slow to Respond (took {distance} to add code {lc.code})
-            </>
+            </ListGroup.Item>
           )
         } else {
           goodCode = true

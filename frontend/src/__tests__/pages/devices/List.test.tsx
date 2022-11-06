@@ -1,4 +1,5 @@
 import { getLockResponsivenessWarnings } from "../../../pages/devices/List"
+import { ListGroup } from "react-bootstrap"
 
 test("scheduled is ignored", () => {
   const warnings = getLockResponsivenessWarnings({
@@ -57,9 +58,9 @@ test("scheduled is ignored", () => {
 
   expect(warnings.length).toBe(1)
   expect(warnings[0]).toStrictEqual(
-    <>
+    <ListGroup.Item variant="light">
       Slow to Respond (took {"1 day"} to add code {"9999"})
-    </>
+    </ListGroup.Item>
   )
 })
 
@@ -162,9 +163,9 @@ test("warning for single none-responsive code", () => {
 
   expect(warnings.length).toBe(1)
   expect(warnings[0]).toStrictEqual(
-    <>
+    <ListGroup.Item variant="light">
       Slow to Respond (took {"1 day"} to add code {"1234"})
-    </>
+    </ListGroup.Item>
   )
 })
 
@@ -208,9 +209,9 @@ test("warning for single none-responsive completed code", () => {
 
   expect(warnings.length).toBe(1)
   expect(warnings[0]).toStrictEqual(
-    <>
+    <ListGroup.Item variant="light">
       Slow to Respond (took {"1 day"} to add code {"3936"})
-    </>
+    </ListGroup.Item>
   )
 })
 
@@ -253,7 +254,11 @@ test("warning for single never added completed code", () => {
   })
 
   expect(warnings.length).toBe(1)
-  expect(warnings[0]).toStrictEqual(<>The code {"4622"} was never added</>)
+  expect(warnings[0]).toStrictEqual(
+    <ListGroup.Item variant="light">
+      The code {"4622"} was never added
+    </ListGroup.Item>
+  )
 })
 
 test("single warning for adding code (ignore an older completed code that never added)", () => {
@@ -429,7 +434,11 @@ test("warning for a completed code despite having an old enabled code", () => {
   })
 
   expect(warnings.length).toBe(1)
-  expect(warnings[0]).toStrictEqual(<>The code {"4622"} was never added</>)
+  expect(warnings[0]).toStrictEqual(
+    <ListGroup.Item variant="light">
+      The code {"4622"} was never added
+    </ListGroup.Item>
+  )
 })
 
 test("no warning for single responsive code", () => {
