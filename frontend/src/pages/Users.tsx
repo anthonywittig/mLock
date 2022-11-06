@@ -99,7 +99,7 @@ export class Users extends React.Component<Props, State> {
       return <Loading />
     }
     return (
-      <Table className="table table-responsive-sm">
+      <Table responsive>
         <thead>
           <tr>
             <th scope="col">Email Address</th>
