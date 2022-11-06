@@ -1,5 +1,12 @@
 import React from "react"
-import { Badge, Button, OverlayTrigger, Tooltip } from "react-bootstrap"
+import {
+  Badge,
+  Button,
+  ListGroup,
+  OverlayTrigger,
+  Table,
+  Tooltip,
+} from "react-bootstrap"
 import { Loading } from "../utils/Loading"
 import { StandardFetch } from "../utils/FetchHelper"
 import { formatDistance, isAfter, isBefore, sub } from "date-fns"
@@ -50,10 +57,7 @@ const List = () => {
   const render = () => {
     return (
       <>
-        <div
-          className="card"
-          style={{ marginBottom: "1rem", marginTop: "1rem" }}
-        >
+        <div className="card">
           <div className="card-body">
             <h2 className="card-title">Devices</h2>
             {renderEntities()}
@@ -68,7 +72,7 @@ const List = () => {
       return <Loading />
     }
     return (
-      <table className="table table-responsive-sm">
+      <Table responsive>
         <thead>
           <tr>
             <th scope="col">Name</th>
@@ -88,18 +92,18 @@ const List = () => {
               </th>
               <td>{renderEntityStatus(entity)}</td>
               <td>{renderEntityBatteryLevel(entity)}</td>
-              <th scope="row">
+              <td>
                 <Link to={"/units/" + entity.unitId}>
                   <Button variant="link">
                     {units.find((e) => e.id === entity.unitId)?.name}
                   </Button>
                 </Link>
-              </th>
+              </td>
               <td>{renderDeleteButton(entity)}</td>
             </tr>
           ))}
         </tbody>
-      </table>
+      </Table>
     )
   }
 
@@ -143,16 +147,7 @@ const List = () => {
     warnings.push.apply(warnings, getLastWentOfflineWarnings(entity))
     warnings.push.apply(warnings, getLockResponsivenessWarnings(entity))
 
-    if (warnings.length === 1) {
-      return <>{warnings[0]}</>
-    }
-    return (
-      <ul>
-        {warnings.map((warn) => (
-          <li>{warn}</li>
-        ))}
-      </ul>
-    )
+    return <ListGroup>{warnings.map((warn) => warn)}</ListGroup>
   }
 
   const renderEntityBatteryLevel = (entity: DeviceT) => {
@@ -180,7 +175,7 @@ const List = () => {
     const warnings: JSX.Element[] = []
 
     if (entity.rawDevice.status !== "ONLINE") {
-      warnings.push(<Badge variant="danger">Offline</Badge>)
+      warnings.push(<ListGroup.Item variant="danger">Offline</ListGroup.Item>)
     }
 
     return warnings
@@ -194,7 +189,11 @@ const List = () => {
 
     if (isBefore(lr, recently)) {
       const distance = formatDistance(lr, new Date(), { addSuffix: true })
-      warnings.push(<>Last Data Sync: {distance}</>)
+      warnings.push(
+        <ListGroup.Item variant="light">
+          Last Data Sync: {distance}
+        </ListGroup.Item>
+      )
     }
 
     return warnings
@@ -214,10 +213,16 @@ const List = () => {
 
     if (entity.rawDevice.status !== "ONLINE") {
       const distance = formatDistance(lwoffd, new Date(), { addSuffix: true })
-      warnings.push(<>Went Offline: {distance}</>)
+      warnings.push(
+        <ListGroup.Item variant="light">
+          Went Offline: {distance}
+        </ListGroup.Item>
+      )
     } else if (isAfter(lwond, recently)) {
       const distance = formatDistance(lwond, new Date(), { addSuffix: true })
-      warnings.push(<>Went Online: {distance}</>)
+      warnings.push(
+        <ListGroup.Item variant="light">Went Online: {distance}</ListGroup.Item>
+      )
     }
 
     return warnings
@@ -255,7 +260,11 @@ const getLockResponsivenessWarnings = (entity: DeviceT) => {
     const sa = Date.parse(lc.startedAddingAt)
     if (isBefore(sa, tooSoon)) {
       if (lc.status === "Complete" && !lc.wasEnabledAt) {
-        warnings.push(<>The code {lc.code} was never added</>)
+        warnings.push(
+          <ListGroup.Item variant="light">
+            The code {lc.code} was never added
+          </ListGroup.Item>
+        )
         continue
       }
       if (lc.wasEnabledAt) {
@@ -264,9 +273,9 @@ const getLockResponsivenessWarnings = (entity: DeviceT) => {
         if (expectedResponseInMinutes < minutesBetween) {
           const distance = formatDistance(sa, wc)
           warnings.push(
-            <>
+            <ListGroup.Item variant="light">
               Slow to Respond (took {distance} to add code {lc.code})
-            </>
+            </ListGroup.Item>
           )
         } else {
           goodCode = true
