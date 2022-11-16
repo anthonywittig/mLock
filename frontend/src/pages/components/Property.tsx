@@ -122,8 +122,12 @@ export class Property extends React.Component<Props, State> {
 
     return (
       <tr key={this.props.entityName}>
-        <th scope="row">{this.props.entityName}</th>
-        <td>{this.props.updatedBy}</td>
+        <th scope="row">
+          <span className="btn">{this.props.entityName}</span>
+        </th>
+        <td>
+          <span className="btn">{this.props.updatedBy}</span>
+        </td>
         <td>
           <Button
             variant="secondary"
