@@ -1,134 +1,140 @@
-import React from 'react'
-import { Loading } from '../utils/Loading'
-import { StandardFetch } from '../utils/FetchHelper'
-import { Unit } from './Unit'
-
+import React from "react"
+import { Loading } from "../utils/Loading"
+import { StandardFetch } from "../utils/FetchHelper"
+import { Unit } from "./Unit"
 
 type Device = {
-    id: string,
-    name: string,
+  id: string
+  name: string
 }
 
 type Entity = {
-    devices: Device[],
-    id: string,
-    name: string,
-    propertyId: string,
-    updatedBy: string,
+  devices: Device[]
+  id: string
+  name: string
+  propertyId: string
+  updatedBy: string
 }
 
 type Property = {
-    id: string,
-    name: string,
-    updatedBy: string,
+  id: string
+  name: string
+  updatedBy: string
 }
 
 type Props = {}
 
 type State = {
-    entities: Entity[],
-    loadingEntities: boolean,
-    properties: Property[],
+  entities: Entity[]
+  loadingEntities: boolean
+  properties: Property[]
 }
 
 const Endpoint = "units"
 
 export class List extends React.Component<Props, State> {
-    state: Readonly<State> = {
-        entities: [],
-        loadingEntities: true,
-        properties: [],
-    }
+  state: Readonly<State> = {
+    entities: [],
+    loadingEntities: true,
+    properties: [],
+  }
 
-    componentDidMount() {
-        StandardFetch(Endpoint, {method: "GET"})
-        .then(response => response.json())
-        .then(response => {
-            this.setState({
-                entities: response.entities,
-                loadingEntities: false,
-                properties: response.extra.properties,
-            })
-        })
-        .catch(err => {
-            // TODO: indicate error.
-            console.log(err)
-        })
-    }
-
-    removeEntity(id: string) {
+  componentDidMount() {
+    StandardFetch(Endpoint, { method: "GET" })
+      .then((response) => response.json())
+      .then((response) => {
         this.setState({
-            entities: this.state.entities.filter(value => {
-                return value.id !== id
-            }),
+          entities: response.entities,
+          loadingEntities: false,
+          properties: response.extra.properties,
         })
-    }
+      })
+      .catch((err) => {
+        // TODO: indicate error.
+        console.log(err)
+      })
+  }
 
-    addEntity(id: string, name: string, propertyId: string, updatedBy: string) {
-        const devices: Device[] = []
-        this.setState({
-            entities: this.state.entities.concat([{
-                devices,
-                id,
-                name,
-                propertyId,
-                updatedBy,
-            }]),
-        })
-    }
+  removeEntity(id: string) {
+    this.setState({
+      entities: this.state.entities.filter((value) => {
+        return value.id !== id
+      }),
+    })
+  }
 
-    renderEntitiesTable() {
-        if (this.state.loadingEntities) {
-            return <Loading />
-        }
-        return (
-            <table className="table table-responsive-sm">
-                <thead>
-                    <tr>
-                        <th scope="col">Name</th>
-                        <th scope="col">Devices</th>
-                        <th scope="col">Property</th>
-                        <th scope="col">Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {this.state.entities.map(entity =>
-                        <Unit
-                            devices={entity.devices}
-                            entityId={entity.id}
-                            entityName={entity.name}
-                            propertyId={entity.propertyId}
-                            updatedBy={entity.updatedBy}
-                            properties={this.state.properties}
-                            addEntity={null}
-                            removeEntity={id => this.removeEntity(id)}
-                        />
-                    )}
-                    <Unit
-                        devices={[] as Device[]}
-                        entityId=""
-                        entityName=""
-                        propertyId=""
-                        updatedBy=""
-                        properties={this.state.properties}
-                        addEntity={(id, name, propertyId, updatedBy) => this.addEntity(id, name, propertyId, updatedBy)}
-                        removeEntity={null}
-                    />
-                </tbody>
-            </table>
-        )
-    }
+  addEntity(id: string, name: string, propertyId: string, updatedBy: string) {
+    const devices: Device[] = []
+    this.setState({
+      entities: this.state.entities.concat([
+        {
+          devices,
+          id,
+          name,
+          propertyId,
+          updatedBy,
+        },
+      ]),
+    })
+  }
 
-    render() {
-        return (
-            <div>
-                <div className="card" style={{marginBottom: "1rem", marginTop: "1rem"}}>
-                    <div className="card-body">
-                    <h2 className="card-title">Units</h2>
-                    {this.renderEntitiesTable()}
-                    </div>
-                </div>
-            </div>
-        )
+  renderEntitiesTable() {
+    if (this.state.loadingEntities) {
+      return <Loading />
     }
+    return (
+      <table className="table table-responsive-sm">
+        <thead>
+          <tr>
+            <th scope="col">Name</th>
+            <th scope="col">Devices</th>
+            <th scope="col">Property</th>
+            <th scope="col">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {this.state.entities.map((entity) => (
+            <Unit
+              devices={entity.devices}
+              entityId={entity.id}
+              entityName={entity.name}
+              propertyId={entity.propertyId}
+              updatedBy={entity.updatedBy}
+              properties={this.state.properties}
+              addEntity={null}
+              removeEntity={(id) => this.removeEntity(id)}
+            />
+          ))}
+          <Unit
+            devices={[] as Device[]}
+            entityId=""
+            entityName=""
+            propertyId=""
+            updatedBy=""
+            properties={this.state.properties}
+            addEntity={(id, name, propertyId, updatedBy) =>
+              this.addEntity(id, name, propertyId, updatedBy)
+            }
+            removeEntity={null}
+          />
+        </tbody>
+      </table>
+    )
+  }
+
+  render() {
+    return (
+      <div>
+        <div
+          className="card"
+          style={{ marginBottom: "1rem", marginTop: "1rem" }}
+        >
+          <div className="card-body">
+            <h2 className="card-title">Units</h2>
+            {this.renderEntitiesTable()}
+          </div>
+        </div>
+      </div>
+    )
+  }
 }
