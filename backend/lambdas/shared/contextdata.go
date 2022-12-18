@@ -7,12 +7,14 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/aws/aws-sdk-go-v2/service/ses"
+	"github.com/aws/aws-sdk-go-v2/service/sqs"
 )
 
 type ContextData struct {
 	DB   *sql.DB
 	DY   *dynamodb.Client
 	SES  *ses.Client
+	SQS  *sqs.Client
 	User *User
 }
 

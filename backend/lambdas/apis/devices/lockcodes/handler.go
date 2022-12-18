@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"mlock/lambdas/shared"
 	"mlock/lambdas/shared/dynamo/device"
+	"mlock/lambdas/shared/sqs"
 	"net/http"
 	"regexp"
 	"time"
@@ -62,9 +63,14 @@ func HandleRequest(ctx context.Context, req events.APIGatewayProxyRequest) (*sha
 		return nil, fmt.Errorf("unable to find entity: %s", deviceID)
 	}
 
+	queue, err := sqs.NewSQSService(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("error creating sqs service: %s", err.Error())
+	}
+
 	switch req.HTTPMethod {
 	case "POST":
-		return create(ctx, req, d)
+		return create(ctx, req, d, queue)
 	case "PUT":
 		if len(match) != 3 {
 			return nil, fmt.Errorf("regex didn't match path for PUT")
@@ -75,13 +81,18 @@ func HandleRequest(ctx context.Context, req events.APIGatewayProxyRequest) (*sha
 			return nil, fmt.Errorf("error parsing device id: %s", err.Error())
 		}
 
-		return update(ctx, req, d, mlcID)
+		return update(ctx, req, d, mlcID, queue)
 	default:
 		return shared.NewAPIResponse(http.StatusNotImplemented, "not implemented")
 	}
 }
 
-func create(ctx context.Context, req events.APIGatewayProxyRequest, d shared.Device) (*shared.APIResponse, error) {
+func create(
+	ctx context.Context,
+	req events.APIGatewayProxyRequest,
+	d shared.Device,
+	q *sqs.SQSService,
+) (*shared.APIResponse, error) {
 	var body CreateRequest
 	if err := json.Unmarshal([]byte(req.Body), &body); err != nil {
 		return nil, fmt.Errorf("error unmarshalling body: %s", err.Error())
@@ -121,12 +132,20 @@ func create(ctx context.Context, req events.APIGatewayProxyRequest, d shared.Dev
 		return nil, fmt.Errorf("error updating device: %s", err.Error())
 	}
 
-	// TODO: kick off poll schedule lambda
+	if err := q.SendBlankMessageToPollSchedulesQueue(ctx); err != nil {
+		return nil, fmt.Errorf("error sending message to queue: %s", err.Error())
+	}
 
 	return shared.NewAPIResponse(http.StatusOK, CreateResponse{Entity: d})
 }
 
-func update(ctx context.Context, req events.APIGatewayProxyRequest, d shared.Device, mlcID uuid.UUID) (*shared.APIResponse, error) {
+func update(
+	ctx context.Context,
+	req events.APIGatewayProxyRequest,
+	d shared.Device,
+	mlcID uuid.UUID,
+	q *sqs.SQSService,
+) (*shared.APIResponse, error) {
 	var body UpdateBody
 	if err := json.Unmarshal([]byte(req.Body), &body); err != nil {
 		return nil, fmt.Errorf("error unmarshalling body: %s", err.Error())
@@ -165,7 +184,9 @@ func update(ctx context.Context, req events.APIGatewayProxyRequest, d shared.Dev
 		return nil, fmt.Errorf("error updating device: %s", err.Error())
 	}
 
-	// TODO: kick off poll schedule lambda
+	if err := q.SendBlankMessageToPollSchedulesQueue(ctx); err != nil {
+		return nil, fmt.Errorf("error sending message to queue: %s", err.Error())
+	}
 
 	return shared.NewAPIResponse(http.StatusOK, UpdateResponse{Entity: d})
 }
