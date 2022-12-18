@@ -4,11 +4,12 @@ go 1.16
 
 require (
 	github.com/aws/aws-lambda-go v1.20.0
-	github.com/aws/aws-sdk-go-v2 v1.13.0
+	github.com/aws/aws-sdk-go-v2 v1.17.3
 	github.com/aws/aws-sdk-go-v2/config v1.13.1
 	github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue v1.6.0
 	github.com/aws/aws-sdk-go-v2/service/dynamodb v1.13.0
 	github.com/aws/aws-sdk-go-v2/service/ses v1.12.0
+	github.com/aws/aws-sdk-go-v2/service/sqs v1.19.17 // indirect
 	github.com/futurenda/google-auth-id-token-verifier v0.0.0-20170311140316-2a5b89f28b7e
 	github.com/golang/mock v1.6.0
 	github.com/google/uuid v1.1.2
