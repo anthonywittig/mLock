@@ -13,6 +13,7 @@ import (
 	"mlock/lambdas/shared/scheduler"
 	"mlock/lambdas/shared/ses"
 	mshared "mlock/shared"
+	"sort"
 	"strings"
 	"time"
 
@@ -188,6 +189,8 @@ func updateDevicesFromController(
 
 	transitioningToOfflineDevices := []shared.Device{}
 	offlineDevices := []shared.Device{}
+	transitioningToLowBatteryDevices := []shared.Device{}
+	lowBatteryDevices := []shared.Device{}
 
 	online, offline, err := ezlo.GetControllers(ctx)
 	if err != nil {
@@ -198,7 +201,7 @@ func updateDevicesFromController(
 		ctxUpdateDevices, cancel := context.WithTimeout(ctx, 40*time.Second)
 		defer cancel()
 
-		tTODevices, oDevices, err := updateOnlineDevicesFromController(
+		tTODevices, oDevices, tTLDevices, lDevices, err := updateOnlineDevicesFromController(
 			ctxUpdateDevices,
 			emailService,
 			c.PKDevice,
@@ -221,6 +224,8 @@ func updateDevicesFromController(
 		}
 		transitioningToOfflineDevices = append(transitioningToOfflineDevices, tTODevices...)
 		offlineDevices = append(offlineDevices, oDevices...)
+		transitioningToLowBatteryDevices = append(transitioningToLowBatteryDevices, tTLDevices...)
+		lowBatteryDevices = append(lowBatteryDevices, lDevices...)
 	}
 
 	for _, c := range offline {
@@ -248,6 +253,9 @@ func updateDevicesFromController(
 	}
 
 	if err := sendOfflineDeviceEmail(ctx, emailService, transitioningToOfflineDevices, offlineDevices); err != nil {
+		return fmt.Errorf("error sending offline device email: %s", err.Error())
+	}
+	if err := sendLowBatteryDeviceEmail(ctx, emailService, transitioningToLowBatteryDevices, lowBatteryDevices); err != nil {
 		return fmt.Errorf("error sending offline device email: %s", err.Error())
 	}
 
@@ -315,14 +323,18 @@ func updateOnlineDevicesFromController(
 ) (
 	[]shared.Device,
 	[]shared.Device,
+	[]shared.Device,
+	[]shared.Device,
 	error,
 ) {
 	transitioningToOfflineDevices := []shared.Device{}
 	offlineDevices := []shared.Device{}
+	transitioningToLowBatteryDevices := []shared.Device{}
+	lowBatteryDevices := []shared.Device{}
 
 	rds, err := deviceController.GetDevices(ctx, controllerID)
 	if err != nil {
-		return transitioningToOfflineDevices, offlineDevices, fmt.Errorf("error getting devices from controller: %s", err.Error())
+		return transitioningToOfflineDevices, offlineDevices, transitioningToLowBatteryDevices, lowBatteryDevices, fmt.Errorf("error getting devices from controller: %s", err.Error())
 	}
 
 	for _, rd := range rds {
@@ -342,9 +354,13 @@ func updateOnlineDevicesFromController(
 				// We found a match.
 				var tTOD []shared.Device
 				var oDs []shared.Device
-				d, tTOD, oDs = updateDeviceWithRawData(ed, rd)
+				var tTLDevices []shared.Device
+				var lDevices []shared.Device
+				d, tTOD, oDs, tTLDevices, lDevices = updateDeviceWithRawData(ed, rd)
 				transitioningToOfflineDevices = append(transitioningToOfflineDevices, tTOD...)
 				offlineDevices = append(offlineDevices, oDs...)
+				transitioningToLowBatteryDevices = append(transitioningToLowBatteryDevices, tTLDevices...)
+				lowBatteryDevices = append(lowBatteryDevices, lDevices...)
 			}
 		}
 
@@ -353,7 +369,7 @@ func updateOnlineDevicesFromController(
 		d.LastRefreshedAt = time.Now()
 
 		if _, err := deviceRepository.Put(ctx, d); err != nil {
-			return transitioningToOfflineDevices, offlineDevices, fmt.Errorf("error putting device: %s", err.Error())
+			return transitioningToOfflineDevices, offlineDevices, transitioningToLowBatteryDevices, lowBatteryDevices, fmt.Errorf("error putting device: %s", err.Error())
 		}
 	}
 
@@ -378,29 +394,43 @@ func updateOnlineDevicesFromController(
 		} else {
 			rd := ed.RawDevice
 			rd.Status = shared.DeviceStatusOffline // Fake an offline status.
-			d, tTOD, oDs := updateDeviceWithRawData(ed, rd)
+			d, tTOD, oDs, tTLDevices, lDevices := updateDeviceWithRawData(ed, rd)
 			d.RawDevice = rd
 			if _, err := deviceRepository.Put(ctx, d); err != nil {
-				return transitioningToOfflineDevices, offlineDevices, fmt.Errorf("error putting device: %s", err.Error())
+				return transitioningToOfflineDevices, offlineDevices, transitioningToLowBatteryDevices, lowBatteryDevices, fmt.Errorf("error putting device: %s", err.Error())
 			}
 			transitioningToOfflineDevices = append(transitioningToOfflineDevices, tTOD...)
 			offlineDevices = append(offlineDevices, oDs...)
+			transitioningToLowBatteryDevices = append(transitioningToLowBatteryDevices, tTLDevices...)
+			lowBatteryDevices = append(lowBatteryDevices, lDevices...)
 		}
 	}
 
-	return transitioningToOfflineDevices, offlineDevices, nil
+	return transitioningToOfflineDevices, offlineDevices, transitioningToLowBatteryDevices, lowBatteryDevices, nil
 }
 
 func updateDeviceWithRawData(d shared.Device, rd shared.RawDevice) (
 	shared.Device,
 	[]shared.Device,
 	[]shared.Device,
+	[]shared.Device,
+	[]shared.Device,
 ) {
 	transitioningToOfflineDevices := []shared.Device{}
 	offlineDevices := []shared.Device{}
+	transitioningToLowBatteryDevices := []shared.Device{}
+	lowBatteryDevices := []shared.Device{}
 
 	wasOffline := d.RawDevice.Status == shared.DeviceStatusOffline
 	isOffline := rd.Status == shared.DeviceStatusOffline
+
+	wasLowBattery := false
+	isLowBattery := false
+	if d.RawDevice.Battery.BatteryPowered {
+		lowBatteryLevel := 89
+		wasLowBattery = d.RawDevice.Battery.Level <= lowBatteryLevel
+		isLowBattery = rd.Battery.Level <= lowBatteryLevel
+	}
 
 	if wasOffline && !isOffline {
 		now := time.Now()
@@ -413,6 +443,13 @@ func updateDeviceWithRawData(d shared.Device, rd shared.RawDevice) (
 			now := time.Now()
 			d.LastWentOfflineAt = &now
 			transitioningToOfflineDevices = append(transitioningToOfflineDevices, d)
+		}
+	}
+
+	if isLowBattery {
+		lowBatteryDevices = append(lowBatteryDevices, d)
+		if !wasLowBattery {
+			transitioningToLowBatteryDevices = append(transitioningToLowBatteryDevices, d)
 		}
 	}
 
@@ -431,7 +468,7 @@ func updateDeviceWithRawData(d shared.Device, rd shared.RawDevice) (
 		d.History = d.History[historyStartIndex:]
 	}
 
-	return d, transitioningToOfflineDevices, offlineDevices
+	return d, transitioningToOfflineDevices, offlineDevices, transitioningToLowBatteryDevices, lowBatteryDevices
 }
 
 func sendOfflineDeviceEmail(ctx context.Context, emailService *ses.EmailService, transitioningToOfflineDevices []shared.Device, offlineDevices []shared.Device) error {
@@ -456,6 +493,54 @@ func sendOfflineDeviceEmail(ctx context.Context, emailService *ses.EmailService,
 	sb.WriteString("</ul>")
 
 	if err := emailService.SendEmailToAdmins(ctx, "zcclock - Devices That Recently Went Offline", sb.String()); err != nil {
+		return fmt.Errorf("error sending email: %s", err.Error())
+	}
+
+	return nil
+}
+
+func sendLowBatteryDeviceEmail(
+	ctx context.Context,
+	emailService *ses.EmailService,
+	transitioningToLowBatteryDevices []shared.Device,
+	lowBatteryDevices []shared.Device,
+) error {
+	if len(transitioningToLowBatteryDevices) == 0 {
+		return nil
+	}
+
+	sort.Slice(transitioningToLowBatteryDevices, func(i, j int) bool {
+		return transitioningToLowBatteryDevices[i].RawDevice.Battery.Level < transitioningToLowBatteryDevices[j].RawDevice.Battery.Level
+	})
+	sort.Slice(lowBatteryDevices, func(i, j int) bool {
+		return lowBatteryDevices[i].RawDevice.Battery.Level < lowBatteryDevices[j].RawDevice.Battery.Level
+	})
+
+	var sb strings.Builder
+
+	sb.WriteString("<h1>Devices That Recently Changed to Low Battery Levels</h1>")
+	sb.WriteString("<ul>")
+	for _, d := range transitioningToLowBatteryDevices {
+		sb.WriteString(fmt.Sprintf("<li>Device: %s</li>", d.RawDevice.Name))
+	}
+	sb.WriteString("</ul>")
+
+	sb.WriteString("<h1>Devices That Currently Have Low Battery Levels</h1>")
+	sb.WriteString("<ul>")
+	for _, d := range lowBatteryDevices {
+		sb.WriteString(fmt.Sprintf(
+			"<li>Device: %s, Battery Level: %d</li>",
+			d.RawDevice.Name,
+			d.RawDevice.Battery.Level,
+		))
+	}
+	sb.WriteString("</ul>")
+
+	if err := emailService.SendEmailToAdmins(
+		ctx,
+		"zcclock - Devices That Recently Changed to Low Battery Levels",
+		sb.String(),
+	); err != nil {
 		return fmt.Errorf("error sending email: %s", err.Error())
 	}
 

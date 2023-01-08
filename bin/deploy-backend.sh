@@ -11,8 +11,8 @@ go vet ./...
 go test ./...
 cd $SCRIPT_DIR
 
-./deploy-lambda/run.sh backend/lambdas/apis/devices
 ./deploy-lambda/run.sh backend/lambdas/jobs/pollschedules
+./deploy-lambda/run.sh backend/lambdas/apis/devices
 ./deploy-lambda/run.sh backend/lambdas/apis/units
 ./deploy-lambda/run.sh backend/lambdas/apis/users
 ./deploy-lambda/run.sh backend/lambdas/apis/signin
