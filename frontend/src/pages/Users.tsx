@@ -110,8 +110,12 @@ export class Users extends React.Component<Props, State> {
         <tbody>
           {this.state.users.map((user) => (
             <tr key={user.id}>
-              <th scope="row">{user.email}</th>
-              <td>{user.updatedBy}</td>
+              <th scope="row">
+                <span className="btn">{user.email}</span>
+              </th>
+              <td>
+                <span className="btn">{user.updatedBy}</span>
+              </td>
               <td>
                 <Button
                   variant="secondary"

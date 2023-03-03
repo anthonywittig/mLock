@@ -232,7 +232,11 @@ function render(props: Props, state: State) {
         </Button>
       </th>
       <td>{devices}</td>
-      <td>{props.properties.find((e) => e.id === props.propertyId)?.name}</td>
+      <td>
+        <span className="btn">
+          {props.properties.find((e) => e.id === props.propertyId)?.name}
+        </span>
+      </td>
       <td>
         <Button
           variant="secondary"

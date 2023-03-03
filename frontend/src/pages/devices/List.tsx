@@ -91,7 +91,9 @@ const List = () => {
                 </Link>
               </th>
               <td>{renderEntityStatus(entity)}</td>
-              <td>{renderEntityBatteryLevel(entity)}</td>
+              <td>
+                <span className="btn">{renderEntityBatteryLevel(entity)}</span>
+              </td>
               <td>
                 <Link to={"/units/" + entity.unitId}>
                   <Button variant="link">
