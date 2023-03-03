@@ -124,7 +124,10 @@ export const LockCode = (props: Props) => {
     }
 
     let syncWithReservationCB = <></>
-    if (props.managedLockCode?.reservation.id) {
+    if (
+      props.managedLockCode?.status !== "Adding" &&
+      props.managedLockCode?.status !== "Enabled"
+    ) {
       syncWithReservationCB = (
         <Form.Group className="mb-3" controlId="formBasicCheckbox">
           <Form.Check
