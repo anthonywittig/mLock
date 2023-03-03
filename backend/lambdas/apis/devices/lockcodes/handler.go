@@ -28,6 +28,7 @@ type CreateResponse struct {
 type UpdateBody struct {
 	Reservation UpdateBodyReservation `json:"reservation"`
 	EndAt       time.Time             `json:"endAt"`
+	StartAt     time.Time             `json:"startAt"`
 }
 
 type UpdateBodyReservation struct {
@@ -156,12 +157,17 @@ func update(
 		return nil, fmt.Errorf("unable to find managed lock code")
 	}
 
-	mlc.EndAt = body.EndAt
-	if mlc.StartAt.After(mlc.EndAt) {
-		return nil, fmt.Errorf("can't start after it ends")
-	}
-
 	mlc.Reservation.Sync = body.Reservation.Sync
+	if !mlc.Reservation.Sync {
+		if !body.StartAt.IsZero() {
+			mlc.StartAt = body.StartAt
+		}
+
+		mlc.EndAt = body.EndAt
+		if mlc.StartAt.After(mlc.EndAt) {
+			return nil, fmt.Errorf("can't start after it ends")
+		}
+	}
 
 	cd, err := shared.GetContextData(ctx)
 	if err != nil {
