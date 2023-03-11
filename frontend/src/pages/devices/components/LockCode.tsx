@@ -86,6 +86,16 @@ export const LockCode = (props: Props) => {
       })
   }
 
+  const enabledLogic = () => {
+    if (
+      props.managedLockCode?.status === "Adding" ||
+      props.managedLockCode?.status === "Enabled"
+    ) {
+      return true
+    }
+    return syncWithReservation
+  }
+
   const render = () => {
     // Might have just a "renderLockCode" method in the future too?
     return renderAddLockCode()
@@ -124,10 +134,7 @@ export const LockCode = (props: Props) => {
     }
 
     let syncWithReservationCB = <></>
-    if (
-      props.managedLockCode?.status !== "Adding" &&
-      props.managedLockCode?.status !== "Enabled"
-    ) {
+    if (props.managedLockCode?.reservation.id) {
       syncWithReservationCB = (
         <Form.Group className="mb-3" controlId="formBasicCheckbox">
           <Form.Check
@@ -161,7 +168,7 @@ export const LockCode = (props: Props) => {
             type="datetime-local"
             defaultValue={format(startAt, "yyyy-MM-dd'T'HH:mm")}
             onChange={(evt) => setStartAt(parseISO(evt.target.value))}
-            disabled={syncWithReservation}
+            disabled={enabledLogic()}
           />
         </Form.Group>
 
