@@ -86,7 +86,7 @@ export const LockCode = (props: Props) => {
       })
   }
 
-  const enabledLogic = () => {
+  const getDisabled = () => {
     if (
       props.managedLockCode?.status === "Adding" ||
       props.managedLockCode?.status === "Enabled"
@@ -168,7 +168,7 @@ export const LockCode = (props: Props) => {
             type="datetime-local"
             defaultValue={format(startAt, "yyyy-MM-dd'T'HH:mm")}
             onChange={(evt) => setStartAt(parseISO(evt.target.value))}
-            disabled={enabledLogic()}
+            disabled={getDisabled()}
           />
         </Form.Group>
 
