@@ -71,6 +71,7 @@ export const LockCode = (props: Props) => {
             sync: syncWithReservation,
           },
           endAt: endAt,
+          startAt: startAt,
         }),
       }
     )
@@ -83,6 +84,16 @@ export const LockCode = (props: Props) => {
         // TODO: indicate error.
         console.log(err)
       })
+  }
+
+  const getDisabled = () => {
+    if (
+      props.managedLockCode?.status === "Adding" ||
+      props.managedLockCode?.status === "Enabled"
+    ) {
+      return true
+    }
+    return syncWithReservation
   }
 
   const render = () => {
@@ -157,7 +168,7 @@ export const LockCode = (props: Props) => {
             type="datetime-local"
             defaultValue={format(startAt, "yyyy-MM-dd'T'HH:mm")}
             onChange={(evt) => setStartAt(parseISO(evt.target.value))}
-            disabled={!!props.managedLockCode}
+            disabled={getDisabled()}
           />
         </Form.Group>
 
