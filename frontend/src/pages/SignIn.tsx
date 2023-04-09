@@ -185,19 +185,3 @@ export class SignIn extends React.Component<Props, State> {
     )
   }
 }
-/*
-<GoogleLogin
-          clientId={process.env.REACT_APP_GOOGLE_SIGNIN_CLIENT_ID || ""}
-          buttonText="Login"
-          onSuccess={this.responseGoogleSuccess.bind(this)}
-          onFailure={this.responseGoogleFailure.bind(this)}
-          cookiePolicy="single_host_origin"
-          prompt="select_account"
-        />
-        <br />
-        <br />
-        <GoogleLogout
-          clientId={process.env.REACT_APP_GOOGLE_SIGNIN_CLIENT_ID || ""}
-          buttonText="Logout"
-          onLogoutSuccess={this.signOut.bind(this)}
-        />*/
