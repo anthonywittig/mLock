@@ -44,7 +44,7 @@ export class SignIn extends React.Component<Props, State> {
   responseGoogleSuccess(response: CredentialResponse) {
     this.setAlert("", "")
 
-    if (response as CredentialResponse) {
+    if (response) {
       const user = response as CredentialResponse
       const gToken = user.credential
 
