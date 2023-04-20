@@ -1,10 +1,10 @@
 import React from "react"
+
 import {
+  GoogleOAuthProvider,
   GoogleLogin,
-  GoogleLoginResponse,
-  GoogleLoginResponseOffline,
-  GoogleLogout,
-} from "react-google-login"
+  CredentialResponse,
+} from "@react-oauth/google"
 import {
   Redirect,
   //useLocation,
@@ -41,14 +41,12 @@ export class SignIn extends React.Component<Props, State> {
     }
   }
 
-  responseGoogleSuccess(
-    response: GoogleLoginResponse | GoogleLoginResponseOffline
-  ) {
+  responseGoogleSuccess(response: CredentialResponse) {
     this.setAlert("", "")
 
-    if ((response as GoogleLoginResponse).profileObj) {
-      const user = response as GoogleLoginResponse
-      const gToken = user.getAuthResponse().id_token
+    if (response) {
+      const user = response as CredentialResponse
+      const gToken = user.credential
 
       this.setState({ processing: true })
       StandardFetch("sign-in", {
@@ -164,29 +162,26 @@ export class SignIn extends React.Component<Props, State> {
 
   renderNonProcessing() {
     return (
-      <div>
-        {this.state.message && (
-          <div className={"alert " + this.state.messageClass} role="alert">
-            {this.state.message}
-          </div>
-        )}
-        <br />
-        <GoogleLogin
-          clientId={process.env.REACT_APP_GOOGLE_SIGNIN_CLIENT_ID || ""}
-          buttonText="Login"
-          onSuccess={this.responseGoogleSuccess.bind(this)}
-          onFailure={this.responseGoogleFailure.bind(this)}
-          cookiePolicy="single_host_origin"
-          prompt="select_account"
-        />
-        <br />
-        <br />
-        <GoogleLogout
-          clientId={process.env.REACT_APP_GOOGLE_SIGNIN_CLIENT_ID || ""}
-          buttonText="Logout"
-          onLogoutSuccess={this.signOut.bind(this)}
-        />
-      </div>
+      <GoogleOAuthProvider
+        clientId={process.env.REACT_APP_GOOGLE_SIGNIN_CLIENT_ID || ""}
+      >
+        <div>
+          {this.state.message && (
+            <div className={"alert " + this.state.messageClass} role="alert">
+              {this.state.message}
+            </div>
+          )}
+          <br />
+          <GoogleLogin
+            onSuccess={this.responseGoogleSuccess.bind(this)}
+            onError={() => {
+              this.responseGoogleFailure.bind(this)
+            }}
+            auto_select
+            useOneTap
+          />
+        </div>
+      </GoogleOAuthProvider>
     )
   }
 }
