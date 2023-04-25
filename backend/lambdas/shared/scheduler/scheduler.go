@@ -163,10 +163,6 @@ func (s *Scheduler) getRelevantReservations(reservations []shared.Reservation) (
 			continue // If it ended an hour or more ago, ignore it.
 		}
 
-		if r.Start.After(s.now.Add(24 * 7 * time.Hour)) {
-			continue // If it starts more than a week in the future, ignore it.
-		}
-
 		// We don't control the IDs, so it's probably a good idea to double check that they're unique (at least within a unit's active reservations).
 		if _, ok := relevantReservations[r.ID]; ok {
 			return nil, fmt.Errorf("duplicate reservation found, reservation ID: %s", r.ID)
