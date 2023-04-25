@@ -223,7 +223,7 @@ func parseReservations(data string) ([]shared.Reservation, error) {
 	i++
 
 	if i != len(lines) {
-		return nil, fmt.Errorf("line lenght doesn't _line_ up")
+		return nil, fmt.Errorf("line length doesn't _line_ up")
 	}
 
 	return reservations, nil
