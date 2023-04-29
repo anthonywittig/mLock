@@ -174,80 +174,38 @@ export const Detail = () => {
       return <p>There are no lock codes currently set.</p>
     }
 
+    const getStatusValue = (status: string) => {
+      switch (status) {
+        case "Removing":
+          return 0
+        case "Enabled":
+          return 1
+        case "Adding":
+          return 2
+        case "Scheduled":
+          return 3
+        case "Complete":
+          return 4
+        default:
+          console.log(`Couldn't identify status ${status}`)
+          return -1
+      }
+    }
+
     entity.managedLockCodes.sort((a, b) => {
-      var aValue = -1
-      switch (a.status) {
-        case "Removing":
-          aValue = 0
-          break
-        case "Enabled":
-          aValue = 1
-          break
-        case "Adding":
-          aValue = 2
-          break
-        case "Scheduled":
-          aValue = 3
-          break
-        case "Complete":
-          aValue = 4
-          break
-      }
+      const aValue = getStatusValue(a.status)
+      const bValue = getStatusValue(b.status)
 
-      var bValue = -1
-      switch (b.status) {
-        case "Removing":
-          bValue = 0
-          break
-        case "Enabled":
-          bValue = 1
-          break
-        case "Adding":
-          bValue = 2
-          break
-        case "Scheduled":
-          bValue = 3
-          break
-        case "Complete":
-          bValue = 4
-          break
-      }
-
-      if (aValue === -1 || bValue === -1) {
-        console.log(
-          "Error with sorting locks; lock status not identified (" +
-            b.status +
-            " and " +
-            a.status +
-            ")"
-        )
-
-        return 0
-      }
-
-      if (aValue !== 4) {
-        if (aValue === bValue) {
-          if (a.startAt < b.startAt) {
-            return 1
-          }
-          if (a.startAt > b.startAt) {
-            return -1
-          }
-        }
+      const val = aValue - bValue
+      if (val !== 0) {
+        return val
       }
 
       if (aValue === 4) {
-        if (aValue === bValue) {
-          if (a.startAt > b.startAt) {
-            return 1
-          }
-          if (a.startAt < b.startAt) {
-            return -1
-          }
-        }
+        return a.endAt.localeCompare(b.endAt)
       }
 
-      return aValue - bValue
+      return b.startAt.localeCompare(a.startAt)
     })
 
     return (
