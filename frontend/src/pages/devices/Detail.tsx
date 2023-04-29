@@ -174,6 +174,40 @@ export const Detail = () => {
       return <p>There are no lock codes currently set.</p>
     }
 
+    const getStatusValue = (status: string) => {
+      switch (status) {
+        case "Removing":
+          return 0
+        case "Enabled":
+          return 1
+        case "Adding":
+          return 2
+        case "Scheduled":
+          return 3
+        case "Complete":
+          return 4
+        default:
+          console.log(`Couldn't identify status ${status}`)
+          return -1
+      }
+    }
+
+    entity.managedLockCodes.sort((a, b) => {
+      const aValue = getStatusValue(a.status)
+      const bValue = getStatusValue(b.status)
+
+      const val = aValue - bValue
+      if (val !== 0) {
+        return val
+      }
+
+      if (aValue === 4) {
+        return a.endAt.localeCompare(b.endAt)
+      }
+
+      return b.startAt.localeCompare(a.startAt)
+    })
+
     return (
       <>
         {entity.managedLockCodes.map((lc) => {
