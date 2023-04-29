@@ -283,7 +283,11 @@ const getLockResponsivenessWarnings = (entity: DeviceT) => {
           goodCode = true
         }
       } else {
-        warnings.push(<>Not Responding (for code {lc.code})</>)
+        warnings.push(
+          <ListGroup.Item variant="light">
+            Not Responding (for code {lc.code})
+          </ListGroup.Item>
+        )
       }
     }
   }

@@ -120,7 +120,11 @@ test("Warning for older adding code", () => {
   })
 
   expect(warnings.length).toBe(1)
-  expect(warnings[0]).toStrictEqual(<>Not Responding (for code {"9999"})</>)
+  expect(warnings[0]).toStrictEqual(
+    <ListGroup.Item variant="light">
+      Not Responding (for code {"9999"})
+    </ListGroup.Item>
+  )
 })
 
 test("warning for single none-responsive code", () => {
@@ -317,7 +321,11 @@ test("single warning for adding code (ignore an older completed code that never 
   })
 
   expect(warnings.length).toBe(1)
-  expect(warnings[0]).toStrictEqual(<>Not Responding (for code {"1234"})</>)
+  expect(warnings[0]).toStrictEqual(
+    <ListGroup.Item variant="light">
+      Not Responding (for code {"1234"})
+    </ListGroup.Item>
+  )
 })
 
 test("no warning for a quickly added code (ignore an older completed code that never added)", () => {
