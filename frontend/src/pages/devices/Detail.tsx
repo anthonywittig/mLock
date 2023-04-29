@@ -199,7 +199,6 @@ export const Detail = () => {
         case "Removing":
           bValue = 0
           break
-
         case "Enabled":
           bValue = 1
           break
@@ -222,7 +221,30 @@ export const Detail = () => {
             a.status +
             ")"
         )
+
         return 0
+      }
+
+      if (aValue !== 4) {
+        if (aValue === bValue) {
+          if (a.startAt < b.startAt) {
+            return 1
+          }
+          if (a.startAt > b.startAt) {
+            return -1
+          }
+        }
+      }
+
+      if (aValue === 4) {
+        if (aValue === bValue) {
+          if (a.startAt > b.startAt) {
+            return 1
+          }
+          if (a.startAt < b.startAt) {
+            return -1
+          }
+        }
       }
 
       return aValue - bValue
