@@ -2,7 +2,7 @@ import React from "react"
 import { Button, Form } from "react-bootstrap"
 import { useRouteMatch } from "react-router-dom"
 import { format, parseISO } from "date-fns"
-import { useHistory } from "react-router-dom"
+import { useHistory, Link } from "react-router-dom"
 import { Loading } from "../utils/Loading"
 import { StandardFetch } from "../utils/FetchHelper"
 
@@ -190,7 +190,11 @@ export const Detail = () => {
         <tbody>
           {devices.map((device) => (
             <tr>
-              <th scope="row">{device.rawDevice.name}</th>
+              <th scope="row">
+                <Link to={"/devices/" + device.id}>
+                  <Button variant="link">{device.rawDevice.name}</Button>
+                </Link>
+              </th>
             </tr>
           ))}
         </tbody>
