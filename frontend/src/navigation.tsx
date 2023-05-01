@@ -1,6 +1,7 @@
 import React from "react"
-import { Navbar, Nav } from "react-bootstrap"
+import { Navbar, Nav, Button } from "react-bootstrap"
 import { useLocation } from "react-router-dom"
+import { googleLogout } from "@react-oauth/google"
 
 export const Navigation = () => {
   let location = useLocation()
@@ -43,6 +44,15 @@ export const Navigation = () => {
           >
             Users
           </Nav.Link>
+        </Nav>
+        <Nav>
+          <Button
+            variant="outline-secondary"
+            onClick={googleLogout}
+            href="/sign-in/"
+          >
+            Log Out
+          </Button>
         </Nav>
       </Navbar.Collapse>
     </Navbar>
