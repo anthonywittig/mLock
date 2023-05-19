@@ -202,7 +202,7 @@ export const Detail = () => {
       }
 
       if (aValue === 4) {
-        return b.endAt.localeCompare(a.endAt)
+        return a.endAt.localeCompare(b.endAt)
       }
 
       return a.startAt.localeCompare(b.startAt)
