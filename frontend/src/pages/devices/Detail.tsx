@@ -176,11 +176,11 @@ export const Detail = () => {
 
     const getStatusValue = (status: string) => {
       switch (status) {
-        case "Removing":
-          return 0
         case "Enabled":
-          return 1
+          return 0
         case "Adding":
+          return 1
+        case "Removing":
           return 2
         case "Scheduled":
           return 3
@@ -201,8 +201,12 @@ export const Detail = () => {
         return val
       }
 
+      if (aValue === 3) {
+        return a.startAt.localeCompare(b.endAt)
+      }
+
       if (aValue === 4) {
-        return b.endAt.localeCompare(a.endAt)
+        return a.endAt.localeCompare(b.endAt)
       }
 
       return b.startAt.localeCompare(a.startAt)
