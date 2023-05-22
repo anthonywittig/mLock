@@ -10,7 +10,7 @@ type MatchParams = { id: string }
 
 const Endpoint = "devices"
 
-export const Detail = () => {
+const Detail = () => {
   const [entity, setEntity] = React.useState<DeviceT>({
     id: "",
     unitId: "",
@@ -174,47 +174,9 @@ export const Detail = () => {
       return <p>There are no lock codes currently set.</p>
     }
 
-    const getStatusValue = (status: string) => {
-      switch (status) {
-        case "Enabled":
-          return 0
-        case "Adding":
-          return 1
-        case "Removing":
-          return 2
-        case "Scheduled":
-          return 3
-        case "Complete":
-          return 4
-        default:
-          console.log(`Couldn't identify status ${status}`)
-          return -1
-      }
-    }
-
-    entity.managedLockCodes.sort((a, b) => {
-      const aValue = getStatusValue(a.status)
-      const bValue = getStatusValue(b.status)
-
-      const val = aValue - bValue
-      if (val !== 0) {
-        return val
-      }
-
-      if (aValue === 3) {
-        return a.startAt.localeCompare(b.endAt)
-      }
-
-      if (aValue === 4) {
-        return b.endAt.localeCompare(a.endAt)
-      }
-
-      return b.startAt.localeCompare(a.startAt)
-    })
-
     return (
       <>
-        {entity.managedLockCodes.map((lc) => {
+        {sortLockCodes(entity.managedLockCodes).map((lc) => {
           return (
             <div>
               <LockCode
@@ -294,3 +256,47 @@ export const Detail = () => {
 
   return render()
 }
+
+const sortLockCodes = (
+  lockCodes: DeviceManagedLockCodeT[]
+): DeviceManagedLockCodeT[] => {
+  const getStatusValue = (status: string) => {
+    switch (status) {
+      case "Enabled":
+        return 0
+      case "Adding":
+        return 1
+      case "Removing":
+        return 2
+      case "Scheduled":
+        return 3
+      case "Complete":
+        return 4
+      default:
+        console.log(`Couldn't identify status ${status}`)
+        return -1
+    }
+  }
+
+  return lockCodes.slice().sort((a, b) => {
+    const aValue = getStatusValue(a.status)
+    const bValue = getStatusValue(b.status)
+
+    const val = aValue - bValue
+    if (val !== 0) {
+      return val
+    }
+
+    if (aValue === 3) {
+      return a.startAt.localeCompare(b.endAt)
+    }
+
+    if (aValue === 4) {
+      return b.endAt.localeCompare(a.endAt)
+    }
+
+    return b.startAt.localeCompare(a.startAt)
+  })
+}
+
+export { Detail, sortLockCodes }
