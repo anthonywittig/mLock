@@ -288,7 +288,7 @@ const sortLockCodes = (
     }
 
     if (aValue === 3) {
-      return a.startAt.localeCompare(b.endAt)
+      return a.startAt.localeCompare(b.startAt)
     }
 
     if (aValue === 4) {
