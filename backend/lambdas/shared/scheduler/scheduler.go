@@ -3,6 +3,7 @@ package scheduler
 import (
 	"context"
 	"fmt"
+	"log"
 	"mlock/lambdas/shared"
 	"time"
 
@@ -136,11 +137,28 @@ func (s *Scheduler) processDevice(ctx context.Context, device shared.Device, res
 		}
 	}
 
-	// We could check to see if the reservation has disappeared, but that can happen for at least these reasons:
-	// * the reservation was canceled
-	// * modified to end early
-	// * is missing due to a system error (this happens a lot)
-	// In practice, we'll delay creating reservations until they're close to their start time, so if it disappears we'll assume a system error and do nothing.
+	for _, mlc := range device.ManagedLockCodes {
+		if mlc.Reservation.ID != "" && mlc.Reservation.Sync {
+			if _, ok := relevantReservations[mlc.Reservation.ID]; !ok {
+				if mlc.Status == shared.DeviceManagedLockCodeStatus1Scheduled {
+					log.Printf("DEBUG: canceling reservation %s from device %s", mlc.Reservation.ID, device.RawDevice.Name)
+					mlc.Note = "Reservation disappeared, assuming it was canceled; moving the start and end times to now"
+					mlc.StartAt = s.now
+					mlc.EndAt = s.now
+					needToSave = append(needToSave, mlc)
+				} else if mlc.Status == shared.DeviceManagedLockCodeStatus2Adding || mlc.Status == shared.DeviceManagedLockCodeStatus3Enabled {
+					log.Printf("DEBUG: canceling reservation %s from device %s", mlc.Reservation.ID, device.RawDevice.Name)
+					mlc.Note = "Reservation disappeared, assuming it was canceled; moving the end time to now"
+					mlc.EndAt = s.now
+					needToSave = append(needToSave, mlc)
+				} else if mlc.Status == shared.DeviceManagedLockCodeStatus4Removing || mlc.Status == shared.DeviceManagedLockCodeStatus5Complete {
+					// Do nothing.
+				} else {
+					return fmt.Errorf("unhandled status %s", mlc.Status)
+				}
+			}
+		}
+	}
 
 	if len(needToSave) > 0 {
 		if err := s.dr.AppendToAuditLog(ctx, device, needToSave); err != nil {

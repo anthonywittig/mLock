@@ -351,12 +351,13 @@ func Test_recentlyEndedMLC(t *testing.T) {
 	managedLockCode := &shared.DeviceManagedLockCode{
 		ID: uuid.New(),
 		Reservation: shared.DeviceManagedLockCodeReservation{
-			ID:   "someReservationIDThatDoesn'tExist",
+			ID:   "someReservationIDThatDoesNotExist",
 			Sync: true,
 		},
 		Code:    "1111",
 		StartAt: now.Add(-2 * time.Minute),
 		EndAt:   now.Add(-1 * time.Minute),
+		Status:  shared.DeviceManagedLockCodeStatus4Removing,
 	}
 	device := shared.Device{
 		ID:               uuid.New(),
@@ -390,6 +391,7 @@ func Test_editMLCWithNoReservation(t *testing.T) {
 	type TestCase struct {
 		OriginalStartAt time.Time
 		OriginalEndAt   time.Time
+		OriginalStatus  shared.DeviceManagedLockCodeStatus
 	}
 
 	now := time.Now()
@@ -399,16 +401,19 @@ func Test_editMLCWithNoReservation(t *testing.T) {
 		{
 			OriginalStartAt: now.Add(-10 * time.Hour),
 			OriginalEndAt:   now.Add(-5 * time.Hour),
+			OriginalStatus:  shared.DeviceManagedLockCodeStatus5Complete,
 		},
 		// Reservation is in progress.
 		{
 			OriginalStartAt: now.Add(-10 * time.Hour),
 			OriginalEndAt:   now.Add(10 * time.Hour),
+			OriginalStatus:  shared.DeviceManagedLockCodeStatus3Enabled,
 		},
 		// Reservation hasn't started.
 		{
 			OriginalStartAt: now.Add(10 * time.Hour),
 			OriginalEndAt:   now.Add(20 * time.Hour),
+			OriginalStatus:  shared.DeviceManagedLockCodeStatus1Scheduled,
 		},
 	} {
 		s, dr, _, rr, ur := newScheduler(t, now)
@@ -421,12 +426,13 @@ func Test_editMLCWithNoReservation(t *testing.T) {
 		managedLockCode := &shared.DeviceManagedLockCode{
 			ID: uuid.New(),
 			Reservation: shared.DeviceManagedLockCodeReservation{
-				ID:   "someReservationIDThatDoesn'tExist",
-				Sync: true,
+				ID:   "someReservationIDThatDoesNotExist",
+				Sync: false,
 			},
 			Code:    "1111",
 			StartAt: testCase.OriginalStartAt,
 			EndAt:   testCase.OriginalEndAt,
+			Status:  testCase.OriginalStatus,
 		}
 		device := shared.Device{
 			ID:               uuid.New(),
