@@ -146,11 +146,13 @@ func (s *Scheduler) processDevice(ctx context.Context, device shared.Device, res
 					mlc.StartAt = s.now
 					mlc.EndAt = s.now
 					needToSave = append(needToSave, mlc)
-				} else if mlc.Status == shared.DeviceManagedLockCodeStatus2Adding || mlc.Status == shared.DeviceManagedLockCodeStatus3Enabled {
+				} else if mlc.Status == shared.DeviceManagedLockCodeStatus2Adding {
 					log.Printf("DEBUG: canceling reservation %s from device %s", mlc.Reservation.ID, device.RawDevice.Name)
 					mlc.Note = "Reservation disappeared, assuming it was canceled; moving the end time to now"
 					mlc.EndAt = s.now
 					needToSave = append(needToSave, mlc)
+				} else if mlc.Status == shared.DeviceManagedLockCodeStatus3Enabled {
+					// The reservation drops off the calendar at midnight (or there about) the day before it ends.
 				} else if mlc.Status == shared.DeviceManagedLockCodeStatus4Removing || mlc.Status == shared.DeviceManagedLockCodeStatus5Complete {
 					// Do nothing.
 				} else {
