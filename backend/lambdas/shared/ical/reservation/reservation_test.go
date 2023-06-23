@@ -28,10 +28,8 @@ func Test_getCheckinTimestamp_happyPath(t *testing.T) {
 	actual, err := NewRepository(tz).getCheckinTimestamp(in)
 	assert.Nil(t, err)
 
-	expected, err := time.Parse(time.RFC3339, "2006-01-02T16:00:00-07:00")
-	assert.Nil(t, err)
-
-	assert.Equal(t, expected.String(), actual.String())
+	expected := "2006-01-02T16:00:00-07:00"
+	assert.Equal(t, expected, actual.Format(time.RFC3339))
 }
 
 func Test_getCheckoutTimestamp_nonMidnightUTC(t *testing.T) {
@@ -55,7 +53,6 @@ func Test_getCheckoutTimestamp_happyPath(t *testing.T) {
 	actual, err := NewRepository(tz).getCheckoutTimestamp(in)
 	assert.Nil(t, err)
 
-	expected, err := time.Parse(time.RFC3339, "2006-01-02T11:00:00-07:00")
-	assert.Nil(t, err)
-	assert.Equal(t, expected.String(), actual.String())
+	expected := "2006-01-02T11:00:00-07:00"
+	assert.Equal(t, expected, actual.Format(time.RFC3339))
 }
