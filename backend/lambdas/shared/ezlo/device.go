@@ -110,6 +110,23 @@ func (d *DeviceController) RediscoverDevice(ctx context.Context, device shared.D
 	return nil
 }
 
+func (d *DeviceController) RebootController(ctx context.Context, device shared.Device) error {
+	if device.ControllerID == "" {
+		return fmt.Errorf("device doesn't have a controller ID")
+	}
+
+	ws, err := d.connectionPool.GetConnection(ctx, device.ControllerID)
+	if err != nil {
+		return fmt.Errorf("error getting websocket: %s", err.Error())
+	}
+
+	if err := wsRebootHub(ws); err != nil {
+		return fmt.Errorf("error rebooting controller: %s", err.Error())
+	}
+
+	return nil
+}
+
 func (d *DeviceController) RemoveLockCode(ctx context.Context, device shared.Device, code string) error {
 	// TODO: if multiple codes for the same device are getting removed within a short period of time, might we end up removing the wrong code?
 	if device.ControllerID == "" {
@@ -241,6 +258,50 @@ func wsGetLockCodesForDevice(ws *websocket.Conn, deviceID string) ([]shared.RawD
 	}
 
 	return []shared.RawDeviceLockCode{}, wsItem{}, fmt.Errorf("couldn't find lock codes for deviceID: %s", deviceID)
+}
+
+func wsRebootHub(ws *websocket.Conn) error {
+	/*
+		Request:
+
+		method: "hub.reboot"
+		id: "1688852614989"
+		params: Object {}
+
+
+		Response:
+
+		error: null
+		id: "1688852614989"
+		method: "hub.reboot"
+		result: Object {}
+		sender: Object {"conn_id":"84da5a58-1ab3-410b-9fe2-11181f92f06f","type":"ui"}
+	*/
+	id := fmt.Sprintf("hub.reboot.%s", uuid.New())
+
+	type response struct{}
+	resp := response{}
+
+	type params struct{}
+	err := wsSendCommand(
+		ws,
+		id,
+		struct {
+			Method string `json:"method"`
+			ID     string `json:"id"`
+			Params params `json:"params"`
+		}{
+			Method: "hub.reboot",
+			ID:     id,
+			Params: params{},
+		},
+		&resp,
+	)
+	if err != nil {
+		return fmt.Errorf("error sending command: %s", err.Error())
+	}
+
+	return nil
 }
 
 func wsRemoveLockCodeForItem(ws *websocket.Conn, item wsItem, slot string) error {

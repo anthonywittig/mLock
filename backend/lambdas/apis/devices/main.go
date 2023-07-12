@@ -10,6 +10,7 @@ import (
 	"mlock/lambdas/shared/dynamo/auditlog"
 	"mlock/lambdas/shared/dynamo/device"
 	"mlock/lambdas/shared/dynamo/unit"
+	"mlock/lambdas/shared/ezlo"
 	"net/http"
 	"regexp"
 	"strings"
@@ -61,10 +62,18 @@ func main() {
 func HandleRequest(ctx context.Context, req events.APIGatewayProxyRequest) (*shared.APIResponse, error) {
 	match, err := regexp.MatchString(`^/devices/[0-9a-fA-F]{8}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{12}/lock-codes/`, req.Path)
 	if err != nil {
-		return shared.NewAPIResponse(http.StatusBadRequest, ErrorResponse{Error: "unable to url"})
+		return shared.NewAPIResponse(http.StatusBadRequest, ErrorResponse{Error: "unable to parse request"})
 	}
 	if match {
 		return lockcodes.HandleRequest(ctx, req)
+	}
+
+	match, err = regexp.MatchString(`^/devices/[0-9a-fA-F]{8}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{12}/reboot-controller/`, req.Path)
+	if err != nil {
+		return shared.NewAPIResponse(http.StatusBadRequest, ErrorResponse{Error: "unable to parse request"})
+	}
+	if match && req.HTTPMethod == "POST" {
+		return rebootController(ctx, req)
 	}
 
 	switch req.HTTPMethod {
@@ -226,4 +235,29 @@ func update(ctx context.Context, req events.APIGatewayProxyRequest) (*shared.API
 	}
 
 	return shared.NewAPIResponse(http.StatusOK, UpdateResponse{Entity: entity})
+}
+
+func rebootController(ctx context.Context, req events.APIGatewayProxyRequest) (*shared.APIResponse, error) {
+	id := entityRegex.ReplaceAllString(req.Path, "")
+	id = strings.Replace(id, "/reboot-controller/", "", 1)
+	parsedID, err := uuid.Parse(id)
+	if err != nil {
+		return nil, fmt.Errorf("error parsing id: %s", err.Error())
+	}
+
+	entity, ok, err := device.NewRepository().Get(ctx, parsedID)
+	if err != nil {
+		return nil, fmt.Errorf("error getting entity: %s", err.Error())
+	}
+	if !ok {
+		return nil, fmt.Errorf("entity not found: %s", parsedID)
+	}
+
+	connectionPool := ezlo.NewConnectionPool()
+	defer connectionPool.Close()
+
+	deviceController := ezlo.NewDeviceController(connectionPool)
+	deviceController.RebootController(ctx, entity)
+
+	return shared.NewAPIResponse(http.StatusOK, ErrorResponse{Error: ""})
 }
