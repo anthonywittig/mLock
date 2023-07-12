@@ -46,7 +46,7 @@ export class Users extends React.Component<Props, State> {
   removeUserClick(id: string) {
     this.setState({ loadingUsers: true })
 
-    StandardFetch("users/" + id, { method: "DELETE" })
+    StandardFetch(`users/${id}`, { method: "DELETE" })
       .then((response) => response.json())
       .then((response) => {
         if (response.Users) {

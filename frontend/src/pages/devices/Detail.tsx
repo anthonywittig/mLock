@@ -1,5 +1,5 @@
 import React from "react"
-import { Alert, Button, Form } from "react-bootstrap"
+import { Alert, Button, Form, InputGroup } from "react-bootstrap"
 import { format, formatDistance, parseISO } from "date-fns"
 import { useHistory, useRouteMatch } from "react-router-dom"
 import { LockCode } from "./components/LockCode"
@@ -14,6 +14,7 @@ const Detail = () => {
   const [entity, setEntity] = React.useState<DeviceT>({
     id: "",
     unitId: "",
+    controllerId: "",
     lastRefreshedAt: "",
     lastWentOfflineAt: null,
     lastWentOnlineAt: null,
@@ -30,6 +31,10 @@ const Detail = () => {
     },
   })
   const [loading, setLoading] = React.useState<boolean>(true)
+  const [rebootButtonText, setRebootButtonText] =
+    React.useState<string>("Reboot")
+  const [rebootButtonDisabled, setRebootButtonDisabled] =
+    React.useState<boolean>(false)
   const [auditLog, setAuditLog] = React.useState<AuditLogT>({
     id: "",
     entries: [],
@@ -98,6 +103,18 @@ const Detail = () => {
         // TODO: indicate error.
         console.log(err)
       })
+  }
+
+  const rebootController = () => {
+    setRebootButtonDisabled(true)
+    setRebootButtonText("Rebooting...")
+
+    StandardFetch(`devices/${entity.id}/reboot-controller/`, {
+      method: "POST",
+    }).catch((err) => {
+      // Need to indicate error...
+      console.log("error: " + err)
+    })
   }
 
   const render = () => {
@@ -214,10 +231,29 @@ const Detail = () => {
             value={formatDistance(
               Date.parse(entity.lastRefreshedAt),
               new Date(),
-              { addSuffix: true }
+              { addSuffix: true },
             )}
             disabled={true}
           />
+        </Form.Group>
+
+        <Form.Group>
+          <Form.Label>Controller</Form.Label>
+          <InputGroup className="mb-3">
+            <Form.Control
+              type="text"
+              value={entity.controllerId}
+              disabled={true}
+            />
+            <Button
+              disabled={rebootButtonDisabled}
+              variant="outline-secondary"
+              id="button-addon2"
+              onClick={rebootController}
+            >
+              {rebootButtonText}
+            </Button>
+          </InputGroup>
         </Form.Group>
 
         <Form.Group>
@@ -258,7 +294,7 @@ const Detail = () => {
 }
 
 const sortLockCodes = (
-  lockCodes: DeviceManagedLockCodeT[]
+  lockCodes: DeviceManagedLockCodeT[],
 ): DeviceManagedLockCodeT[] => {
   const getStatusValue = (status: string) => {
     switch (status) {

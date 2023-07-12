@@ -25,15 +25,17 @@ export const LockCode = (props: Props) => {
   }
   const [code, setCode] = React.useState<string>(initialCode)
   const [syncWithReservation, setSyncWithReservation] = React.useState<boolean>(
-    !!props.managedLockCode?.reservation.sync
+    !!props.managedLockCode?.reservation.sync,
   )
   const [startAt, setStartAt] = React.useState<Date>(
-    props.managedLockCode ? parseISO(props.managedLockCode.startAt) : new Date()
+    props.managedLockCode
+      ? parseISO(props.managedLockCode.startAt)
+      : new Date(),
   )
   const [endAt, setEndAt] = React.useState<Date>(
     props.managedLockCode
       ? parseISO(props.managedLockCode.endAt)
-      : addDays(set(new Date(), { minutes: 0 }), 1)
+      : addDays(set(new Date(), { minutes: 0 }), 1),
   )
 
   const formSubmit = (evt: React.FormEvent<HTMLFormElement>) => {
@@ -73,7 +75,7 @@ export const LockCode = (props: Props) => {
           endAt: endAt,
           startAt: startAt,
         }),
-      }
+      },
     )
       .then((response) => response.json())
       .then((response) => {
