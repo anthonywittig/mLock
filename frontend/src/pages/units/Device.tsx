@@ -51,7 +51,7 @@ function resetState(props: Props, state: State) {
 
 function updateEntityId(
   state: State,
-  evt: React.ChangeEvent<HTMLSelectElement>
+  evt: React.ChangeEvent<HTMLSelectElement>,
 ) {
   state.setEntityId(evt.target.value)
 }

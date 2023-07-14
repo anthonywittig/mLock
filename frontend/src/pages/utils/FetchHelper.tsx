@@ -8,11 +8,11 @@ function StandardFetch(path: string, init?: RequestInit): Promise<Response> {
 
   return fetch(
     (process.env.REACT_APP_BACKEND_DOMAIN || "") + "/" + path,
-    init
+    init,
   ).then((response) => {
     if (response.status === 401 || response.status === 403) {
       const next = encodeURIComponent(
-        window.location.pathname + window.location.search
+        window.location.pathname + window.location.search,
       )
       // Is setting the location directly a good pattern?
       window.location.href =

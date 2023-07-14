@@ -45,7 +45,7 @@ const List = () => {
         setEntities(
           entities.filter((value) => {
             return value.id !== id
-          })
+          }),
         )
       })
       .catch((err) => {
@@ -194,7 +194,7 @@ const List = () => {
       warnings.push(
         <ListGroup.Item variant="light">
           Last Data Sync: {distance}
-        </ListGroup.Item>
+        </ListGroup.Item>,
       )
     }
 
@@ -218,12 +218,14 @@ const List = () => {
       warnings.push(
         <ListGroup.Item variant="light">
           Went Offline: {distance}
-        </ListGroup.Item>
+        </ListGroup.Item>,
       )
     } else if (isAfter(lwond, recently)) {
       const distance = formatDistance(lwond, new Date(), { addSuffix: true })
       warnings.push(
-        <ListGroup.Item variant="light">Went Online: {distance}</ListGroup.Item>
+        <ListGroup.Item variant="light">
+          Went Online: {distance}
+        </ListGroup.Item>,
       )
     }
 
@@ -265,7 +267,7 @@ const getLockResponsivenessWarnings = (entity: DeviceT) => {
         warnings.push(
           <ListGroup.Item variant="light">
             The code {lc.code} was never added
-          </ListGroup.Item>
+          </ListGroup.Item>,
         )
         continue
       }
@@ -277,7 +279,7 @@ const getLockResponsivenessWarnings = (entity: DeviceT) => {
           warnings.push(
             <ListGroup.Item variant="light">
               Slow to Respond (took {distance} to add code {lc.code})
-            </ListGroup.Item>
+            </ListGroup.Item>,
           )
         } else {
           goodCode = true
@@ -286,7 +288,7 @@ const getLockResponsivenessWarnings = (entity: DeviceT) => {
         warnings.push(
           <ListGroup.Item variant="light">
             Not Responding (for code {lc.code})
-          </ListGroup.Item>
+          </ListGroup.Item>,
         )
       }
     }

@@ -78,7 +78,7 @@ export const Detail = () => {
   }
 
   const detailFormPropertyChange = (
-    evt: React.ChangeEvent<HTMLSelectElement>
+    evt: React.ChangeEvent<HTMLSelectElement>,
   ) => {
     setEntity({
       ...entity,
@@ -87,7 +87,7 @@ export const Detail = () => {
   }
 
   const detailFormCalendarUrlChange = (
-    evt: React.ChangeEvent<HTMLSelectElement>
+    evt: React.ChangeEvent<HTMLSelectElement>,
   ) => {
     setEntity({
       ...entity,

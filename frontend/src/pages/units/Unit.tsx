@@ -8,7 +8,7 @@ type Adder = (
   id: string,
   name: string,
   propertyId: string,
-  updatedBy: string
+  updatedBy: string,
 ) => void
 type IdAction = (id: string) => void
 
@@ -59,7 +59,7 @@ function GetState(props: Props): State {
   const [entityName, setEntityName] = React.useState<string>(props.entityName)
   const [propertyId, setPropertyId] = React.useState<string>(props.propertyId)
   const [entityState, setEntityState] = React.useState<string>(
-    props.entityName ? "exists" : "new"
+    props.entityName ? "exists" : "new",
   )
   const history = useHistory()
   return {
@@ -106,14 +106,14 @@ function nameClick(state: State, id: string) {
 
 function updateEntityName(
   state: State,
-  evt: React.ChangeEvent<HTMLInputElement>
+  evt: React.ChangeEvent<HTMLInputElement>,
 ) {
   state.setEntityName(evt.target.value)
 }
 
 function updatePropertyId(
   state: State,
-  evt: React.ChangeEvent<HTMLSelectElement>
+  evt: React.ChangeEvent<HTMLSelectElement>,
 ) {
   state.setPropertyId(evt.target.value)
 }

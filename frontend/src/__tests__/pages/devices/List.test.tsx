@@ -60,7 +60,7 @@ test("scheduled is ignored", () => {
   expect(warnings[0]).toStrictEqual(
     <ListGroup.Item variant="light">
       Slow to Respond (took {"1 day"} to add code {"9999"})
-    </ListGroup.Item>
+    </ListGroup.Item>,
   )
 })
 
@@ -123,7 +123,7 @@ test("Warning for older adding code", () => {
   expect(warnings[0]).toStrictEqual(
     <ListGroup.Item variant="light">
       Not Responding (for code {"9999"})
-    </ListGroup.Item>
+    </ListGroup.Item>,
   )
 })
 
@@ -169,7 +169,7 @@ test("warning for single none-responsive code", () => {
   expect(warnings[0]).toStrictEqual(
     <ListGroup.Item variant="light">
       Slow to Respond (took {"1 day"} to add code {"1234"})
-    </ListGroup.Item>
+    </ListGroup.Item>,
   )
 })
 
@@ -215,7 +215,7 @@ test("warning for single none-responsive completed code", () => {
   expect(warnings[0]).toStrictEqual(
     <ListGroup.Item variant="light">
       Slow to Respond (took {"1 day"} to add code {"3936"})
-    </ListGroup.Item>
+    </ListGroup.Item>,
   )
 })
 
@@ -261,7 +261,7 @@ test("warning for single never added completed code", () => {
   expect(warnings[0]).toStrictEqual(
     <ListGroup.Item variant="light">
       The code {"4622"} was never added
-    </ListGroup.Item>
+    </ListGroup.Item>,
   )
 })
 
@@ -324,7 +324,7 @@ test("single warning for adding code (ignore an older completed code that never 
   expect(warnings[0]).toStrictEqual(
     <ListGroup.Item variant="light">
       Not Responding (for code {"1234"})
-    </ListGroup.Item>
+    </ListGroup.Item>,
   )
 })
 
@@ -445,7 +445,7 @@ test("warning for a completed code despite having an old enabled code", () => {
   expect(warnings[0]).toStrictEqual(
     <ListGroup.Item variant="light">
       The code {"4622"} was never added
-    </ListGroup.Item>
+    </ListGroup.Item>,
   )
 })
 
