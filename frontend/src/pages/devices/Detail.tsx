@@ -244,15 +244,18 @@ const Detail = () => {
               type="text"
               value={entity.controllerId}
               disabled={true}
+              aria-describedby="basic-addon2"
             />
-            <Button
-              disabled={rebootButtonDisabled}
-              variant="outline-secondary"
-              id="button-addon2"
-              onClick={rebootController}
-            >
-              {rebootButtonText}
-            </Button>
+            <InputGroup.Append>
+              <Button
+                disabled={rebootButtonDisabled}
+                variant="outline-secondary"
+                id="button-addon2"
+                onClick={rebootController}
+              >
+                {rebootButtonText}
+              </Button>
+            </InputGroup.Append>
           </InputGroup>
         </Form.Group>
 
