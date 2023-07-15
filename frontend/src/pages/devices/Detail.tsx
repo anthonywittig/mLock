@@ -1,11 +1,11 @@
 import React from "react"
 import { Alert, Button, Form, InputGroup } from "react-bootstrap"
 import { format, formatDistance, parseISO } from "date-fns"
-import { useHistory, useRouteMatch } from "react-router-dom"
+import { useNavigate, useMatch } from "react-router-dom"
 import { LockCode } from "./components/LockCode"
 import { Loading } from "../utils/Loading"
 import { StandardFetch } from "../utils/FetchHelper"
-
+console.log("we get to devices")
 type MatchParams = { id: string }
 
 const Endpoint = "devices"
@@ -50,10 +50,13 @@ const Detail = () => {
     setRevision(revision + 1)
   }
 
-  const m = useRouteMatch("/" + Endpoint + "/:id")
+  console.log(useMatch(":id"))
+  console.log(useMatch("/:id"))
+
+  const m = useMatch("/devices/:id")
   const mp = m?.params as MatchParams
   const id = mp.id
-  const history = useHistory()
+  const navigate = useNavigate()
 
   React.useEffect(() => {
     setLoading(true)
@@ -97,7 +100,7 @@ const Detail = () => {
       .then((response) => {
         setEntity(response.entity)
         setLoading(false)
-        history.push("/" + Endpoint + "/" + response.entity.id)
+        navigate("/" + Endpoint + "/" + response.entity.id)
       })
       .catch((err) => {
         // TODO: indicate error.
@@ -246,7 +249,7 @@ const Detail = () => {
               disabled={true}
               aria-describedby="basic-addon2"
             />
-            <InputGroup.Append>
+            <InputGroup>
               <Button
                 disabled={rebootButtonDisabled}
                 variant="outline-secondary"
@@ -255,7 +258,7 @@ const Detail = () => {
               >
                 {rebootButtonText}
               </Button>
-            </InputGroup.Append>
+            </InputGroup>
           </InputGroup>
         </Form.Group>
 

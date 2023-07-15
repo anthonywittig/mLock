@@ -163,11 +163,11 @@ const List = () => {
     const level = entity.rawDevice.battery.level
 
     if (isBefore(lud, recently) || level === null) {
-      return <Badge variant="danger">Unknown</Badge>
+      return <Badge bg="danger">Unknown</Badge>
     }
 
     if (level < 25) {
-      return <Badge variant="danger">{level}%</Badge>
+      return <Badge bg="danger">{level}%</Badge>
     }
 
     return <>{level}%</>

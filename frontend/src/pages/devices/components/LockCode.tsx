@@ -129,7 +129,7 @@ export const LockCode = (props: Props) => {
       })()
 
       statusBadge = (
-        <Badge pill variant={variant}>
+        <Badge pill bg={variant}>
           {status}
         </Badge>
       )

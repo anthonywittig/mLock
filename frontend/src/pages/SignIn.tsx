@@ -6,7 +6,7 @@ import {
   CredentialResponse,
 } from "@react-oauth/google"
 import {
-  Redirect,
+  Navigate,
   //useLocation,
 } from "react-router-dom"
 import { StandardFetch } from "./utils/FetchHelper"
@@ -137,9 +137,9 @@ export class SignIn extends React.Component<Props, State> {
     if (this.state.successfullyLoggedIn) {
       const next = new URLSearchParams(window.location.search).get("next")
       if (next != null && next !== "") {
-        return <Redirect to={next} />
+        return <Navigate to={next} replace />
       }
-      return <Redirect to="/devices/" />
+      return <Navigate to="/devices/" replace />
     }
 
     let innerContent = this.renderNonProcessing()
