@@ -6,8 +6,6 @@ import { useNavigate, Link } from "react-router-dom"
 import { Loading } from "../utils/Loading"
 import { StandardFetch } from "../utils/FetchHelper"
 
-console.log("we get to units")
-
 type Reservation = {
   id: string
   start: string
@@ -42,7 +40,7 @@ export const Detail = () => {
   const [reservations, setReservations] = React.useState<Reservation[]>([])
   const navigate = useNavigate()
 
-  const m = useMatch("/units/:id")
+  const m = useMatch(Endpoint + "/:id")
   const mp = m?.params as MatchParams
   const id = mp.id
 

@@ -5,7 +5,6 @@ import { useNavigate, useMatch } from "react-router-dom"
 import { LockCode } from "./components/LockCode"
 import { Loading } from "../utils/Loading"
 import { StandardFetch } from "../utils/FetchHelper"
-console.log("we get to devices")
 type MatchParams = { id: string }
 
 const Endpoint = "devices"
@@ -50,7 +49,7 @@ const Detail = () => {
     setRevision(revision + 1)
   }
 
-  const m = useMatch("/devices/:id")
+  const m = useMatch(Endpoint + "/:id")
   const mp = m?.params as MatchParams
   const id = mp.id
   const navigate = useNavigate()
@@ -246,7 +245,8 @@ const Detail = () => {
               disabled={true}
               aria-describedby="basic-addon2"
             />
-            <InputGroup>
+
+            <div className="input-group-append">
               <Button
                 disabled={rebootButtonDisabled}
                 variant="outline-secondary"
@@ -255,7 +255,7 @@ const Detail = () => {
               >
                 {rebootButtonText}
               </Button>
-            </InputGroup>
+            </div>
           </InputGroup>
         </Form.Group>
 
