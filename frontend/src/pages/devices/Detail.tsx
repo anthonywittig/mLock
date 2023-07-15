@@ -50,9 +50,6 @@ const Detail = () => {
     setRevision(revision + 1)
   }
 
-  console.log(useMatch(":id"))
-  console.log(useMatch("/:id"))
-
   const m = useMatch("/devices/:id")
   const mp = m?.params as MatchParams
   const id = mp.id

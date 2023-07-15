@@ -42,7 +42,7 @@ export const Detail = () => {
   const [reservations, setReservations] = React.useState<Reservation[]>([])
   const navigate = useNavigate()
 
-  const m = useMatch(":id")
+  const m = useMatch("/units/:id")
   const mp = m?.params as MatchParams
   const id = mp.id
 

@@ -19,13 +19,13 @@ export const NavRoutes = () => {
       <Navigation />
       <div>
         <Routes>
-          <Route path="/devices" element={<DeviceRoutes />} />
-          <Route path="/properties" element={<Properties />} />
-          <Route path="/privacy-policy" element={<PrivacyPolicy />} />
-          <Route path="/sign-in" element={<SignIn />} />\
-          <Route path="/terms-of-service" element={<TermsOfService />} />
-          <Route path="/units" element={<UnitRoutes />} />
-          <Route path="/users" element={<Users />} />
+          <Route path="/devices/*" element={<DeviceRoutes />} />
+          <Route path="/properties/*" element={<Properties />} />
+          <Route path="/privacy-policy/*" element={<PrivacyPolicy />} />
+          <Route path="/sign-in/*" element={<SignIn />} />\
+          <Route path="/terms-of-service/*" element={<TermsOfService />} />
+          <Route path="/units/*" element={<UnitRoutes />} />
+          <Route path="/users/*" element={<Users />} />
           <Route path="/" element={<Navigate to="/devices/" replace />} />
         </Routes>
       </div>
