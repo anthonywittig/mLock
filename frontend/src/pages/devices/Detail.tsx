@@ -246,16 +246,14 @@ const Detail = () => {
               aria-describedby="basic-addon2"
             />
 
-            <div className="input-group-append">
-              <Button
-                disabled={rebootButtonDisabled}
-                variant="outline-secondary"
-                id="button-addon2"
-                onClick={rebootController}
-              >
-                {rebootButtonText}
-              </Button>
-            </div>
+            <Button
+              disabled={rebootButtonDisabled}
+              variant="outline-secondary"
+              id="button-addon2"
+              onClick={rebootController}
+            >
+              {rebootButtonText}
+            </Button>
           </InputGroup>
         </Form.Group>
 
