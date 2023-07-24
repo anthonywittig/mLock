@@ -214,7 +214,7 @@ const Detail = () => {
     }
     return (
       <Form onSubmit={(evt) => formSubmit(evt)}>
-        <Form.Group>
+        <Form.Group className="mb-3">
           <Form.Label>Name</Form.Label>
           <Form.Control
             type="text"
@@ -223,7 +223,7 @@ const Detail = () => {
           />
         </Form.Group>
 
-        <Form.Group>
+        <Form.Group className="mb-3">
           <Form.Label>Last Refreshed</Form.Label>
           <Form.Control
             type="text"
@@ -236,7 +236,7 @@ const Detail = () => {
           />
         </Form.Group>
 
-        <Form.Group>
+        <Form.Group className="mb-3">
           <Form.Label>Controller</Form.Label>
           <InputGroup className="mb-3">
             <Form.Control
@@ -257,7 +257,7 @@ const Detail = () => {
           </InputGroup>
         </Form.Group>
 
-        <Form.Group>
+        <Form.Group className="mb-3">
           <Form.Label>Status</Form.Label>
           <Form.Control
             type="text"
@@ -266,7 +266,7 @@ const Detail = () => {
           />
         </Form.Group>
 
-        <Form.Group controlId="unit">
+        <Form.Group controlId="unit" className="mb-3">
           <Form.Label>Unit</Form.Label>
           <Form.Control
             as="select"

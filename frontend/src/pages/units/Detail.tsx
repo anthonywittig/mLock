@@ -208,7 +208,7 @@ export const Detail = () => {
     }
     return (
       <Form onSubmit={(evt) => detailFormSubmit(evt)}>
-        <Form.Group>
+        <Form.Group className="mb-3">
           <Form.Label>Name</Form.Label>
           <Form.Control
             type="text"
@@ -217,7 +217,7 @@ export const Detail = () => {
           />
         </Form.Group>
 
-        <Form.Group controlId="exampleForm.ControlSelect1">
+        <Form.Group controlId="exampleForm.ControlSelect1" className="mb-3">
           <Form.Label>Property</Form.Label>
           <Form.Control
             as="select"
@@ -234,7 +234,7 @@ export const Detail = () => {
           </Form.Control>
         </Form.Group>
 
-        <Form.Group>
+        <Form.Group className="mb-3">
           <Form.Label>Calendar URL</Form.Label>
           <Form.Control
             type="text"

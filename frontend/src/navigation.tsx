@@ -45,16 +45,17 @@ export const Navigation = () => {
             Users
           </Nav.Link>
         </Nav>
-        <Nav>
-          <Button
-            variant="outline-secondary"
-            onClick={googleLogout}
-            href="/sign-in/"
-          >
-            Log Out
-          </Button>
-        </Nav>
       </Navbar.Collapse>
+      <Nav>
+        <Button
+          variant="outline-secondary"
+          onClick={googleLogout}
+          href="/sign-in/"
+          className="justify-content-md-end"
+        >
+          Log Out
+        </Button>
+      </Nav>
     </Navbar>
   )
 }
