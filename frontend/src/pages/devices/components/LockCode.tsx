@@ -129,7 +129,7 @@ export const LockCode = (props: Props) => {
       })()
 
       statusBadge = (
-        <Badge pill variant={variant}>
+        <Badge pill bg={variant}>
           {status}
         </Badge>
       )
@@ -152,7 +152,7 @@ export const LockCode = (props: Props) => {
     // TODO: we should show the time zone that's being used.
     return (
       <Form onSubmit={(evt) => formSubmit(evt)} style={{ marginBottom: "2em" }}>
-        <Form.Group>
+        <Form.Group className="mb-3">
           <Form.Label>Code {statusBadge}</Form.Label>
           <Form.Control
             type="text"
@@ -164,7 +164,7 @@ export const LockCode = (props: Props) => {
 
         {syncWithReservationCB}
 
-        <Form.Group>
+        <Form.Group className="mb-3">
           <Form.Label>Enable At</Form.Label>
           <Form.Control
             type="datetime-local"
@@ -174,7 +174,7 @@ export const LockCode = (props: Props) => {
           />
         </Form.Group>
 
-        <Form.Group>
+        <Form.Group className="mb-3">
           <Form.Label>Disable At</Form.Label>
           <Form.Control
             type="datetime-local"

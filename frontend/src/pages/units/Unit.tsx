@@ -1,8 +1,7 @@
 import React from "react"
 import { Button } from "react-bootstrap"
-import { Link, useHistory } from "react-router-dom"
+import { Link, useNavigate, NavigateFunction } from "react-router-dom"
 import { StandardFetch } from "../utils/FetchHelper"
-import { History } from "history"
 
 type Adder = (
   id: string,
@@ -43,7 +42,7 @@ type State = {
   setPropertyId: React.Dispatch<React.SetStateAction<string>>
   entityState: string
   setEntityState: React.Dispatch<React.SetStateAction<string>>
-  history: History
+  navigate: NavigateFunction
 }
 
 const Endpoint = "units"
@@ -61,7 +60,7 @@ function GetState(props: Props): State {
   const [entityState, setEntityState] = React.useState<string>(
     props.entityName ? "exists" : "new",
   )
-  const history = useHistory()
+  const navigate = useNavigate()
   return {
     entityFieldsDisabled,
     setEntityFieldsDisabled,
@@ -71,7 +70,7 @@ function GetState(props: Props): State {
     setPropertyId,
     entityState,
     setEntityState,
-    history,
+    navigate,
   }
 }
 
@@ -101,7 +100,7 @@ function removeClick(props: Props, id: string) {
 }
 
 function nameClick(state: State, id: string) {
-  state.history.push("/units/" + id)
+  state.navigate("/units/" + id)
 }
 
 function updateEntityName(

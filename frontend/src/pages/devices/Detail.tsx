@@ -1,11 +1,10 @@
 import React from "react"
 import { Alert, Button, Form, InputGroup } from "react-bootstrap"
 import { format, formatDistance, parseISO } from "date-fns"
-import { useHistory, useRouteMatch } from "react-router-dom"
+import { useNavigate, useMatch } from "react-router-dom"
 import { LockCode } from "./components/LockCode"
 import { Loading } from "../utils/Loading"
 import { StandardFetch } from "../utils/FetchHelper"
-
 type MatchParams = { id: string }
 
 const Endpoint = "devices"
@@ -50,10 +49,10 @@ const Detail = () => {
     setRevision(revision + 1)
   }
 
-  const m = useRouteMatch("/" + Endpoint + "/:id")
+  const m = useMatch(Endpoint + "/:id")
   const mp = m?.params as MatchParams
   const id = mp.id
-  const history = useHistory()
+  const navigate = useNavigate()
 
   React.useEffect(() => {
     setLoading(true)
@@ -97,7 +96,7 @@ const Detail = () => {
       .then((response) => {
         setEntity(response.entity)
         setLoading(false)
-        history.push("/" + Endpoint + "/" + response.entity.id)
+        navigate("/" + Endpoint + "/" + response.entity.id)
       })
       .catch((err) => {
         // TODO: indicate error.
@@ -215,7 +214,7 @@ const Detail = () => {
     }
     return (
       <Form onSubmit={(evt) => formSubmit(evt)}>
-        <Form.Group>
+        <Form.Group className="mb-3">
           <Form.Label>Name</Form.Label>
           <Form.Control
             type="text"
@@ -224,7 +223,7 @@ const Detail = () => {
           />
         </Form.Group>
 
-        <Form.Group>
+        <Form.Group className="mb-3">
           <Form.Label>Last Refreshed</Form.Label>
           <Form.Control
             type="text"
@@ -237,7 +236,7 @@ const Detail = () => {
           />
         </Form.Group>
 
-        <Form.Group>
+        <Form.Group className="mb-3">
           <Form.Label>Controller</Form.Label>
           <InputGroup className="mb-3">
             <Form.Control
@@ -246,20 +245,19 @@ const Detail = () => {
               disabled={true}
               aria-describedby="basic-addon2"
             />
-            <InputGroup.Append>
-              <Button
-                disabled={rebootButtonDisabled}
-                variant="outline-secondary"
-                id="button-addon2"
-                onClick={rebootController}
-              >
-                {rebootButtonText}
-              </Button>
-            </InputGroup.Append>
+
+            <Button
+              disabled={rebootButtonDisabled}
+              variant="outline-secondary"
+              id="button-addon2"
+              onClick={rebootController}
+            >
+              {rebootButtonText}
+            </Button>
           </InputGroup>
         </Form.Group>
 
-        <Form.Group>
+        <Form.Group className="mb-3">
           <Form.Label>Status</Form.Label>
           <Form.Control
             type="text"
@@ -268,7 +266,7 @@ const Detail = () => {
           />
         </Form.Group>
 
-        <Form.Group controlId="unit">
+        <Form.Group controlId="unit" className="mb-3">
           <Form.Label>Unit</Form.Label>
           <Form.Control
             as="select"

@@ -1,7 +1,6 @@
 import React from "react"
 import { Button } from "react-bootstrap"
-import { useHistory } from "react-router-dom"
-import { History } from "history"
+import { useNavigate, NavigateFunction } from "react-router-dom"
 
 type IdAction = (id: string) => void
 
@@ -18,7 +17,7 @@ type State = {
   setEntityFieldsDisabled: React.Dispatch<React.SetStateAction<boolean>>
   entityId: string
   setEntityId: React.Dispatch<React.SetStateAction<string>>
-  history: History
+  navigate: NavigateFunction
 }
 
 const Endpoint = "device"
@@ -32,14 +31,14 @@ function GetState(props: Props): State {
   const [entityFieldsDisabled, setEntityFieldsDisabled] =
     React.useState<boolean>(false)
   const [entityId, setEntityId] = React.useState<string>(props.id)
-  const history = useHistory()
+  const navigate = useNavigate()
 
   return {
     entityFieldsDisabled,
     setEntityFieldsDisabled,
     entityId,
     setEntityId,
-    history,
+    navigate,
   }
 }
 
@@ -73,7 +72,7 @@ function addSubmit(props: Props, state: State) {
 }
 
 function labelClick(state: State, id: string) {
-  state.history.push("/" + Endpoint + "/" + id)
+  state.navigate("/" + Endpoint + "/" + id)
 }
 
 function removeClick(props: Props, id: string) {

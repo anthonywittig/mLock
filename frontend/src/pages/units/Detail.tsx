@@ -1,8 +1,8 @@
 import React from "react"
 import { Button, Form } from "react-bootstrap"
-import { useRouteMatch } from "react-router-dom"
+import { useMatch } from "react-router-dom"
 import { format, parseISO } from "date-fns"
-import { useHistory, Link } from "react-router-dom"
+import { useNavigate, Link } from "react-router-dom"
 import { Loading } from "../utils/Loading"
 import { StandardFetch } from "../utils/FetchHelper"
 
@@ -38,9 +38,9 @@ export const Detail = () => {
   const [properties, setProperties] = React.useState<Property[]>([])
   const [devices, setDevices] = React.useState<DeviceT[]>([])
   const [reservations, setReservations] = React.useState<Reservation[]>([])
-  const history = useHistory()
+  const navigate = useNavigate()
 
-  const m = useRouteMatch("/" + Endpoint + "/:id")
+  const m = useMatch(Endpoint + "/:id")
   const mp = m?.params as MatchParams
   const id = mp.id
 
@@ -108,7 +108,7 @@ export const Detail = () => {
       .then((response) => {
         setEntity(response.entity)
         setLoading(false)
-        history.push("/" + Endpoint + "/" + response.entity.id)
+        navigate("/" + Endpoint + "/" + response.entity.id)
       })
       .catch((err) => {
         // TODO: indicate error.
@@ -208,7 +208,7 @@ export const Detail = () => {
     }
     return (
       <Form onSubmit={(evt) => detailFormSubmit(evt)}>
-        <Form.Group>
+        <Form.Group className="mb-3">
           <Form.Label>Name</Form.Label>
           <Form.Control
             type="text"
@@ -217,7 +217,7 @@ export const Detail = () => {
           />
         </Form.Group>
 
-        <Form.Group controlId="exampleForm.ControlSelect1">
+        <Form.Group controlId="exampleForm.ControlSelect1" className="mb-3">
           <Form.Label>Property</Form.Label>
           <Form.Control
             as="select"
@@ -234,7 +234,7 @@ export const Detail = () => {
           </Form.Control>
         </Form.Group>
 
-        <Form.Group>
+        <Form.Group className="mb-3">
           <Form.Label>Calendar URL</Form.Label>
           <Form.Control
             type="text"
