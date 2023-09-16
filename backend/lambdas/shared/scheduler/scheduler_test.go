@@ -79,7 +79,7 @@ func Test_addMLC(t *testing.T) {
 		assert.Equal(t, "5678", mlc.Code)
 		assert.Equal(t, reservation.ID, mlc.Reservation.ID)
 		assert.Equal(t, true, mlc.Reservation.Sync)
-		assert.Equal(t, reservation.Start.Add(-60*time.Minute), mlc.StartAt)
+		assert.Equal(t, reservation.Start.Add(-2*time.Hour), mlc.StartAt)
 		assert.Equal(t, reservation.End.Add(30*time.Minute), mlc.EndAt)
 		assert.Equal(t, shared.DeviceManagedLockCodeStatus1Scheduled, mlc.Status)
 
@@ -87,7 +87,7 @@ func Test_addMLC(t *testing.T) {
 		assert.Equal(t, "3456", mlc.Code)
 		assert.Equal(t, futureReservation.ID, mlc.Reservation.ID)
 		assert.Equal(t, true, mlc.Reservation.Sync)
-		assert.Equal(t, futureReservation.Start.Add(-60*time.Minute), mlc.StartAt)
+		assert.Equal(t, futureReservation.Start.Add(-2*time.Hour), mlc.StartAt)
 		assert.Equal(t, futureReservation.End.Add(30*time.Minute), mlc.EndAt)
 		assert.Equal(t, shared.DeviceManagedLockCodeStatus1Scheduled, mlc.Status)
 	}).Return(nil)
@@ -127,7 +127,7 @@ func Test_noEditMLC(t *testing.T) {
 			Sync: true,
 		},
 		Code:    "5678",
-		StartAt: reservation.Start.Add(-60 * time.Minute),
+		StartAt: reservation.Start.Add(-2 * time.Hour),
 		EndAt:   reservation.End.Add(30 * time.Minute),
 	}
 	device := shared.Device{
@@ -277,7 +277,7 @@ func Test_editMLC(t *testing.T) {
 		assert.Equal(t, "5678", mlc.Code)
 		assert.Equal(t, reservation.ID, mlc.Reservation.ID)
 		assert.Equal(t, true, mlc.Reservation.Sync)
-		assert.Equal(t, reservation.Start.Add(-60*time.Minute), mlc.StartAt)
+		assert.Equal(t, reservation.Start.Add(-2*time.Hour), mlc.StartAt)
 		assert.Equal(t, reservation.End.Add(30*time.Minute), mlc.EndAt)
 	}).Return(nil)
 
