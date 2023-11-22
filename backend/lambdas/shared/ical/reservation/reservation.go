@@ -197,12 +197,12 @@ func parseReservations(data string) ([]shared.Reservation, error) {
 		}
 		i++
 
-		m, err = getMatch("^STATUS:(.*)$", lines[i])
+		_, err = getMatch("^STATUS:(.*)$", lines[i])
 		if err != nil {
 			return nil, fmt.Errorf("expected STATUS: %s", lines[i])
 		}
 		i++
-		res.Status = m
+		// res.Status = m
 
 		if _, err := getMatch("^END:(VEVENT)$", lines[i]); err != nil {
 			return nil, fmt.Errorf("expected END:VEVENT: %s", lines[i])
