@@ -104,10 +104,10 @@ func Test_notSure(t *testing.T) {
 			mockJSON, _ := json.Marshal(reservationsPage{
 				Result: []reservation{
 					{
-						ArrivalDate:           "2027-11-25",
+						ArrivalDate:           "2021-11-22",
 						ChannelID:             1,
-						CheckInTime:           16,
-						CheckOutTime:          11,
+						CheckInTime:           17, // Hour later than normal.
+						CheckOutTime:          10, // Hour earlier than normal.
 						DepartureDate:         "2027-11-26",
 						HostawayReservationID: "21107569",
 						ListingMapID:          25,
@@ -150,7 +150,7 @@ func Test_notSure(t *testing.T) {
 
 	reservation := reservations[0]
 	assert.Equal(t, "21107569", reservation.ID)
-	assert.Equal(t, "2027-11-25T16:00:00-07:00", reservation.Start.Format(time.RFC3339))
+	assert.Equal(t, "2021-11-22T16:00:00-07:00", reservation.Start.Format(time.RFC3339))
 	assert.Equal(t, "2027-11-26T11:00:00-07:00", reservation.End.Format(time.RFC3339))
 	assert.Equal(t, "", reservation.Summary)
 	assert.Equal(t, "21107569", reservation.TransactionNumber)

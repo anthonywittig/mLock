@@ -66,8 +66,8 @@ func HandleRequest(ctx context.Context, event MyEvent) (Response, error) {
 	liveRezReservationRepository := liveRez.NewRepository(tz)
 	hostawayReservationRepository := hostaway.NewRepository(tz, "")
 	reservationRepository := reservationwrapper.NewRepository([]reservationwrapper.ReservationRepository{
-		liveRezReservationRepository,
 		hostawayReservationRepository,
+		liveRezReservationRepository,
 	})
 	unitRepository := unit.NewRepository()
 

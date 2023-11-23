@@ -90,15 +90,6 @@ func (r *Repository) GetForUnits(ctx context.Context, units []shared.Unit) (map[
 	reservationsByUnit := map[uuid.UUID][]shared.Reservation{}
 
 	for _, reservation := range reservations {
-		if reservation.HostawayReservationID != "21107569" {
-			// Only allow this test reservation through.
-			continue
-		}
-		if reservation.ChannelID == 2015 {
-			// Ignore LiveRez reservations.
-			continue
-		}
-
 		listing, ok := listings[reservation.ListingMapID]
 		if !ok {
 			return map[uuid.UUID][]shared.Reservation{}, fmt.Errorf("listing not found: %d", reservation.ListingMapID)
@@ -112,13 +103,17 @@ func (r *Repository) GetForUnits(ctx context.Context, units []shared.Unit) (map[
 				if err != nil {
 					return map[uuid.UUID][]shared.Reservation{}, fmt.Errorf("error parsing start date: %s", err.Error())
 				}
-				startDate = startDate.Add(time.Duration(reservation.CheckInTime) * time.Hour)
+				// If they say they're going to be later than 4pm, assume 4pm.
+				checkInHour := min(reservation.CheckInTime, 16)
+				startDate = startDate.Add(time.Duration(checkInHour) * time.Hour)
 
 				endDate, err := time.ParseInLocation("2006-01-02", reservation.DepartureDate, r.timeZone)
 				if err != nil {
 					return map[uuid.UUID][]shared.Reservation{}, fmt.Errorf("error parsing end date: %s", err.Error())
 				}
-				endDate = endDate.Add(time.Duration(reservation.CheckOutTime) * time.Hour)
+				// If they say they're going to be earlier than 11am, assume 11am.
+				checkOutHour := max(reservation.CheckOutTime, 11)
+				endDate = endDate.Add(time.Duration(checkOutHour) * time.Hour)
 
 				reservationsByUnit[unit.ID] = append(reservationsByUnit[unit.ID], shared.Reservation{
 					ID:                reservation.HostawayReservationID,
@@ -218,10 +213,11 @@ func (r *Repository) getListingsByID(ctx context.Context, authToken authData) (m
 }
 
 func (r *Repository) getReservations(ctx context.Context, authToken authData) ([]reservation, error) {
+	twoDaysAgo := time.Now().Add(-48 * time.Hour).Format("2006-01-02")
 	result := []reservation{}
 	page := 0
 	for {
-		pageResult, err := getPage(reservationsPage{}, r, ctx, authToken, "reservations", page, []string{"sortOrder=arrivalDateDesc"})
+		pageResult, err := getPage(reservationsPage{}, r, ctx, authToken, "reservations", page, []string{"sortOrder=arrivalDate"})
 		if err != nil {
 			return []reservation{}, fmt.Errorf("error getting reservations page: %s", err.Error())
 		}
@@ -237,13 +233,10 @@ func (r *Repository) getReservations(ctx context.Context, authToken authData) ([
 		}
 
 		for _, reservation := range pageResult.Result {
-			if reservation.ArrivalDate < time.Now().Format("2006-01-02") {
-				// We sort the reservations by arrival date, so if we get to a reservation that's in the past, we can stop.
-				return result, nil
+			if reservation.DepartureDate > twoDaysAgo {
+				result = append(result, reservation)
 			}
-			result = append(result, reservation)
 		}
-
 		page++
 	}
 }
