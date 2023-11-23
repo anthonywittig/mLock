@@ -9,9 +9,7 @@ import (
 	"mlock/lambdas/shared/dynamo/unit"
 	"mlock/lambdas/shared/ezlo"
 	"mlock/lambdas/shared/hostaway"
-	liveRez "mlock/lambdas/shared/ical/reservation"
 	"mlock/lambdas/shared/lockengine"
-	"mlock/lambdas/shared/reservationwrapper"
 	"mlock/lambdas/shared/scheduler"
 	"mlock/lambdas/shared/ses"
 	mshared "mlock/shared"
@@ -63,12 +61,7 @@ func HandleRequest(ctx context.Context, event MyEvent) (Response, error) {
 
 	deviceController := ezlo.NewDeviceController(connectionPool)
 	deviceRepository := device.NewRepository()
-	liveRezReservationRepository := liveRez.NewRepository(tz)
 	hostawayReservationRepository := hostaway.NewRepository(tz, "")
-	reservationRepository := reservationwrapper.NewRepository([]reservationwrapper.ReservationRepository{
-		hostawayReservationRepository,
-		liveRezReservationRepository,
-	})
 	unitRepository := unit.NewRepository()
 
 	if err := updateDevicesFromController(
@@ -84,7 +77,7 @@ func HandleRequest(ctx context.Context, event MyEvent) (Response, error) {
 	if err := scheduler.NewScheduler(
 		deviceRepository,
 		time.Now(),
-		reservationRepository,
+		hostawayReservationRepository,
 		unitRepository,
 	).ReconcileReservationsAndLockCodes(ctx); err != nil {
 		return Response{}, fmt.Errorf("error scheduling: %s", err.Error())
