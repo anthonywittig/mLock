@@ -71,18 +71,21 @@ func NewRepository(timeZone *time.Location, hostawayURL string) *Repository {
 	}
 }
 
+func (r *Repository) Get(ctx context.Context, unit shared.Unit) ([]shared.Reservation, error) {
+	reservations, err := r.GetForUnits(ctx, []shared.Unit{unit})
+	if err != nil {
+		return nil, fmt.Errorf("error getting reservations: %s", err.Error())
+	}
+	return reservations[unit.ID], nil
+}
+
 func (r *Repository) GetForUnits(ctx context.Context, units []shared.Unit) (map[uuid.UUID][]shared.Reservation, error) {
 	accessToken, err := r.getAccessToken(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("error getting access token: %s\n", err.Error())
 	}
 
-	listings, err := r.getListingsByID(ctx, accessToken)
-	if err != nil {
-		return nil, fmt.Errorf("error getting listings: %s\n", err.Error())
-	}
-
-	reservations, err := r.getReservations(ctx, accessToken)
+	reservations, err := r.getReservations(ctx, accessToken, units)
 	if err != nil {
 		return nil, fmt.Errorf("error getting reservations: %s\n", err.Error())
 	}
@@ -90,15 +93,8 @@ func (r *Repository) GetForUnits(ctx context.Context, units []shared.Unit) (map[
 	reservationsByUnit := map[uuid.UUID][]shared.Reservation{}
 
 	for _, reservation := range reservations {
-		listing, ok := listings[reservation.ListingMapID]
-		if !ok {
-			return map[uuid.UUID][]shared.Reservation{}, fmt.Errorf("listing not found: %d", reservation.ListingMapID)
-		}
-		found := false
 		for _, unit := range units {
-			if strings.HasPrefix(listing.InternalListingName, unit.Name) {
-				found = true
-
+			if unit.GetRemotePropertyID() == reservation.ListingMapID {
 				startDate, err := time.ParseInLocation("2006-01-02", reservation.ArrivalDate, r.timeZone)
 				if err != nil {
 					return map[uuid.UUID][]shared.Reservation{}, fmt.Errorf("error parsing start date: %s", err.Error())
@@ -123,10 +119,6 @@ func (r *Repository) GetForUnits(ctx context.Context, units []shared.Unit) (map[
 				})
 				break
 			}
-		}
-		if !found {
-			// TODO: send email instead of failing.
-			return nil, fmt.Errorf("listing not found for unit: %s\n", listing.InternalListingName)
 		}
 	}
 
@@ -212,12 +204,16 @@ func (r *Repository) getListingsByID(ctx context.Context, authToken authData) (m
 	return result, nil
 }
 
-func (r *Repository) getReservations(ctx context.Context, authToken authData) ([]reservation, error) {
+func (r *Repository) getReservations(ctx context.Context, authToken authData, units []shared.Unit) ([]reservation, error) {
 	twoDaysAgo := time.Now().Add(-48 * time.Hour).Format("2006-01-02")
+	extraParameters := []string{"sortOrder=arrivalDate"}
+	if len(units) == 1 {
+		extraParameters = append(extraParameters, fmt.Sprintf("listingId=%d", units[0].GetRemotePropertyID()))
+	}
 	result := []reservation{}
 	page := 0
 	for {
-		pageResult, err := getPage(reservationsPage{}, r, ctx, authToken, "reservations", page, []string{"sortOrder=arrivalDate"})
+		pageResult, err := getPage(reservationsPage{}, r, ctx, authToken, "reservations", page, extraParameters)
 		if err != nil {
 			return []reservation{}, fmt.Errorf("error getting reservations page: %s", err.Error())
 		}

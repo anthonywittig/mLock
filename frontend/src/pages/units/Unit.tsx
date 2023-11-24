@@ -99,10 +99,6 @@ function removeClick(props: Props, id: string) {
     })
 }
 
-function nameClick(state: State, id: string) {
-  state.navigate("/units/" + id)
-}
-
 function updateEntityName(
   state: State,
   evt: React.ChangeEvent<HTMLInputElement>,
@@ -223,12 +219,9 @@ function render(props: Props, state: State) {
   return (
     <tr key={props.entityId}>
       <th scope="row">
-        <Button
-          variant="link"
-          onClick={(evt) => nameClick(state, props.entityId)}
-        >
-          {props.entityName}
-        </Button>
+        <Link to={"/units/" + props.entityId}>
+          <Button variant="link">{props.entityName}</Button>
+        </Link>
       </th>
       <td>{devices}</td>
       <td>

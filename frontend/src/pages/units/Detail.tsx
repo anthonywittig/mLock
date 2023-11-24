@@ -12,8 +12,8 @@ type Reservation = {
   startDate: Date
   end: string
   endDate: Date
-  summary: string
   status: string
+  transactionNumber: string
 }
 
 type Property = {
@@ -31,7 +31,7 @@ export const Detail = () => {
     id: "",
     name: "",
     propertyId: "",
-    calendarUrl: "",
+    remotePropertyUrl: "",
     updatedBy: "",
   })
   const [loading, setLoading] = React.useState<boolean>(true)
@@ -86,12 +86,12 @@ export const Detail = () => {
     })
   }
 
-  const detailFormCalendarUrlChange = (
+  const detailFormRemotePropertyUrlChange = (
     evt: React.ChangeEvent<HTMLSelectElement>,
   ) => {
     setEntity({
       ...entity,
-      calendarUrl: evt.target.value,
+      remotePropertyUrl: evt.target.value,
     })
   }
 
@@ -166,7 +166,7 @@ export const Detail = () => {
         <tbody>
           {reservations.map((res) => (
             <tr>
-              <th scope="row">{res.summary}</th>
+              <th scope="row">{res.transactionNumber}</th>
               <td>{format(res.startDate, "LL/dd/yyyy")}</td>
               <td>{format(res.endDate, "LL/dd/yyyy")}</td>
             </tr>
@@ -235,12 +235,17 @@ export const Detail = () => {
         </Form.Group>
 
         <Form.Group className="mb-3">
-          <Form.Label>Calendar URL</Form.Label>
+          <Form.Label>Remote Property URL</Form.Label>
           <Form.Control
             type="text"
-            value={entity.calendarUrl}
-            onChange={(evt) => detailFormCalendarUrlChange(evt as any)}
+            value={entity.remotePropertyUrl}
+            onChange={(evt) => detailFormRemotePropertyUrlChange(evt as any)}
           />
+          <Form.Text className="text-muted">
+            <Link to={entity.remotePropertyUrl}>
+              {entity.remotePropertyUrl}
+            </Link>
+          </Form.Text>
         </Form.Group>
 
         <Button variant="secondary" type="submit">
