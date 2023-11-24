@@ -9,7 +9,7 @@ import (
 	"mlock/lambdas/shared/dynamo/device"
 	"mlock/lambdas/shared/dynamo/property"
 	"mlock/lambdas/shared/dynamo/unit"
-	"mlock/lambdas/shared/ical/reservation"
+	"mlock/lambdas/shared/hostaway"
 	mshared "mlock/shared"
 	"net/http"
 	"regexp"
@@ -39,12 +39,11 @@ type ListResponseDevice struct {
 }
 
 type ListResponseEntity struct {
-	Devices     []ListResponseDevice `json:"devices"`
-	ID          uuid.UUID            `json:"id"`
-	Name        string               `json:"name"`
-	PropertyID  uuid.UUID            `json:"propertyId"`
-	CalendarURL string               `json:"calendarUrl"`
-	UpdatedBy   string               `json:"updatedBy"`
+	Devices    []ListResponseDevice `json:"devices"`
+	ID         uuid.UUID            `json:"id"`
+	Name       string               `json:"name"`
+	PropertyID uuid.UUID            `json:"propertyId"`
+	UpdatedBy  string               `json:"updatedBy"`
 }
 
 type CreateBody struct {
@@ -57,9 +56,9 @@ type CreateResponse struct {
 }
 
 type UpdateBody struct {
-	Name        string    `json:"name"`
-	PropertyID  uuid.UUID `json:"propertyId"`
-	CalendarURL string    `json:"calendarUrl"`
+	Name              string    `json:"name"`
+	PropertyID        uuid.UUID `json:"propertyId"`
+	RemotePropertyURL string    `json:"remotePropertyUrl"`
 }
 
 type UpdateResponse struct {
@@ -207,11 +206,12 @@ func detail(ctx context.Context, req events.APIGatewayProxyRequest, id string) (
 	}
 
 	reservations := []shared.Reservation{}
-	if entity.CalendarURL != "" {
-		reservations, err = reservation.NewRepository(tz).Get(ctx, entity.CalendarURL)
+	if entity.RemotePropertyURL != "" {
+		hostawayReservations, err := hostaway.NewRepository(tz, "").Get(ctx, entity)
 		if err != nil {
-			return nil, fmt.Errorf("error getting calendar items: %s", err.Error())
+			return nil, fmt.Errorf("error getting reservation items: %s", err.Error())
 		}
+		reservations = append(reservations, hostawayReservations...)
 	}
 
 	properties, err := property.NewRepository().List(ctx)
@@ -256,7 +256,7 @@ func update(ctx context.Context, req events.APIGatewayProxyRequest) (*shared.API
 
 	entity.Name = body.Name
 	entity.PropertyID = body.PropertyID
-	entity.CalendarURL = body.CalendarURL
+	entity.RemotePropertyURL = body.RemotePropertyURL
 
 	entity, err = unit.NewRepository().Put(ctx, entity)
 	if err != nil {

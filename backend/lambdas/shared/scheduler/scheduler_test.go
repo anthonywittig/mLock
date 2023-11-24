@@ -22,8 +22,7 @@ func Test_addMLC(t *testing.T) {
 
 	ctx := context.Background()
 	unit := shared.Unit{
-		ID:          uuid.New(),
-		CalendarURL: "notBlank",
+		ID: uuid.New(),
 	}
 	device := shared.Device{
 		ID:     uuid.New(),
@@ -111,8 +110,7 @@ func Test_noEditMLC(t *testing.T) {
 
 	ctx := context.Background()
 	unit := shared.Unit{
-		ID:          uuid.New(),
-		CalendarURL: "notBlank",
+		ID: uuid.New(),
 	}
 	reservation := shared.Reservation{
 		ID:                "someReservationID",
@@ -166,8 +164,7 @@ func Test_noSyncMLC(t *testing.T) {
 
 	ctx := context.Background()
 	unit := shared.Unit{
-		ID:          uuid.New(),
-		CalendarURL: "notBlank",
+		ID: uuid.New(),
 	}
 	reservation := shared.Reservation{
 		ID:                "someReservationID",
@@ -221,8 +218,7 @@ func Test_editMLC(t *testing.T) {
 
 	ctx := context.Background()
 	unit := shared.Unit{
-		ID:          uuid.New(),
-		CalendarURL: "notBlank",
+		ID: uuid.New(),
 	}
 	reservation := shared.Reservation{
 		ID:                "someReservationID",
@@ -300,8 +296,7 @@ func Test_recentlyEndedReservation(t *testing.T) {
 
 	ctx := context.Background()
 	unit := shared.Unit{
-		ID:          uuid.New(),
-		CalendarURL: "notBlank",
+		ID: uuid.New(),
 	}
 	reservation := shared.Reservation{
 		ID:                "someReservationID",
@@ -345,8 +340,7 @@ func Test_recentlyEndedMLC(t *testing.T) {
 
 	ctx := context.Background()
 	unit := shared.Unit{
-		ID:          uuid.New(),
-		CalendarURL: "notBlank",
+		ID: uuid.New(),
 	}
 	managedLockCode := &shared.DeviceManagedLockCode{
 		ID: uuid.New(),
@@ -420,8 +414,7 @@ func Test_editMLCWithNoReservation(t *testing.T) {
 
 		ctx := context.Background()
 		unit := shared.Unit{
-			ID:          uuid.New(),
-			CalendarURL: "notBlank",
+			ID: uuid.New(),
 		}
 		managedLockCode := &shared.DeviceManagedLockCode{
 			ID: uuid.New(),

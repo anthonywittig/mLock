@@ -139,7 +139,7 @@ func (r *Repository) Put(ctx context.Context, item shared.Unit) (shared.Unit, er
 	}
 
 	item.Name = strings.TrimSpace(item.Name)
-	item.CalendarURL = strings.TrimSpace(item.CalendarURL)
+	item.RemotePropertyURL = strings.TrimSpace(item.RemotePropertyURL)
 
 	cd, err := shared.GetContextData(ctx)
 	if err != nil {

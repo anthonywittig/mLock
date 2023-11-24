@@ -59,6 +59,6 @@ type UnitT = {
   id: string
   name: string
   propertyId: string
-  calendarUrl: string
+  remotePropertyUrl: string
   updatedBy: string
 }

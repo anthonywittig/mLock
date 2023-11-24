@@ -138,8 +138,9 @@ func Test_notSure(t *testing.T) {
 	unitID := uuid.New()
 	reservationsByUnit, err := r.GetForUnits(context.Background(), []shared.Unit{
 		{
-			ID:   unitID,
-			Name: "01A",
+			ID:                unitID,
+			Name:              "01A",
+			RemotePropertyURL: "https://dashboard.hostaway.com/listing/25",
 		},
 	})
 	assert.Nil(t, err)
