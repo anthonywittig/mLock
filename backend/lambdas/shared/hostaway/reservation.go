@@ -37,14 +37,19 @@ type listingsPage struct {
 
 type reservation struct {
 	ArrivalDate           string `json:"arrivalDate"`
+	DoorCode              string `json:"doorCode"`
 	ChannelID             int    `json:"channelId"`
 	CheckInTime           int    `json:"checkInTime"`
 	CheckOutTime          int    `json:"checkOutTime"`
 	DepartureDate         string `json:"departureDate"`
 	HostawayReservationID string `json:"hostawayReservationId"`
 	ListingMapID          int    `json:"listingMapId"`
-	// DoorCode      string `json:"doorCode"`
-	// ExternalPropertyID    int    `json:"externalPropertyId"`
+	Status                string `json:"status"`
+}
+
+type reservationUpdateResponse struct {
+	Status  string `json:"status"`
+	Message string `json:"message"`
 }
 
 type reservationsPage struct {
@@ -111,8 +116,17 @@ func (r *Repository) GetForUnits(ctx context.Context, units []shared.Unit) (map[
 				checkOutHour := max(reservation.CheckOutTime, 11)
 				endDate = endDate.Add(time.Duration(checkOutHour) * time.Hour)
 
+				// This probably isn't the best place to do this, but if the `DoorCode` isn't set, set it.
+				if reservation.DoorCode == "" {
+					reservation.DoorCode = reservation.HostawayReservationID[len(reservation.HostawayReservationID)-4:]
+					if err := r.setDoorCode(ctx, accessToken, reservation.HostawayReservationID, reservation.DoorCode); err != nil {
+						return map[uuid.UUID][]shared.Reservation{}, fmt.Errorf("error setting door code: %s", err.Error())
+					}
+				}
+
 				reservationsByUnit[unit.ID] = append(reservationsByUnit[unit.ID], shared.Reservation{
 					ID:                reservation.HostawayReservationID,
+					DoorCode:          reservation.DoorCode,
 					TransactionNumber: reservation.HostawayReservationID,
 					Start:             startDate,
 					End:               endDate,
@@ -229,9 +243,16 @@ func (r *Repository) getReservations(ctx context.Context, authToken authData, un
 		}
 
 		for _, reservation := range pageResult.Result {
-			if reservation.DepartureDate > twoDaysAgo {
-				result = append(result, reservation)
+			if reservation.Status == "cancelled" {
+				continue
 			}
+			if reservation.Status != "new" && reservation.Status != "modified" {
+				fmt.Printf("unhandled reservation status: %s\n", reservation.Status)
+			}
+			if reservation.DepartureDate < twoDaysAgo {
+				continue
+			}
+			result = append(result, reservation)
 		}
 		page++
 	}
@@ -286,4 +307,50 @@ func getPage[T any](
 	}
 
 	return body, nil
+}
+
+func (r *Repository) setDoorCode(ctx context.Context, authToken authData, reservationID string, doorCode string) error {
+	req, err := http.NewRequestWithContext(
+		ctx,
+		http.MethodPut,
+		fmt.Sprintf("%s/v1/reservations/%s", r.hostawayURL, reservationID),
+		strings.NewReader(fmt.Sprintf(`{"doorCode":"%s"}`, doorCode)),
+	)
+	if err != nil {
+		return fmt.Errorf("error creating request: %s", err.Error())
+	}
+	req.Header.Add("Authorization", "Bearer "+authToken.AccessToken)
+	req.Header.Set("Content-Type", "application/json")
+
+	client := &http.Client{
+		Timeout: 30 * time.Second,
+	}
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return fmt.Errorf("error doing request: %s", err.Error())
+	}
+	defer resp.Body.Close()
+
+	respBody, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return fmt.Errorf("error reading body: %s", err.Error())
+	}
+
+	var body reservationUpdateResponse
+	if err := json.Unmarshal(respBody, &body); err != nil {
+		return fmt.Errorf("error unmarshalling body: %s", err.Error())
+	}
+
+	if resp.StatusCode == 403 && strings.HasPrefix(body.Message, "Requested dates are not available") {
+		// There were a lot of duplicate reservations when we first moved over to Hostaway...
+		fmt.Printf("non-fatal error setting door code for reservation %s; message: %s\n", reservationID, body.Message)
+		return nil
+	}
+
+	if resp.StatusCode != 200 {
+		return fmt.Errorf("non-200 status code: %d, body: %s", resp.StatusCode, string(respBody))
+	}
+
+	return nil
 }

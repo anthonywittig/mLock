@@ -93,7 +93,9 @@ func (s *Scheduler) processDevice(ctx context.Context, device shared.Device, res
 	needToSave := []*shared.DeviceManagedLockCode{}
 
 	for _, reservation := range relevantReservations {
-		code := reservation.TransactionNumber[len(reservation.TransactionNumber)-4:]
+		if reservation.DoorCode == "" {
+			return fmt.Errorf("reservation %s has no door code", reservation.ID)
+		}
 		mlc, ok := mlcByReservation[reservation.ID]
 		if !ok {
 			if reservation.End.Before(s.now) {
@@ -101,7 +103,7 @@ func (s *Scheduler) processDevice(ctx context.Context, device shared.Device, res
 			}
 
 			newMLC := &shared.DeviceManagedLockCode{
-				Code:  code,
+				Code:  reservation.DoorCode,
 				EndAt: reservation.End,
 				ID:    uuid.New(),
 				Note:  fmt.Sprintf("Automatically created for reservation %s", reservation.TransactionNumber),
@@ -117,9 +119,9 @@ func (s *Scheduler) processDevice(ctx context.Context, device shared.Device, res
 			needToSave = append(needToSave, newMLC)
 		} else if mlc.Reservation.Sync {
 			changedFields := []string{}
-			if mlc.Code != code {
+			if mlc.Code != reservation.DoorCode {
 				changedFields = append(changedFields, "code")
-				mlc.Code = code
+				mlc.Code = reservation.DoorCode
 			}
 			if !mlc.StartAt.Equal(reservation.Start) {
 				changedFields = append(changedFields, "start")

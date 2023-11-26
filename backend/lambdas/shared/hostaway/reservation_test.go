@@ -41,10 +41,15 @@ type reservation struct {
 	CheckInTime           int    `json:"checkInTime"`
 	CheckOutTime          int    `json:"checkOutTime"`
 	DepartureDate         string `json:"departureDate"`
+	DoorCode              string `json:"doorCode"`
 	HostawayReservationID string `json:"hostawayReservationId"`
 	ListingMapID          int    `json:"listingMapId"`
-	// DoorCode              string `json:"doorCode"`
-	// ExternalPropertyID    int    `json:"externalPropertyId"`
+	Status                string `json:"status"`
+}
+
+type reservationUpdateResponse struct {
+	Status  string `json:"status"`
+	Message string `json:"message"`
 }
 
 type reservationsPage struct {
@@ -68,32 +73,34 @@ func Test_notSure(t *testing.T) {
 		w.WriteHeader(http.StatusOK)
 		w.Write(mockJSON)
 	})
-	mux.HandleFunc("/v1/listings", func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
+	/*
+		mux.HandleFunc("/v1/listings", func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusOK)
 
-		query := r.URL.Query()
-		offset := query.Get("offset")
-		if offset == "0" {
-			mockJSON, _ := json.Marshal(listingsPage{
-				Result: []listing{
-					{
-						ID:                  25,
-						InternalListingName: "01A Bunkhouse",
+			query := r.URL.Query()
+			offset := query.Get("offset")
+			if offset == "0" {
+				mockJSON, _ := json.Marshal(listingsPage{
+					Result: []listing{
+						{
+							ID:                  25,
+							InternalListingName: "01A Bunkhouse",
+						},
 					},
-				},
-				Status: "success",
-			})
-			w.Write(mockJSON)
-		} else {
-			mockJSON, _ := json.Marshal(listingsPage{
-				Result: []listing{},
-				Status: "success",
-			})
-			w.Write(mockJSON)
+					Status: "success",
+				})
+				w.Write(mockJSON)
+			} else {
+				mockJSON, _ := json.Marshal(listingsPage{
+					Result: []listing{},
+					Status: "success",
+				})
+				w.Write(mockJSON)
 
-		}
-	})
+			}
+		})
+	*/
 	mux.HandleFunc("/v1/reservations", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
@@ -111,6 +118,7 @@ func Test_notSure(t *testing.T) {
 						DepartureDate:         "2027-11-26",
 						HostawayReservationID: "21107569",
 						ListingMapID:          25,
+						Status:                "new",
 					},
 				},
 				Status: "success",
@@ -124,6 +132,19 @@ func Test_notSure(t *testing.T) {
 			w.Write(mockJSON)
 
 		}
+	})
+	mux.HandleFunc("/v1/reservations/21107569", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodPut {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusOK)
+			mockJSON, _ := json.Marshal(reservationUpdateResponse{
+				Status:  "",
+				Message: "",
+			})
+			w.Write(mockJSON)
+			return
+		}
+		w.WriteHeader(http.StatusMethodNotAllowed)
 	})
 
 	// Setup a mock HTTP server with the custom mux
@@ -153,7 +174,6 @@ func Test_notSure(t *testing.T) {
 	assert.Equal(t, "21107569", reservation.ID)
 	assert.Equal(t, "2021-11-22T16:00:00-07:00", reservation.Start.Format(time.RFC3339))
 	assert.Equal(t, "2027-11-26T11:00:00-07:00", reservation.End.Format(time.RFC3339))
-	assert.Equal(t, "", reservation.Summary)
 	assert.Equal(t, "21107569", reservation.TransactionNumber)
 }
 

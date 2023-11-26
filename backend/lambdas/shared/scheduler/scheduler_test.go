@@ -32,18 +32,21 @@ func Test_addMLC(t *testing.T) {
 		ID:                "pastReservation",
 		Start:             now.Add(-24 * time.Hour * 180),
 		End:               now.Add(-24 * time.Hour * 179),
+		DoorCode:          "3344",
 		TransactionNumber: "11223344",
 	}
 	reservation := shared.Reservation{
 		ID:                "currentReservation",
 		Start:             now,
 		End:               now.Add(1 * time.Hour),
+		DoorCode:          "9876", // Different from the `TransactionNumber`.
 		TransactionNumber: "12345678",
 	}
 	futureReservation := shared.Reservation{
 		ID:                "futureReservation",
 		Start:             now.Add(24 * time.Hour * 180),
 		End:               now.Add(24 * time.Hour * 181),
+		DoorCode:          "3456",
 		TransactionNumber: "90123456",
 	}
 
@@ -75,7 +78,7 @@ func Test_addMLC(t *testing.T) {
 		assert.Equal(t, 2, len(d.ManagedLockCodes))
 
 		mlc := d.ManagedLockCodes[0]
-		assert.Equal(t, "5678", mlc.Code)
+		assert.Equal(t, "9876", mlc.Code)
 		assert.Equal(t, reservation.ID, mlc.Reservation.ID)
 		assert.Equal(t, true, mlc.Reservation.Sync)
 		assert.Equal(t, reservation.Start.Add(-2*time.Hour), mlc.StartAt)
@@ -116,6 +119,7 @@ func Test_noEditMLC(t *testing.T) {
 		ID:                "someReservationID",
 		Start:             now,
 		End:               now.Add(1 * time.Hour),
+		DoorCode:          "5678",
 		TransactionNumber: "12345678",
 	}
 	managedLockCode := &shared.DeviceManagedLockCode{
@@ -170,6 +174,7 @@ func Test_noSyncMLC(t *testing.T) {
 		ID:                "someReservationID",
 		Start:             now,
 		End:               now.Add(1 * time.Hour),
+		DoorCode:          "5678",
 		TransactionNumber: "12345678",
 	}
 	managedLockCode := &shared.DeviceManagedLockCode{
@@ -224,6 +229,7 @@ func Test_editMLC(t *testing.T) {
 		ID:                "someReservationID",
 		Start:             now,
 		End:               now.Add(1 * time.Hour),
+		DoorCode:          "5678",
 		TransactionNumber: "12345678",
 	}
 	managedLockCode := &shared.DeviceManagedLockCode{
@@ -302,6 +308,7 @@ func Test_recentlyEndedReservation(t *testing.T) {
 		ID:                "someReservationID",
 		Start:             now.Add(-1 * time.Hour),
 		End:               now.Add(-31 * time.Minute), // To make it end a minute ago, we need to subtract the 30 that will get added...
+		DoorCode:          "5678",
 		TransactionNumber: "12345678",
 	}
 	device := shared.Device{

@@ -2,10 +2,12 @@ package shared
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"mlock/shared"
+	mshared "mlock/shared"
 	"net/http"
 	"strings"
 
@@ -75,6 +77,47 @@ func (a *APIResponse) SetAuthCookie(token string) error {
 }
 
 func AddAuthToContext(ctx context.Context, req events.APIGatewayProxyRequest, userService UserService) error {
+	cd, err := GetContextData(ctx)
+	if err != nil {
+		return fmt.Errorf("error getting context data: %s", err.Error())
+	}
+
+	if req.Path == "/webhooks" {
+		if req.HTTPMethod == "GET" {
+			// When first setting up a webhook, Hostaway sends a GET request without any auth. :(
+			cd.User = &User{
+				ID:    [16]byte{},
+				Email: "super-fake-hostaway-webhook-user",
+			}
+			return nil
+		}
+
+		login, err := mshared.GetConfig("HOSTAWAY_WEBHOOK_LOGIN")
+		if err != nil {
+			return fmt.Errorf("error getting hostaway webhook login: %s", err.Error())
+		}
+		password, err := mshared.GetConfig("HOSTAWAY_WEBHOOK_PASSWORD")
+		if err != nil {
+			return fmt.Errorf("error getting hostaway webhook password: %s", err.Error())
+		}
+		base64Auth := base64.StdEncoding.EncodeToString([]byte(fmt.Sprintf("%s:%s", login, password)))
+		expectedAuthHeader := fmt.Sprintf("Basic %s", base64Auth)
+
+		authHeader, ok := req.Headers["Authorization"]
+		if !ok {
+			return fmt.Errorf("no auth header")
+		}
+		if authHeader != expectedAuthHeader {
+			return fmt.Errorf("auth header does not match")
+		}
+
+		cd.User = &User{
+			ID:    [16]byte{},
+			Email: "fake-hostaway-webhook-user",
+		}
+		return nil
+	}
+
 	cookies := req.Headers[CookieHeaderName]
 	if cookies == "" {
 		return nil
@@ -104,11 +147,6 @@ func AddAuthToContext(ctx context.Context, req events.APIGatewayProxyRequest, us
 	if tokenData.Error != nil || !tokenData.TokenValid || !tokenData.UserValid {
 		// Could probably just check if the user is not nil.
 		return nil
-	}
-
-	cd, err := GetContextData(ctx)
-	if err != nil {
-		return fmt.Errorf("error getting context data: %s", err.Error())
 	}
 
 	cd.User = &tokenData.User

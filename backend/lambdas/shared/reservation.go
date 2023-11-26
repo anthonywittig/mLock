@@ -6,6 +6,6 @@ type Reservation struct {
 	ID                string    `json:"id"`
 	Start             time.Time `json:"start"`
 	End               time.Time `json:"end"`
-	Summary           string    `json:"summary"`
+	DoorCode          string    `json:"doorCode"`
 	TransactionNumber string    `json:"transactionNumber"`
 }
