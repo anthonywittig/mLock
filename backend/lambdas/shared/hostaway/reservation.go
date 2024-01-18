@@ -256,7 +256,7 @@ func (r *Repository) getReservations(ctx context.Context, authToken authData, un
 		if page > 20 {
 			return []reservation{}, fmt.Errorf("too many pages")
 		}
-
+	ReservationLoop:
 		for _, reservation := range pageResult.Result {
 			for _, statusToIgnore := range []string{
 				"cancelled",
@@ -266,7 +266,7 @@ func (r *Repository) getReservations(ctx context.Context, authToken authData, un
 				// "inquiryNotPossible",
 			} {
 				if reservation.Status == statusToIgnore {
-					continue
+					continue ReservationLoop
 				}
 			}
 			if reservation.Status != "new" && reservation.Status != "modified" {
