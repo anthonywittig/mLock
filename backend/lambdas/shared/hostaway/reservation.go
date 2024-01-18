@@ -23,6 +23,7 @@ type authData struct {
 }
 
 type listing struct {
+	DoorSecurityCode    string `json:"doorSecurityCode"`
 	ID                  int    `json:"id"`
 	InternalListingName string `json:"internalListingName"`
 }
@@ -95,6 +96,8 @@ func (r *Repository) GetForUnits(ctx context.Context, units []shared.Unit) (map[
 		return nil, fmt.Errorf("error getting reservations: %s\n", err.Error())
 	}
 
+	var listings map[int]listing = map[int]listing{}
+
 	reservationsByUnit := map[uuid.UUID][]shared.Reservation{}
 
 	for _, reservation := range reservations {
@@ -118,7 +121,19 @@ func (r *Repository) GetForUnits(ctx context.Context, units []shared.Unit) (map[
 
 				// This probably isn't the best place to do this, but if the `DoorCode` isn't set, set it.
 				if reservation.DoorCode == "" {
-					reservation.DoorCode = reservation.HostawayReservationID[len(reservation.HostawayReservationID)-4:]
+					if len(listings) == 0 {
+						listings, err = r.getListingsByID(ctx, accessToken)
+						if err != nil {
+							return map[uuid.UUID][]shared.Reservation{}, fmt.Errorf("error getting listings: %s", err.Error())
+						}
+					}
+					listing, ok := listings[reservation.ListingMapID]
+					if ok {
+						reservation.DoorCode = listing.DoorSecurityCode
+						fmt.Printf("setting door code to listing door code: %s\n", reservation.DoorCode)
+					} else {
+						reservation.DoorCode = reservation.HostawayReservationID[len(reservation.HostawayReservationID)-4:]
+					}
 					if err := r.setDoorCode(ctx, accessToken, reservation.HostawayReservationID, reservation.DoorCode); err != nil {
 						return map[uuid.UUID][]shared.Reservation{}, fmt.Errorf("error setting door code: %s", err.Error())
 					}
@@ -243,11 +258,19 @@ func (r *Repository) getReservations(ctx context.Context, authToken authData, un
 		}
 
 		for _, reservation := range pageResult.Result {
-			if reservation.Status == "cancelled" {
-				continue
+			for _, statusToIgnore := range []string{
+				"cancelled",
+				// Need to see if we should ignore these.
+				// "declined",
+				// "inquiry",
+				// "inquiryNotPossible",
+			} {
+				if reservation.Status == statusToIgnore {
+					continue
+				}
 			}
 			if reservation.Status != "new" && reservation.Status != "modified" {
-				fmt.Printf("unhandled reservation status: %s\n", reservation.Status)
+				fmt.Printf("unhandled reservation status: %s for hostaway reservation ID: %s\n", reservation.Status, reservation.HostawayReservationID)
 			}
 			if reservation.DepartureDate < twoDaysAgo {
 				continue
@@ -295,6 +318,10 @@ func getPage[T any](
 		return emptyT, fmt.Errorf("error doing request: %s", err.Error())
 	}
 	defer resp.Body.Close()
+
+	if resp.StatusCode >= 300 {
+		return emptyT, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
+	}
 
 	respBody, err := io.ReadAll(resp.Body)
 	if err != nil {

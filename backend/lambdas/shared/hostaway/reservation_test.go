@@ -101,6 +101,19 @@ func Test_notSure(t *testing.T) {
 			}
 		})
 	*/
+	mux.HandleFunc("/v1/listings", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodGet {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusOK)
+			mockJSON, _ := json.Marshal(listingsPage{
+				Status: "success",
+				Result: []listing{},
+			})
+			w.Write(mockJSON)
+			return
+		}
+		w.WriteHeader(http.StatusMethodNotAllowed)
+	})
 	mux.HandleFunc("/v1/reservations", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
