@@ -260,10 +260,9 @@ func (r *Repository) getReservations(ctx context.Context, authToken authData, un
 		for _, reservation := range pageResult.Result {
 			for _, statusToIgnore := range []string{
 				"cancelled",
-				// Need to see if we should ignore these.
-				// "declined",
-				// "inquiry",
-				// "inquiryNotPossible",
+				"declined",
+				"inquiry",
+				"inquiryNotPossible",
 			} {
 				if reservation.Status == statusToIgnore {
 					continue ReservationLoop
