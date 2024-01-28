@@ -39,6 +39,14 @@ export const Navigation = () => {
             Devices
           </Nav.Link>
           <Nav.Link
+            href="/climate-controls/"
+            className={
+              location.pathname.startsWith("/climate-controls/") ? "active" : ""
+            }
+          >
+            Climate Controls
+          </Nav.Link>
+          <Nav.Link
             href="/users/"
             className={location.pathname.startsWith("/users/") ? "active" : ""}
           >

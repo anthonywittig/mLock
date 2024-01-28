@@ -27,6 +27,12 @@ func HandleRequest(ctx context.Context, event MyEvent) (Response, error) {
 		ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
 		defer cancel()
 
+		log.Printf("migrating climatecontrol...\n")
+		if err := climatecontrol.Migrate(ctx); err != nil {
+			return Response{}, fmt.Errorf("error migrating climatecontrol: %s", err.Error())
+		}
+		log.Printf("migrated climatecontrol\n")
+
 		log.Printf("starting migrations\n")
 		if err := mshared.LoadConfig(); err != nil {
 			return Response{}, fmt.Errorf("error loading config: %s", err.Error())
@@ -57,6 +63,5 @@ func HandleRequest(ctx context.Context, event MyEvent) (Response, error) {
 		if err := auditlog.Migrate(ctx); err != nil {
 			return Response{}, fmt.Errorf("error migrating dynamo audit log: %s", err.Error())
 		}
-
 	*/
 }

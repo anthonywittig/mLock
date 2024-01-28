@@ -8,6 +8,19 @@ type AuditLogEntriesT = {
   log: string
 }
 
+type ClimateControlT = {
+  id: string
+  lastRefreshedAt: string
+  rawClimateControl: {
+    attributes: {
+      current_temperature: number // actual
+      friendly_name: string
+      temperature: number // desired
+    }
+    state: string
+  }
+}
+
 type DeviceLockCodeT = {
   code: string
   mode: string

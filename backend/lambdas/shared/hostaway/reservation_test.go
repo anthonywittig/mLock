@@ -60,7 +60,7 @@ type reservationsPage struct {
 	Offset int           `json:"offset"`
 }
 
-func Test_notSure(t *testing.T) {
+func Test_aFewThings(t *testing.T) {
 	assert.Nil(t, loadConfig())
 
 	mux := http.NewServeMux()
