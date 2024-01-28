@@ -4,6 +4,7 @@ import {
   Route,
   Navigate,
 } from "react-router-dom"
+import { ClimateControlRoutes } from "./pages/climate-controls/Routes"
 import { DeviceRoutes } from "./pages/devices/Routes"
 import { Navigation } from "./navigation"
 import { Properties } from "./pages/Properties"
@@ -19,6 +20,10 @@ export const NavRoutes = () => {
       <Navigation />
       <div>
         <Routes>
+          <Route
+            path="/climate-controls/*"
+            element={<ClimateControlRoutes />}
+          />
           <Route path="/devices/*" element={<DeviceRoutes />} />
           <Route path="/properties/*" element={<Properties />} />
           <Route path="/privacy-policy/*" element={<PrivacyPolicy />} />

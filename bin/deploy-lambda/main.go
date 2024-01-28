@@ -140,7 +140,7 @@ func (l *lambdaDeployer) createIfNotExists(ctx context.Context) error {
 			Timeout:      aws.Int32(30), // Seems like an ok default, but some will need more.
 		},
 	); err != nil {
-		return fmt.Errorf("unable to create function, %v", err)
+		return fmt.Errorf("unable to create function -- YOU MAY NEED TO WAIT 30 SECONDS AND TRY AGAIN --, %v", err)
 	}
 
 	return nil

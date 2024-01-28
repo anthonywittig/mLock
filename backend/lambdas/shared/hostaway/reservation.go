@@ -363,6 +363,11 @@ func (r *Repository) setDoorCode(ctx context.Context, authToken authData, reserv
 		return fmt.Errorf("error reading body: %s", err.Error())
 	}
 
+	// We'll handle 403 later.
+	if resp.StatusCode != 200 && resp.StatusCode != 403 {
+		return fmt.Errorf("non-200 status code: %d, body: %s", resp.StatusCode, string(respBody))
+	}
+
 	var body reservationUpdateResponse
 	if err := json.Unmarshal(respBody, &body); err != nil {
 		return fmt.Errorf("error unmarshalling body: %s", err.Error())
@@ -372,10 +377,6 @@ func (r *Repository) setDoorCode(ctx context.Context, authToken authData, reserv
 		// There were a lot of duplicate reservations when we first moved over to Hostaway...
 		fmt.Printf("non-fatal error setting door code for reservation %s; message: %s\n", reservationID, body.Message)
 		return nil
-	}
-
-	if resp.StatusCode != 200 {
-		return fmt.Errorf("non-200 status code: %d, body: %s", resp.StatusCode, string(respBody))
 	}
 
 	return nil
