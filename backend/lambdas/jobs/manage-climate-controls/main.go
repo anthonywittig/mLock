@@ -52,6 +52,11 @@ func HandleRequest(ctx context.Context, event MyEvent) (Response, error) {
 	for _, rawClimateControl := range rawClimateControls {
 		fmt.Printf("rawClimateControl: %+v\n", rawClimateControl)
 
+		if rawClimateControl.State == "unavailable" {
+			// For now, let's skip these.
+			continue
+		}
+
 		climateControl := shared.ClimateControl{
 			ID:      uuid.NewSHA1(idNamespace, []byte(rawClimateControl.EntityID)),
 			History: []shared.ClimateControlHistory{},

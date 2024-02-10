@@ -17,6 +17,7 @@ type ClimateControlT = {
       friendly_name: string
       temperature: number // desired
     }
+    entity_id: string
     state: string
   }
 }
