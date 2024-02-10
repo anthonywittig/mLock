@@ -76,7 +76,7 @@ const List = () => {
         <thead>
           <tr>
             <th scope="col">Name</th>
-            <th scope="col">Status</th>
+            <th scope="col">Warnings</th>
             <th scope="col">Battery</th>
             <th scope="col">Unit</th>
             <th scope="col">Actions</th>
@@ -90,7 +90,7 @@ const List = () => {
                   <Button variant="link">{entity.rawDevice.name}</Button>
                 </Link>
               </th>
-              <td>{renderEntityStatus(entity)}</td>
+              <td>{renderEntityWarnings(entity)}</td>
               <td>
                 <span className="btn">{renderEntityBatteryLevel(entity)}</span>
               </td>
@@ -143,7 +143,7 @@ const List = () => {
     )
   }
 
-  const renderEntityStatus = (entity: DeviceT) => {
+  const renderEntityWarnings = (entity: DeviceT) => {
     const warnings = getOfflineWarnings(entity)
     warnings.push.apply(warnings, getLastRefreshedWarnings(entity))
     warnings.push.apply(warnings, getLastWentOfflineWarnings(entity))
