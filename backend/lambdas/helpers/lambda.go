@@ -135,7 +135,7 @@ func handleMiddlewares(ctx context.Context, req events.APIGatewayProxyRequest, m
 				return fmt.Errorf("error getting auth user: %s", err.Error())
 			}
 			if user == nil {
-				fmt.Println("unauthorized request")
+				fmt.Printf("unauthorized request; method: %s, path: %s\n", req.HTTPMethod, req.Path)
 				return &shared.APIError{
 					StatusCode: http.StatusUnauthorized,
 					Message:    "unauthorized",

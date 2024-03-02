@@ -2,6 +2,11 @@ package main
 
 import (
 	"context"
+	"fmt"
+	"log"
+	"mlock/lambdas/shared"
+	"mlock/lambdas/shared/dynamo/miscellaneous"
+	"time"
 
 	"github.com/aws/aws-lambda-go/lambda"
 )
@@ -18,15 +23,26 @@ func main() {
 }
 
 func HandleRequest(ctx context.Context, event MyEvent) (Response, error) {
-	return Response{
-		Messages: []string{"no migrations run; we should create a migration tracking table and only run them once, probably. And we should run the migrations on every deploy, probably."},
-	}, nil
+	/*
+		return Response{
+			Messages: []string{"no migrations run; we should create a migration tracking table and only run them once, probably. And we should run the migrations on every deploy, probably."},
+		}, nil
+	*/
+
+	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
+	defer cancel()
+	ctx = shared.CreateContextData(ctx)
+
+	log.Printf("migrating miscellaneous...\n")
+	if err := miscellaneous.Migrate(ctx); err != nil {
+		return Response{}, fmt.Errorf("error migrating miscellaneous: %s", err.Error())
+	}
+	log.Printf("migrated miscellaneous\n")
+
+	return Response{Messages: []string{"success!"}}, nil
 
 	// Old code as a reference to what we once did:
 	/*
-		ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
-		defer cancel()
-
 		log.Printf("migrating climatecontrol...\n")
 		if err := climatecontrol.Migrate(ctx); err != nil {
 			return Response{}, fmt.Errorf("error migrating climatecontrol: %s", err.Error())
