@@ -22,6 +22,11 @@ type ClimateControlT = {
   }
 }
 
+type ClimateControlSetting = {
+  hvacMode: string
+  temperature: number
+}
+
 type DeviceLockCodeT = {
   code: string
   mode: string

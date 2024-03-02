@@ -3,11 +3,22 @@ import { ListGroup, Table } from "react-bootstrap"
 import { Loading } from "../utils/Loading"
 import { StandardFetch } from "../utils/FetchHelper"
 import { formatDistance, isBefore, sub } from "date-fns"
+import { Button, Form } from "react-bootstrap"
 
 const Endpoint = "climate-controls"
 
 const List = () => {
   const [entities, setEntities] = React.useState<ClimateControlT[]>([])
+  const [climateControlOccupiedSettings, setClimateControlOccupiedSettings] =
+    React.useState<ClimateControlSetting>({
+      hvacMode: "off",
+      temperature: 72,
+    })
+  const [climateControlVacantSettings, setClimateControlVacantSettings] =
+    React.useState<ClimateControlSetting>({
+      hvacMode: "off",
+      temperature: 72,
+    })
   const [loading, setLoading] = React.useState<boolean>(true)
 
   React.useEffect(() => {
@@ -17,6 +28,10 @@ const List = () => {
       .then((response) => response.json())
       .then((response) => {
         setEntities(response.entities)
+        setClimateControlOccupiedSettings(
+          response.climateControlOccupiedSettings,
+        )
+        setClimateControlVacantSettings(response.climateControlVacantSettings)
         setLoading(false)
       })
       .catch((err) => {
@@ -28,11 +43,17 @@ const List = () => {
   const render = () => {
     return (
       <>
-        <div className="card">
-          <div className="card-body">
-            <h2 className="card-title">Climate Controls</h2>
-            {renderEntities()}
+        <div className="card mb-2">
+          <div className="card-header">
+            <h2 className="card-title">Settings</h2>
           </div>
+          <div className="card-body">{renderSettings()}</div>
+        </div>
+        <div className="card">
+          <div className="card-header">
+            <h2 className="card-title">Climate Controls</h2>
+          </div>
+          <div className="card-body">{renderEntities()}</div>
         </div>
       </>
     )
@@ -73,6 +94,95 @@ const List = () => {
     )
   }
 
+  const renderSettings = () => {
+    if (loading) {
+      return <Loading />
+    }
+    return (
+      <>
+        {[
+          {
+            name: "Occupied",
+            settings: climateControlOccupiedSettings,
+            settingsSetter: setClimateControlOccupiedSettings,
+          },
+          {
+            name: "Vacant",
+            settings: climateControlVacantSettings,
+            settingsSetter: setClimateControlVacantSettings,
+          },
+        ].map((config) => (
+          <>
+            <h3>{config.name}</h3>
+            <Form
+              className="mb-3"
+              onSubmit={(evt) => {
+                evt.preventDefault()
+                updateSettings()
+              }}
+            >
+              <Form.Group
+                controlId={`hvac-mode-${config.name}`}
+                className="mb-3"
+              >
+                <Form.Label>HVAC Mode</Form.Label>
+                <Form.Control
+                  as="select"
+                  onChange={(evt) =>
+                    config.settingsSetter({
+                      hvacMode: evt.target.value,
+                      temperature: config.settings.temperature,
+                    })
+                  }
+                >
+                  <option
+                    value="off"
+                    selected={"off" === config.settings?.hvacMode}
+                  >
+                    Off
+                  </option>
+                  <option
+                    value="cool"
+                    selected={"cool" === config.settings?.hvacMode}
+                  >
+                    Cool
+                  </option>
+                  <option
+                    value="heat"
+                    selected={"heat" === config.settings?.hvacMode}
+                  >
+                    Heat
+                  </option>
+                </Form.Control>
+              </Form.Group>
+
+              <Form.Group
+                controlId={`temperature-${config.name}`}
+                className="mb-3"
+              >
+                <Form.Label>Temperature</Form.Label>
+                <Form.Control
+                  type="number"
+                  value={config.settings?.temperature}
+                  onChange={(evt) =>
+                    config.settingsSetter({
+                      hvacMode: config.settings.hvacMode,
+                      temperature: Number(evt.target.value),
+                    })
+                  }
+                />
+              </Form.Group>
+
+              <Button variant="secondary" type="submit">
+                Update
+              </Button>
+            </Form>
+          </>
+        ))}
+      </>
+    )
+  }
+
   const renderLastRefreshedAt = (entity: ClimateControlT) => {
     const lr = Date.parse(entity.lastRefreshedAt)
     return formatDistance(lr, new Date(), { addSuffix: true })
@@ -106,6 +216,32 @@ const List = () => {
     }
 
     return warnings
+  }
+
+  const updateSettings = () => {
+    console.log("updateSettings")
+    setLoading(true)
+
+    StandardFetch(`${Endpoint}/settings`, {
+      method: "PUT",
+      body: JSON.stringify({
+        climateControlOccupiedSettings,
+        climateControlVacantSettings,
+      }),
+    })
+      .then((response) => response.json())
+      .then((response) => {
+        setEntities(response.entities)
+        setClimateControlOccupiedSettings(
+          response.climateControlOccupiedSettings,
+        )
+        setClimateControlVacantSettings(response.climateControlVacantSettings)
+        setLoading(false)
+      })
+      .catch((err) => {
+        // TODO: indicate error.
+        console.log(err)
+      })
   }
 
   return render()
