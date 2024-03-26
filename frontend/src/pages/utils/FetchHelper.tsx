@@ -1,8 +1,4 @@
-function StandardFetch(path: string, init?: RequestInit): Promise<Response> {
-  if (!init) {
-    init = {}
-  }
-
+function StandardFetch(path: string, init: RequestInit): Promise<Response> {
   // Always add credentials.
   init.credentials = "include"
 

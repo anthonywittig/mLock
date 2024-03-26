@@ -1,6 +1,7 @@
 package shared
 
 import (
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -42,4 +43,8 @@ type RawClimateControl struct {
 		// ParentID string `json:"parent_id"` // Not sure what the real type of this is.
 		// UserID string `json:"user_id"`  // Not sure what the real type of this is.
 	} `json:"context"`
+}
+
+func (c *ClimateControl) GetFriendlyNamePrefix() string {
+	return strings.Split(c.RawClimateControl.Attributes.FriendlyName, " ")[0]
 }

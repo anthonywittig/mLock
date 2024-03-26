@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"mlock/lambdas/shared"
 	"mlock/lambdas/shared/dynamo/climatecontrol"
+	"mlock/lambdas/shared/dynamo/device"
+	"mlock/lambdas/shared/dynamo/unit"
 	"mlock/lambdas/shared/homeassistant"
 	mshared "mlock/shared"
 	"time"
@@ -31,11 +33,13 @@ func HandleRequest(ctx context.Context, event MyEvent) (Response, error) {
 		return Response{}, fmt.Errorf("error loading config: %s", err.Error())
 	}
 
+	climateControlRepository := climatecontrol.NewRepository()
+	deviceRepository := device.NewRepository()
 	haRepository, err := homeassistant.NewRepository()
 	if err != nil {
 		return Response{}, fmt.Errorf("error creating climate control repository: %s", err.Error())
 	}
-	climateControlRepository := climatecontrol.NewRepository()
+	unitsRepository := unit.NewRepository()
 
 	rawClimateControls, err := haRepository.ListClimateControls(ctx)
 	if err != nil {
