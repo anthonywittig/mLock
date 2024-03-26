@@ -9,17 +9,20 @@ type AuditLogEntriesT = {
 }
 
 type ClimateControlT = {
-  id: string
-  lastRefreshedAt: string
-  rawClimateControl: {
-    attributes: {
-      current_temperature: number // actual
-      friendly_name: string
-      temperature: number // desired
+  climateControl: {
+    id: string
+    lastRefreshedAt: string
+    rawClimateControl: {
+      attributes: {
+        current_temperature: number // actual
+        friendly_name: string
+        temperature: number // desired
+      }
+      entity_id: string
+      state: string
     }
-    entity_id: string
-    state: string
   }
+  unit: UnitT
 }
 
 type ClimateControlSetting = {

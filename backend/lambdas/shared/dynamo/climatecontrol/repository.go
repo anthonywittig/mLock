@@ -7,7 +7,6 @@ import (
 	"mlock/lambdas/shared"
 	"mlock/lambdas/shared/dynamo"
 	"sort"
-	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
@@ -117,33 +116,7 @@ func (r *Repository) ListByFriendlyNamePrefix(ctx context.Context) (map[string][
 		return nil, fmt.Errorf("error getting devices: %s", err.Error())
 	}
 
-	byP := map[string][]shared.ClimateControl{}
-	for _, e := range all {
-		prefix := r.getFriendlyNamePrefix(e)
-		es, ok := byP[prefix]
-		if !ok {
-			es = []shared.ClimateControl{}
-		}
-		es = append(es, e)
-		byP[prefix] = es
-	}
-
-	return byP, nil
-}
-
-func (r *Repository) ListForUnit(ctx context.Context, unit shared.Unit) ([]shared.ClimateControl, error) {
-	all, err := r.List(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("error listing: %s", err.Error())
-	}
-
-	forU := []shared.ClimateControl{}
-	for _, e := range all {
-		if r.getFriendlyNamePrefix(e) == unit.Name {
-			forU = append(forU, e)
-		}
-	}
-	return forU, nil
+	return r.GroupByFriendlyNamePrefix(all), nil
 }
 
 func (r *Repository) Put(ctx context.Context, item shared.ClimateControl) (shared.ClimateControl, error) {
@@ -181,10 +154,6 @@ func (r *Repository) Put(ctx context.Context, item shared.ClimateControl) (share
 	}
 
 	return entity, nil
-}
-
-func (r *Repository) getFriendlyNamePrefix(e shared.ClimateControl) string {
-	return strings.Split(e.RawClimateControl.Attributes.FriendlyName, " ")[0]
 }
 
 func Migrate(ctx context.Context) error {

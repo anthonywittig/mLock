@@ -6,20 +6,37 @@ import (
 	"fmt"
 	"mlock/lambdas/helpers"
 	"mlock/lambdas/shared"
+	"mlock/lambdas/shared/dynamo/auditlog"
 	"mlock/lambdas/shared/dynamo/climatecontrol"
 	"mlock/lambdas/shared/dynamo/miscellaneous"
+	"mlock/lambdas/shared/dynamo/unit"
 	"net/http"
 	"regexp"
 
 	"github.com/aws/aws-lambda-go/events"
+	"github.com/google/uuid"
 )
+
+type ClimateControlEntity struct {
+	ClimateControl shared.ClimateControl `json:"climateControl"`
+	Unit           shared.Unit           `json:"unit"`
+}
+
+type DetailResponse struct {
+	Entity ClimateControlEntity `json:"entity"`
+	Extra  ExtraEntities        `json:"extra"`
+}
 
 type ErrorResponse struct {
 	Error string `json:"error"`
 }
 
+type ExtraEntities struct {
+	AuditLog shared.AuditLog `json:"auditLog"`
+}
+
 type ListResponse struct {
-	Entities                       []shared.ClimateControl       `json:"entities"`
+	Entities                       []ClimateControlEntity        `json:"entities"`
 	ClimateControlOccupiedSettings shared.ClimateControlSettings `json:"climateControlOccupiedSettings"`
 	ClimateControlVacantSettings   shared.ClimateControlSettings `json:"climateControlVacantSettings"`
 }
@@ -28,6 +45,8 @@ type SettingsUpdateRequest struct {
 	ClimateControlOccupiedSettings shared.ClimateControlSettings `json:"climateControlOccupiedSettings"`
 	ClimateControlVacantSettings   shared.ClimateControlSettings `json:"climateControlVacantSettings"`
 }
+
+var entityRegex = regexp.MustCompile(`/climate-controls/?`)
 
 func main() {
 	helpers.StartAPILambda(HandleRequest, []string{helpers.MiddlewareAuth})
@@ -44,14 +63,71 @@ func HandleRequest(ctx context.Context, req events.APIGatewayProxyRequest) (*sha
 
 	switch req.HTTPMethod {
 	case "GET":
-		return list(ctx, req)
+		return get(ctx, req)
 	default:
 		return shared.NewAPIResponse(http.StatusNotImplemented, "not implemented")
 	}
 }
 
+func detail(ctx context.Context, req events.APIGatewayProxyRequest, id string) (*shared.APIResponse, error) {
+	parsedID, err := uuid.Parse(id)
+	if err != nil {
+		return nil, fmt.Errorf("error parsing id: %s", err.Error())
+	}
+
+	entity, ok, err := climatecontrol.NewRepository().Get(ctx, parsedID)
+	if err != nil {
+		return nil, fmt.Errorf("error getting entity: %s", err.Error())
+	}
+	if !ok {
+		return nil, fmt.Errorf("entity not found: %s", parsedID)
+	}
+
+	auditLog, found, err := auditlog.Get(ctx, entity.ID)
+	if err != nil {
+		return nil, fmt.Errorf("error getting audit logs: %s", err.Error())
+	}
+	if !found {
+		auditLog = shared.AuditLog{Entries: []shared.AuditLogEntry{}}
+	}
+	if len(auditLog.Entries) > 100 {
+		auditLog.Entries = auditLog.Entries[len(auditLog.Entries)-100:]
+	}
+
+	// Reverse the entries so that the newer items are first.
+	// https://github.com/golang/go/wiki/SliceTricks#reversing
+	for i := len(auditLog.Entries)/2 - 1; i >= 0; i-- {
+		opp := len(auditLog.Entries) - 1 - i
+		auditLog.Entries[i], auditLog.Entries[opp] = auditLog.Entries[opp], auditLog.Entries[i]
+	}
+
+	units, err := unit.NewRepository().ListByName(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("error getting units: %s", err.Error())
+	}
+	unit, _ := units[entity.GetFriendlyNamePrefix()]
+
+	return shared.NewAPIResponse(http.StatusOK, DetailResponse{
+		Entity: ClimateControlEntity{
+			ClimateControl: entity,
+			Unit:           unit,
+		},
+		Extra: ExtraEntities{
+			AuditLog: auditLog,
+		},
+	})
+}
+
+func get(ctx context.Context, req events.APIGatewayProxyRequest) (*shared.APIResponse, error) {
+	id := entityRegex.ReplaceAllString(req.Path, "")
+	if id != "" {
+		return detail(ctx, req, id)
+	}
+	return list(ctx, req)
+}
+
 func list(ctx context.Context, req events.APIGatewayProxyRequest) (*shared.APIResponse, error) {
-	entities, err := climatecontrol.NewRepository().List(ctx)
+	climateControls, err := climatecontrol.NewRepository().List(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("error getting entities: %s", err.Error())
 	}
@@ -62,6 +138,20 @@ func list(ctx context.Context, req events.APIGatewayProxyRequest) (*shared.APIRe
 	}
 	if !ok {
 		return shared.NewAPIResponse(http.StatusNotFound, "miscellaneous not found")
+	}
+
+	units, err := unit.NewRepository().ListByName(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("error getting units: %s", err.Error())
+	}
+
+	entities := make([]ClimateControlEntity, 0, len(climateControls))
+	for _, climateControl := range climateControls {
+		unit, _ := units[climateControl.GetFriendlyNamePrefix()]
+		entities = append(entities, ClimateControlEntity{
+			ClimateControl: climateControl,
+			Unit:           unit,
+		})
 	}
 
 	return shared.NewAPIResponse(

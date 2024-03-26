@@ -1,6 +1,7 @@
 package homeassistant
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -83,7 +84,6 @@ func (r *Repository) GetClimateControl(ctx context.Context, id string) (shared.R
 }
 
 func (r *Repository) ListClimateControls(ctx context.Context) ([]shared.RawClimateControl, error) {
-
 	req, err := http.NewRequestWithContext(
 		ctx,
 		http.MethodGet,

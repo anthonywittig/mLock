@@ -171,7 +171,7 @@ const Detail = () => {
                     </li>
                   ))
                 ) : (
-                  <li>no entries yet</li>
+                  <li>&nbsp;no entries yet</li>
                 )}
               </ul>
             </div>

@@ -113,6 +113,20 @@ func (r *Repository) List(ctx context.Context) ([]shared.Unit, error) {
 	return items, nil
 }
 
+func (r *Repository) ListByName(ctx context.Context) (map[string]shared.Unit, error) {
+	units, err := r.List(ctx)
+	if err != nil {
+		return map[string]shared.Unit{}, fmt.Errorf("error getting units: %s", err.Error())
+	}
+
+	byName := map[string]shared.Unit{}
+	for _, u := range units {
+		byName[u.Name] = u
+	}
+
+	return byName, nil
+}
+
 func (r *Repository) ListByID(ctx context.Context) (map[uuid.UUID]shared.Unit, error) {
 	units, err := r.List(ctx)
 	if err != nil {
