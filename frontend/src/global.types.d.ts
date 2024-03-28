@@ -77,6 +77,18 @@ type DeviceManagedLockCodeReservationT = {
   sync: boolean
 }
 
+type UnitOccupancyStatusT = {
+  date: string
+  noon: {
+    occupied: boolean
+    managedLockCodes: DeviceManagedLockCodeT[]
+  }
+  fourPm: {
+    occupied: boolean
+    managedLockCodes: DeviceManagedLockCodeT[]
+  }
+}
+
 type UnitT = {
   id: string
   name: string

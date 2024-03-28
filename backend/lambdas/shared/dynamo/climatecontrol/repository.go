@@ -72,6 +72,21 @@ func (r *Repository) Get(ctx context.Context, id uuid.UUID) (shared.ClimateContr
 	return *item, true, nil
 }
 
+func (r *Repository) GroupByFriendlyNamePrefix(all []shared.ClimateControl) map[string][]shared.ClimateControl {
+	byP := map[string][]shared.ClimateControl{}
+	for _, e := range all {
+		prefix := e.GetFriendlyNamePrefix()
+		es, ok := byP[prefix]
+		if !ok {
+			es = []shared.ClimateControl{}
+		}
+		es = append(es, e)
+		byP[prefix] = es
+	}
+
+	return byP
+}
+
 func (r *Repository) List(ctx context.Context) ([]shared.ClimateControl, error) {
 	dy, err := dynamo.GetClient(ctx)
 	if err != nil {

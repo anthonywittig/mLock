@@ -10,6 +10,10 @@ type MatchParams = { id: string }
 const Endpoint = "climate-controls"
 
 const Detail = () => {
+  const [auditLog, setAuditLog] = React.useState<AuditLogT>({
+    id: "",
+    entries: [],
+  })
   const [entity, setEntity] = React.useState<ClimateControlT>({
     climateControl: {
       id: "",
@@ -33,10 +37,9 @@ const Detail = () => {
     },
   })
   const [loading, setLoading] = React.useState<boolean>(true)
-  const [auditLog, setAuditLog] = React.useState<AuditLogT>({
-    id: "",
-    entries: [],
-  })
+  const [unitOccupancyStatuses, setUnitOccupancyStatuses] = React.useState<
+    UnitOccupancyStatusT[]
+  >([])
 
   const m = useMatch(Endpoint + "/:id")
   const mp = m?.params as MatchParams
@@ -49,9 +52,10 @@ const Detail = () => {
     StandardFetch(Endpoint + "/" + id, { method: "GET" })
       .then((response) => response.json())
       .then((response) => {
-        setEntity(response.entity)
-        setLoading(false)
         setAuditLog(response.extra.auditLog)
+        setEntity(response.entity)
+        setUnitOccupancyStatuses(response.extra.unitOccupancyStatuses)
+        setLoading(false)
       })
       .catch((err) => {
         // TODO: indicate error.
@@ -90,6 +94,10 @@ const Detail = () => {
           <div className="card-body">
             <h2 className="card-title">Details</h2>
             {renderEntity()}
+          </div>
+          <div className="card-body">
+            <h2 className="card-title">Occupancy Status</h2>
+            {renderOccupancyStatuses()}
           </div>
           <div className="card-body">
             <h2 className="card-title">Audit Log</h2>
@@ -159,6 +167,32 @@ const Detail = () => {
           Update
         </Button>
       </Form>
+    )
+  }
+
+  const renderOccupancyStatuses = () => {
+    if (loading) {
+      return <Loading />
+    }
+    return (
+      <table className="table table-responsive-sm">
+        <thead>
+          <tr>
+            <th scope="col">Date</th>
+            <th scope="col">Noon</th>
+            <th scope="col">4 PM</th>
+          </tr>
+        </thead>
+        <tbody>
+          {unitOccupancyStatuses.map((status) => (
+            <tr>
+              <th scope="row">{format(parseISO(status.date), "LL/dd/yyyy")}</th>
+              <td>{status.noon.occupied ? "yes" : "no"}</td>
+              <td>{status.fourPm.occupied ? "yes" : "no"}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
     )
   }
 

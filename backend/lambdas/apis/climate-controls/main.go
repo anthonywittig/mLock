@@ -8,10 +8,13 @@ import (
 	"mlock/lambdas/shared"
 	"mlock/lambdas/shared/dynamo/auditlog"
 	"mlock/lambdas/shared/dynamo/climatecontrol"
+	"mlock/lambdas/shared/dynamo/device"
 	"mlock/lambdas/shared/dynamo/miscellaneous"
 	"mlock/lambdas/shared/dynamo/unit"
+	mshared "mlock/shared"
 	"net/http"
 	"regexp"
+	"time"
 
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/google/uuid"
@@ -32,7 +35,8 @@ type ErrorResponse struct {
 }
 
 type ExtraEntities struct {
-	AuditLog shared.AuditLog `json:"auditLog"`
+	AuditLog              shared.AuditLog              `json:"auditLog"`
+	UnitOccupancyStatuses []shared.UnitOccupancyStatus `json:"unitOccupancyStatuses"`
 }
 
 type ListResponse struct {
@@ -105,7 +109,36 @@ func detail(ctx context.Context, req events.APIGatewayProxyRequest, id string) (
 	if err != nil {
 		return nil, fmt.Errorf("error getting units: %s", err.Error())
 	}
-	unit, _ := units[entity.GetFriendlyNamePrefix()]
+	unit := units[entity.GetFriendlyNamePrefix()]
+
+	devices, err := device.NewRepository().List(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("error getting devices: %s", err.Error())
+	}
+
+	tzName, err := mshared.GetConfig("TIME_ZONE")
+	if err != nil {
+		return nil, fmt.Errorf("error getting time zone name: %s", err.Error())
+	}
+
+	tz, err := time.LoadLocation(tzName)
+	if err != nil {
+		return nil, fmt.Errorf("error getting time zone %s", err.Error())
+	}
+
+	unitOccupancyStatuses := []shared.UnitOccupancyStatus{}
+	for i := 0; i < 7; i++ {
+		now := time.Now().In(tz).AddDate(0, 0, i)
+		year, month, day := now.Date()
+		date := time.Date(year, month, day, 0, 0, 0, 0, tz)
+
+		occupiedStatusForDay, err := unit.OccupancyStatusForDay(devices, date)
+		if err != nil {
+			return nil, fmt.Errorf("error getting occupied status for day: %s", err.Error())
+		}
+
+		unitOccupancyStatuses = append(unitOccupancyStatuses, occupiedStatusForDay)
+	}
 
 	return shared.NewAPIResponse(http.StatusOK, DetailResponse{
 		Entity: ClimateControlEntity{
@@ -113,7 +146,8 @@ func detail(ctx context.Context, req events.APIGatewayProxyRequest, id string) (
 			Unit:           unit,
 		},
 		Extra: ExtraEntities{
-			AuditLog: auditLog,
+			AuditLog:              auditLog,
+			UnitOccupancyStatuses: unitOccupancyStatuses,
 		},
 	})
 }

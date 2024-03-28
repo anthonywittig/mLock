@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"mlock/lambdas/shared"
 	"mlock/lambdas/shared/dynamo/climatecontrol"
-	"mlock/lambdas/shared/dynamo/device"
-	"mlock/lambdas/shared/dynamo/unit"
 	"mlock/lambdas/shared/homeassistant"
 	mshared "mlock/shared"
 	"time"
@@ -34,12 +32,12 @@ func HandleRequest(ctx context.Context, event MyEvent) (Response, error) {
 	}
 
 	climateControlRepository := climatecontrol.NewRepository()
-	deviceRepository := device.NewRepository()
+	// deviceRepository := device.NewRepository()
 	haRepository, err := homeassistant.NewRepository()
 	if err != nil {
 		return Response{}, fmt.Errorf("error creating climate control repository: %s", err.Error())
 	}
-	unitsRepository := unit.NewRepository()
+	// unitsRepository := unit.NewRepository()
 
 	rawClimateControls, err := haRepository.ListClimateControls(ctx)
 	if err != nil {
@@ -78,6 +76,50 @@ func HandleRequest(ctx context.Context, event MyEvent) (Response, error) {
 
 		climateControlRepository.Put(ctx, climateControl)
 	}
+
+	/*
+		existingClimateControlsByFriendlyName := climateControlRepository.GroupByFriendlyNamePrefix(existingClimateControls)
+		units, err := unitsRepository.List(ctx)
+		if err != nil {
+			return Response{}, fmt.Errorf("error getting units: %s", err.Error())
+		}
+		devicesByUnit, err := deviceRepository.ListByUnit(ctx)
+		if err != nil {
+			return Response{}, fmt.Errorf("error getting devices by unit: %s", err.Error())
+		}
+
+		for _, unit := range units {
+			unitClimateControls, ok := existingClimateControlsByFriendlyName[unit.Name]
+			if !ok {
+				continue
+			}
+
+			devices, ok := devicesByUnit[unit.ID]
+			if !ok {
+				continue
+			}
+
+			occupiedNow, err := unit.OccupiedStatusForDay(devices, time.Now())
+			if err != nil {
+				return Response{}, fmt.Errorf("error getting occupied status for day: %s", err.Error())
+			}
+
+			fmt.Printf("test --- occupiedNow: %+v\n", occupiedNow)
+			fmt.Printf("test --- unitClimateControls: %+v\n", unitClimateControls)
+
+			// If it's not currently occupied and won't be occupied in 6 hours from now, use the vacant settings.
+
+			// If it's not currently occupied but will be in 6 hours from now, use the occupied settings.
+
+		}
+	*/
+
+	/*
+		for _, existingClimateControl := range existingClimateControls {
+			// If it's not currently occupied and won't be occupied in 6 hours from now, use the vacant settings. Otherwise, use the occupied settings.
+			existingClimateControl.
+		}
+	*/
 
 	return Response{
 		Message: "ok",
