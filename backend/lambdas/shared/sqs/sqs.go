@@ -46,6 +46,24 @@ func getClient(ctx context.Context) (*sqs.Client, error) {
 	return cd.SQS, nil
 }
 
+func (s *SQSService) SendBlankMessageToManageClimateControlsQueue(ctx context.Context) error {
+	queueURL, err := mshared.GetConfig("MANAGE_CLIMATE_CONTROLS_QUEUE_URL")
+	if err != nil {
+		return fmt.Errorf("empty queue url in config")
+	}
+
+	sMInput := &sqs.SendMessageInput{
+		MessageBody: aws.String("sent from SQSService"),
+		QueueUrl:    aws.String(queueURL),
+	}
+	_, err = s.c.SendMessage(ctx, sMInput)
+	if err != nil {
+		return fmt.Errorf("error sending sqs message: %s", err.Error())
+	}
+
+	return nil
+}
+
 func (s *SQSService) SendBlankMessageToPollSchedulesQueue(ctx context.Context) error {
 	queueURL, err := mshared.GetConfig("POLL_SCHEDULES_QUEUE_URL")
 	if err != nil {
