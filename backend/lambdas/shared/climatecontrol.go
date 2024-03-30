@@ -8,10 +8,19 @@ import (
 )
 
 type ClimateControl struct {
-	History           []ClimateControlHistory `json:"history"`
-	ID                uuid.UUID               `json:"id"`
-	LastRefreshedAt   time.Time               `json:"lastRefreshedAt"`
-	RawClimateControl RawClimateControl       `json:"rawClimateControl"`
+	DesiredState      ClimateControlDesiredState `json:"desiredState"`
+	History           []ClimateControlHistory    `json:"history"`
+	ID                uuid.UUID                  `json:"id"`
+	LastRefreshedAt   time.Time                  `json:"lastRefreshedAt"`
+	RawClimateControl RawClimateControl          `json:"rawClimateControl"`
+}
+
+type ClimateControlDesiredState struct {
+	EndAt            time.Time `json:"endAt"`
+	HVACMode         string    `json:"hvacMode"`
+	Note             string    `json:"note"`
+	SyncWithSettings bool      `json:"syncWithSettings"`
+	Temperature      int       `json:"temperature"`
 }
 
 type ClimateControlHistory struct {
@@ -30,7 +39,7 @@ type RawClimateControl struct {
 		TargetTempStep     int      `json:"target_temp_step"`
 		PresetModes        []string `json:"preset_modes"`
 		CurrentTemperature int      `json:"current_temperature"`
-		Temperature        int      `json:"temperature"`
+		Temperature        int      `json:"temperature"` // The target temperature.
 		HVACAction         string   `json:"hvac_action"`
 		PresetMode         string   `json:"preset_mode"`
 		FriendlyName       string   `json:"friendly_name"`

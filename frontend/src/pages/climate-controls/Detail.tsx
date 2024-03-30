@@ -18,6 +18,13 @@ const Detail = () => {
     climateControl: {
       id: "",
       lastRefreshedAt: "",
+      desiredState: {
+        endAt: "",
+        hvacMode: "",
+        note: "",
+        syncWithSettings: false,
+        temperature: -1,
+      },
       rawClimateControl: {
         attributes: {
           current_temperature: -1,
@@ -96,7 +103,7 @@ const Detail = () => {
             {renderEntity()}
           </div>
           <div className="card-body">
-            <h2 className="card-title">Occupancy Status</h2>
+            <h2 className="card-title">Active Reservations At</h2>
             {renderOccupancyStatuses()}
           </div>
           <div className="card-body">
@@ -163,6 +170,43 @@ const Detail = () => {
           />
         </Form.Group>
 
+        <Form.Group className="mb-3">
+          <Form.Label>Temperature</Form.Label>
+          <Form.Control
+            type="text"
+            value={
+              entity.climateControl.rawClimateControl.attributes.temperature
+            }
+            disabled={true}
+          />
+        </Form.Group>
+
+        <Form.Group className="mb-3">
+          <Form.Label>Desired HVAC Mode</Form.Label>
+          <Form.Control
+            type="text"
+            value={
+              parseISO(entity.climateControl.desiredState.endAt) < new Date()
+                ? ""
+                : entity.climateControl.desiredState.hvacMode
+            }
+            disabled={true}
+          />
+        </Form.Group>
+
+        <Form.Group className="mb-3">
+          <Form.Label>Desired Temperature</Form.Label>
+          <Form.Control
+            type="text"
+            value={
+              parseISO(entity.climateControl.desiredState.endAt) < new Date()
+                ? ""
+                : entity.climateControl.desiredState.temperature
+            }
+            disabled={true}
+          />
+        </Form.Group>
+
         <Button variant="secondary" type="submit">
           Update
         </Button>
@@ -187,8 +231,16 @@ const Detail = () => {
           {unitOccupancyStatuses.map((status) => (
             <tr>
               <th scope="row">{format(parseISO(status.date), "LL/dd/yyyy")}</th>
-              <td>{status.noon.occupied ? "yes" : "no"}</td>
-              <td>{status.fourPm.occupied ? "yes" : "no"}</td>
+              <td>
+                {status.noon.occupied
+                  ? status.noon.managedLockCodes[0].reservation.id
+                  : "-"}
+              </td>
+              <td>
+                {status.fourPm.occupied
+                  ? status.fourPm.managedLockCodes[0].reservation.id
+                  : "-"}
+              </td>
             </tr>
           ))}
         </tbody>

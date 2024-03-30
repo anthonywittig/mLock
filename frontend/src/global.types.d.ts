@@ -12,6 +12,13 @@ type ClimateControlT = {
   climateControl: {
     id: string
     lastRefreshedAt: string
+    desiredState: {
+      endAt: string
+      hvacMode: string
+      note: string
+      syncWithSettings: boolean
+      temperature: number
+    }
     rawClimateControl: {
       attributes: {
         current_temperature: number // actual

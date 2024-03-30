@@ -11,6 +11,7 @@ import (
 	"mlock/lambdas/shared/dynamo/device"
 	"mlock/lambdas/shared/dynamo/miscellaneous"
 	"mlock/lambdas/shared/dynamo/unit"
+	"mlock/lambdas/shared/sqs"
 	mshared "mlock/shared"
 	"net/http"
 	"regexp"
@@ -132,11 +133,7 @@ func detail(ctx context.Context, req events.APIGatewayProxyRequest, id string) (
 		year, month, day := now.Date()
 		date := time.Date(year, month, day, 0, 0, 0, 0, tz)
 
-		occupiedStatusForDay, err := unit.OccupancyStatusForDay(devices, date)
-		if err != nil {
-			return nil, fmt.Errorf("error getting occupied status for day: %s", err.Error())
-		}
-
+		occupiedStatusForDay := unit.OccupancyStatusForDay(devices, date)
 		unitOccupancyStatuses = append(unitOccupancyStatuses, occupiedStatusForDay)
 	}
 
@@ -211,6 +208,11 @@ func updateSettings(ctx context.Context, req events.APIGatewayProxyRequest) (*sh
 		return nil, fmt.Errorf("error unmarshalling body: %s", err.Error())
 	}
 
+	queue, err := sqs.NewSQSService(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("error creating sqs service: %s", err.Error())
+	}
+
 	miscellaneousRepository := miscellaneous.NewRepository()
 
 	miscellaneous, ok, err := miscellaneousRepository.Get(ctx)
@@ -228,7 +230,9 @@ func updateSettings(ctx context.Context, req events.APIGatewayProxyRequest) (*sh
 		return nil, fmt.Errorf("error putting miscellaneous: %s", err.Error())
 	}
 
-	// We might want to kick off something to re-evaluate the current climate control settings.
+	if err := queue.SendBlankMessageToManageClimateControlsQueue(ctx); err != nil {
+		return nil, fmt.Errorf("error sending message to manage climate controls queue: %s", err.Error())
+	}
 
 	return list(ctx, events.APIGatewayProxyRequest{})
 }

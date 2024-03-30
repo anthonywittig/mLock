@@ -6,7 +6,9 @@ import (
 	"log"
 	"mlock/lambdas/shared"
 	"mlock/lambdas/shared/dynamo"
+	"mlock/lambdas/shared/dynamo/auditlog"
 	"sort"
+	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
@@ -22,6 +24,35 @@ const (
 
 func NewRepository() *Repository {
 	return &Repository{}
+}
+
+func (r *Repository) AppendToAuditLog(ctx context.Context, climateControl shared.ClimateControl, note string) error {
+	al, exists, err := auditlog.Get(ctx, climateControl.ID)
+	if err != nil {
+		return fmt.Errorf("error getting audit log: %s", err.Error())
+	}
+
+	if !exists {
+		al = shared.AuditLog{ID: climateControl.ID}
+	}
+
+	al.Entries = append(
+		al.Entries,
+		shared.AuditLogEntry{
+			CreatedAt: time.Now(),
+			Log:       note,
+		},
+	)
+
+	if len(al.Entries) > 1000 {
+		al.Entries = al.Entries[len(al.Entries)-1000:]
+	}
+
+	if _, err := auditlog.Put(ctx, al); err != nil {
+		return fmt.Errorf("error putting audit log: %s", err.Error())
+	}
+
+	return nil
 }
 
 func (r *Repository) Delete(ctx context.Context, id uuid.UUID) error {

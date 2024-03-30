@@ -1,7 +1,6 @@
 package shared
 
 import (
-	"fmt"
 	"strconv"
 	"strings"
 	"time"
@@ -19,6 +18,10 @@ type Unit struct {
 
 type UnitOccupancyStatus struct {
 	Date time.Time `json:"date"`
+	At   struct {
+		Occupied         bool                    `json:"occupied"`
+		ManagedLockCodes []DeviceManagedLockCode `json:"managedLockCodes"`
+	} `json:"at"`
 	Noon struct {
 		Occupied         bool                    `json:"occupied"`
 		ManagedLockCodes []DeviceManagedLockCode `json:"managedLockCodes"`
@@ -44,16 +47,15 @@ func (u *Unit) GetRemotePropertyID() int {
 	return intID
 }
 
-func (u *Unit) OccupancyStatusForDay(devices []Device, day time.Time) (UnitOccupancyStatus, error) {
-	if day.Hour() != 0 || day.Minute() != 0 || day.Second() != 0 || day.Nanosecond() != 0 {
-		return UnitOccupancyStatus{}, fmt.Errorf("day must have zero time fields")
-	}
+func (u *Unit) OccupancyStatusForDay(devices []Device, at time.Time) UnitOccupancyStatus {
+	year, month, day := at.Date()
+	date := time.Date(year, month, day, 0, 0, 0, 0, at.Location())
 
-	noon := day.Add(12 * time.Hour)
-	fourPM := day.Add(16 * time.Hour)
+	noon := date.Add(12 * time.Hour)
+	fourPM := date.Add(16 * time.Hour)
 
 	unitOccupiedStatus := UnitOccupancyStatus{
-		Date: day,
+		Date: date,
 	}
 
 	for _, d := range devices {
@@ -61,6 +63,10 @@ func (u *Unit) OccupancyStatusForDay(devices []Device, day time.Time) (UnitOccup
 			for _, mlc := range d.ManagedLockCodes {
 				if mlc.Reservation.ID != "" {
 					// Warning: we're basing these off of the lock start/stop times which should have a buffer around when we expect the unit to be occupied. If we adjust that buffer we might break this logic.
+					if (mlc.StartAt.Before(at) || mlc.StartAt == at) && mlc.EndAt.After(at) {
+						unitOccupiedStatus.At.Occupied = true
+						unitOccupiedStatus.At.ManagedLockCodes = append(unitOccupiedStatus.At.ManagedLockCodes, *mlc)
+					}
 					if (mlc.StartAt.Before(noon) || mlc.StartAt == noon) && mlc.EndAt.After(noon) {
 						unitOccupiedStatus.Noon.Occupied = true
 						unitOccupiedStatus.Noon.ManagedLockCodes = append(unitOccupiedStatus.Noon.ManagedLockCodes, *mlc)
@@ -74,5 +80,5 @@ func (u *Unit) OccupancyStatusForDay(devices []Device, day time.Time) (UnitOccup
 		}
 	}
 
-	return unitOccupiedStatus, nil
+	return unitOccupiedStatus
 }

@@ -139,3 +139,105 @@ func (r *Repository) ListClimateControls(ctx context.Context) ([]shared.RawClima
 
 	return climateControls, nil
 }
+
+func (r *Repository) SetToDesiredState(ctx context.Context, climateControl shared.ClimateControl) error {
+	if err := r.SetHVACMode(ctx, climateControl, climateControl.DesiredState.HVACMode); err != nil {
+		return fmt.Errorf("error setting HVAC mode: %s", err.Error())
+	}
+	if err := r.SetTemperature(ctx, climateControl, climateControl.DesiredState.Temperature); err != nil {
+		return fmt.Errorf("error setting temperature: %s", err.Error())
+	}
+	return nil
+}
+
+func (r *Repository) SetHVACMode(ctx context.Context, climateControl shared.ClimateControl, hvacMode string) error {
+	jsonData, err := json.Marshal(struct {
+		EntityID string `json:"entity_id"`
+		HVACMode string `json:"hvac_mode"`
+	}{
+		EntityID: climateControl.RawClimateControl.EntityID,
+		HVACMode: hvacMode,
+	})
+	if err != nil {
+		return fmt.Errorf("error marshaling data: %s", err.Error())
+	}
+
+	req, err := http.NewRequestWithContext(
+		ctx,
+		http.MethodPost,
+		fmt.Sprintf("%s/api/services/climate/set_hvac_mode", r.baseURL),
+		bytes.NewBuffer(jsonData),
+	)
+	if err != nil {
+		return fmt.Errorf("error creating request: %s", err.Error())
+	}
+	req.Header.Add("Authorization", "Bearer "+r.authToken)
+	req.Header.Set("Content-Type", "application/json")
+
+	client := &http.Client{
+		Timeout: 30 * time.Second,
+	}
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return fmt.Errorf("error doing request: %s", err.Error())
+	}
+	defer resp.Body.Close()
+
+	respBody, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return fmt.Errorf("error reading body: %s", err.Error())
+	}
+
+	if resp.StatusCode != 200 {
+		return fmt.Errorf("non-200 status code: %d, body: %s", resp.StatusCode, string(respBody))
+	}
+
+	return nil
+}
+
+func (r *Repository) SetTemperature(ctx context.Context, climateControl shared.ClimateControl, temperature int) error {
+	jsonData, err := json.Marshal(struct {
+		EntityID    string `json:"entity_id"`
+		Temperature int    `json:"temperature"`
+	}{
+		EntityID:    climateControl.RawClimateControl.EntityID,
+		Temperature: temperature,
+	})
+	if err != nil {
+		return fmt.Errorf("error marshaling data: %s", err.Error())
+	}
+
+	req, err := http.NewRequestWithContext(
+		ctx,
+		http.MethodPost,
+		fmt.Sprintf("%s/api/services/climate/set_temperature", r.baseURL),
+		bytes.NewBuffer(jsonData),
+	)
+	if err != nil {
+		return fmt.Errorf("error creating request: %s", err.Error())
+	}
+	req.Header.Add("Authorization", "Bearer "+r.authToken)
+	req.Header.Set("Content-Type", "application/json")
+
+	client := &http.Client{
+		Timeout: 30 * time.Second,
+	}
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return fmt.Errorf("error doing request: %s", err.Error())
+	}
+	defer resp.Body.Close()
+
+	respBody, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return fmt.Errorf("error reading body: %s", err.Error())
+	}
+
+	if resp.StatusCode != 200 {
+		return fmt.Errorf("non-200 status code: %d, body: %s", resp.StatusCode, string(respBody))
+	}
+
+	return nil
+}
