@@ -73,7 +73,6 @@ func HandleRequest(ctx context.Context, event MyEvent) (Response, error) {
 	}
 
 	now := time.Now().In(tz)
-
 	fourPM := time.Date(now.Year(), now.Month(), now.Day(), 16, 0, 0, 0, tz)
 
 	// We'll only try to set the desired state if it's between 12pm and 4pm.
