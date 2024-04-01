@@ -187,7 +187,7 @@ const Detail = () => {
             type="text"
             value={
               parseISO(entity.climateControl.desiredState.endAt) < new Date()
-                ? ""
+                ? "N/A"
                 : entity.climateControl.desiredState.hvacMode
             }
             disabled={true}
@@ -200,7 +200,7 @@ const Detail = () => {
             type="text"
             value={
               parseISO(entity.climateControl.desiredState.endAt) < new Date()
-                ? ""
+                ? "N/A"
                 : entity.climateControl.desiredState.temperature
             }
             disabled={true}
