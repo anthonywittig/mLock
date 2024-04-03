@@ -26,6 +26,7 @@
     "start": "react-scripts start",
     "build": "npm run code-style && react-scripts build",
     "test": "react-scripts test",
+    "dep:upgrade": "npx npm-check-updates -ui && npm install && npm audit fix",
     "eject": "react-scripts eject",
     "code-style": "npx prettier --check src"
   },
