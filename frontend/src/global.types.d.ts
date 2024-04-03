@@ -28,6 +28,7 @@ type ClimateControlT = {
       entity_id: string
       state: string
     }
+    syncWithReservations: boolean
   }
   unit: UnitT
 }

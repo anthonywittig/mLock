@@ -34,6 +34,7 @@ const Detail = () => {
         entity_id: "",
         state: "",
       },
+      syncWithReservations: false,
     },
     unit: {
       id: "",
@@ -44,6 +45,8 @@ const Detail = () => {
     },
   })
   const [loading, setLoading] = React.useState<boolean>(true)
+  const [syncWithReservations, setSyncWithReservations] =
+    React.useState<boolean>(false)
   const [unitOccupancyStatuses, setUnitOccupancyStatuses] = React.useState<
     UnitOccupancyStatusT[]
   >([])
@@ -61,6 +64,9 @@ const Detail = () => {
       .then((response) => {
         setAuditLog(response.extra.auditLog)
         setEntity(response.entity)
+        setSyncWithReservations(
+          response.entity.climateControl.syncWithReservations,
+        )
         setUnitOccupancyStatuses(response.extra.unitOccupancyStatuses)
         setLoading(false)
       })
@@ -77,13 +83,20 @@ const Detail = () => {
 
     StandardFetch(Endpoint + "/" + id, {
       method: "PUT",
-      body: JSON.stringify(entity),
+      body: JSON.stringify({
+        syncWithReservations: syncWithReservations,
+      }),
     })
       .then((response) => response.json())
       .then((response) => {
+        setAuditLog(response.extra.auditLog)
         setEntity(response.entity)
+        setSyncWithReservations(
+          response.entity.climateControl.syncWithReservations,
+        )
+        setUnitOccupancyStatuses(response.extra.unitOccupancyStatuses)
         setLoading(false)
-        navigate("/" + Endpoint + "/" + response.entity.id)
+        navigate("/" + Endpoint + "/" + response.entity.climateControl.id)
       })
       .catch((err) => {
         // TODO: indicate error.
@@ -205,6 +218,19 @@ const Detail = () => {
             }
             disabled={true}
           />
+        </Form.Group>
+
+        <Form.Group className="mb-3" controlId="formBasicCheckbox">
+          <Form.Check
+            type="checkbox"
+            label="Sync With Reservation"
+            checked={syncWithReservations}
+            onChange={(e) => setSyncWithReservations(e.target.checked)}
+          />
+          <small id="formBasicCheckboxHelp" className="form-text text-muted">
+            Technically, this syncs with lock codes that are associated with a
+            reservation.
+          </small>
         </Form.Group>
 
         <Button variant="secondary" type="submit">

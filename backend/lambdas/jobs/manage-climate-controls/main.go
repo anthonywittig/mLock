@@ -156,6 +156,10 @@ func HandleRequest(ctx context.Context, event MyEvent) (Response, error) {
 		}
 		attemptedToUpdateAClimateControl := false
 		for _, ecc := range existingClimateControls {
+			if !ecc.SyncWithReservations {
+				fmt.Printf("Skipping climate control: %+v\n", ecc.RawClimateControl.Attributes.FriendlyName)
+				continue
+			}
 			if ecc.RawClimateControl.State == "unavailable" {
 				continue
 			}
@@ -165,10 +169,7 @@ func HandleRequest(ctx context.Context, event MyEvent) (Response, error) {
 			if ecc.DesiredState.HVACMode == ecc.RawClimateControl.State && ecc.DesiredState.Temperature == ecc.RawClimateControl.Attributes.Temperature {
 				continue
 			}
-			if ecc.GetFriendlyNamePrefix() != "03A" {
-				fmt.Printf("Skipping climate control: %+v\n", ecc.RawClimateControl.Attributes.FriendlyName)
-				continue
-			}
+
 			fmt.Printf("Updating climate control: %+v\n", ecc.RawClimateControl.Attributes.FriendlyName)
 			climateControlRepository.AppendToAuditLog(ctx, ecc, fmt.Sprintf("Attempting to update the climate control's settings; HVAC mode: %s, temperature: %d", ecc.DesiredState.HVACMode, ecc.DesiredState.Temperature))
 			if err := haRepository.SetToDesiredState(ctx, ecc); err != nil {
