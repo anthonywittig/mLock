@@ -8,11 +8,12 @@ import (
 )
 
 type ClimateControl struct {
-	DesiredState      ClimateControlDesiredState `json:"desiredState"`
-	History           []ClimateControlHistory    `json:"history"`
-	ID                uuid.UUID                  `json:"id"`
-	LastRefreshedAt   time.Time                  `json:"lastRefreshedAt"`
-	RawClimateControl RawClimateControl          `json:"rawClimateControl"`
+	DesiredState         ClimateControlDesiredState `json:"desiredState"`
+	History              []ClimateControlHistory    `json:"history"`
+	ID                   uuid.UUID                  `json:"id"`
+	LastRefreshedAt      time.Time                  `json:"lastRefreshedAt"`
+	RawClimateControl    RawClimateControl          `json:"rawClimateControl"`
+	SyncWithReservations bool                       `json:"syncWithReservations"`
 }
 
 type ClimateControlDesiredState struct {

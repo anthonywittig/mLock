@@ -46,6 +46,10 @@ type ListResponse struct {
 	ClimateControlVacantSettings   shared.ClimateControlSettings `json:"climateControlVacantSettings"`
 }
 
+type UpdateBody struct {
+	SyncWithReservations bool `json:"syncWithReservations"`
+}
+
 type SettingsUpdateRequest struct {
 	ClimateControlOccupiedSettings shared.ClimateControlSettings `json:"climateControlOccupiedSettings"`
 	ClimateControlVacantSettings   shared.ClimateControlSettings `json:"climateControlVacantSettings"`
@@ -66,28 +70,40 @@ func HandleRequest(ctx context.Context, req events.APIGatewayProxyRequest) (*sha
 		return settingsHandleRequest(ctx, req)
 	}
 
+	if id := entityRegex.ReplaceAllString(req.Path, ""); id != "" {
+		parsedID, err := uuid.Parse(id)
+		if err != nil {
+			return nil, fmt.Errorf("error parsing id: %s", err.Error())
+		}
+
+		entity, ok, err := climatecontrol.NewRepository().Get(ctx, parsedID)
+		if err != nil {
+			return nil, fmt.Errorf("error getting entity: %s", err.Error())
+		}
+		if !ok {
+			return nil, fmt.Errorf("entity not found: %s", parsedID)
+		}
+
+		switch req.HTTPMethod {
+		case "GET":
+			return detail(ctx, req, entity)
+		case "PUT":
+			return update(ctx, req, entity)
+		default:
+			return shared.NewAPIResponse(http.StatusNotImplemented, "not implemented")
+		}
+
+	}
+
 	switch req.HTTPMethod {
 	case "GET":
-		return get(ctx, req)
+		return list(ctx, req)
 	default:
 		return shared.NewAPIResponse(http.StatusNotImplemented, "not implemented")
 	}
 }
 
-func detail(ctx context.Context, req events.APIGatewayProxyRequest, id string) (*shared.APIResponse, error) {
-	parsedID, err := uuid.Parse(id)
-	if err != nil {
-		return nil, fmt.Errorf("error parsing id: %s", err.Error())
-	}
-
-	entity, ok, err := climatecontrol.NewRepository().Get(ctx, parsedID)
-	if err != nil {
-		return nil, fmt.Errorf("error getting entity: %s", err.Error())
-	}
-	if !ok {
-		return nil, fmt.Errorf("entity not found: %s", parsedID)
-	}
-
+func detail(ctx context.Context, req events.APIGatewayProxyRequest, entity shared.ClimateControl) (*shared.APIResponse, error) {
 	auditLog, found, err := auditlog.Get(ctx, entity.ID)
 	if err != nil {
 		return nil, fmt.Errorf("error getting audit logs: %s", err.Error())
@@ -149,14 +165,6 @@ func detail(ctx context.Context, req events.APIGatewayProxyRequest, id string) (
 	})
 }
 
-func get(ctx context.Context, req events.APIGatewayProxyRequest) (*shared.APIResponse, error) {
-	id := entityRegex.ReplaceAllString(req.Path, "")
-	if id != "" {
-		return detail(ctx, req, id)
-	}
-	return list(ctx, req)
-}
-
 func list(ctx context.Context, req events.APIGatewayProxyRequest) (*shared.APIResponse, error) {
 	climateControls, err := climatecontrol.NewRepository().List(ctx)
 	if err != nil {
@@ -200,6 +208,27 @@ func settingsHandleRequest(ctx context.Context, req events.APIGatewayProxyReques
 	default:
 		return shared.NewAPIResponse(http.StatusNotImplemented, "not implemented")
 	}
+}
+
+func update(ctx context.Context, req events.APIGatewayProxyRequest, entity shared.ClimateControl) (*shared.APIResponse, error) {
+	var body UpdateBody
+	if err := json.Unmarshal([]byte(req.Body), &body); err != nil {
+		return nil, fmt.Errorf("error unmarshalling body: %s", err.Error())
+	}
+
+	ccRepo := climatecontrol.NewRepository()
+
+	entity.SyncWithReservations = body.SyncWithReservations
+	if err := ccRepo.AppendToAuditLog(ctx, entity, fmt.Sprintf("Updating sync with reservations to %t", entity.SyncWithReservations)); err != nil {
+		return nil, fmt.Errorf("error appending to audit log: %s", err.Error())
+	}
+
+	entity, err := ccRepo.Put(ctx, entity)
+	if err != nil {
+		return nil, fmt.Errorf("error putting entity: %s", err.Error())
+	}
+
+	return detail(ctx, req, entity)
 }
 
 func updateSettings(ctx context.Context, req events.APIGatewayProxyRequest) (*shared.APIResponse, error) {
