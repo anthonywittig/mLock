@@ -141,12 +141,18 @@ func (r *Repository) ListClimateControls(ctx context.Context) ([]shared.RawClima
 }
 
 func (r *Repository) SetToDesiredState(ctx context.Context, climateControl shared.ClimateControl) error {
-	if err := r.SetHVACMode(ctx, climateControl, climateControl.DesiredState.HVACMode); err != nil {
-		return fmt.Errorf("error setting HVAC mode: %s", err.Error())
+	if climateControl.DesiredState.HVACMode != climateControl.RawClimateControl.State {
+		if err := r.SetHVACMode(ctx, climateControl, climateControl.DesiredState.HVACMode); err != nil {
+			return fmt.Errorf("error setting HVAC mode: %s", err.Error())
+		}
 	}
-	if err := r.SetTemperature(ctx, climateControl, climateControl.DesiredState.Temperature); err != nil {
-		return fmt.Errorf("error setting temperature: %s", err.Error())
+
+	if climateControl.DesiredState.Temperature != climateControl.RawClimateControl.Attributes.Temperature {
+		if err := r.SetTemperature(ctx, climateControl, climateControl.DesiredState.Temperature); err != nil {
+			return fmt.Errorf("error setting temperature: %s", err.Error())
+		}
 	}
+
 	return nil
 }
 
