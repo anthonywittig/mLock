@@ -13,11 +13,13 @@ type ClimateControlT = {
     id: string
     lastRefreshedAt: string
     desiredState: {
+      abandonAfter: string
       endAt: string
       hvacMode: string
       note: string
       syncWithSettings: boolean
       temperature: number
+      wasSuccessfulAt: string | null
     }
     rawClimateControl: {
       attributes: {

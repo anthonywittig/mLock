@@ -19,11 +19,13 @@ const Detail = () => {
       id: "",
       lastRefreshedAt: "",
       desiredState: {
+        abandonAfter: "",
         endAt: "",
         hvacMode: "",
         note: "",
         syncWithSettings: false,
         temperature: -1,
+        wasSuccessfulAt: null,
       },
       rawClimateControl: {
         attributes: {
@@ -195,14 +197,38 @@ const Detail = () => {
         </Form.Group>
 
         <Form.Group className="mb-3">
+          <Form.Label>Desired Was Set At</Form.Label>
+          {entity.climateControl.desiredState.wasSuccessfulAt ? (
+            <Form.Control
+              type="datetime-local"
+              defaultValue={format(
+                parseISO(entity.climateControl.desiredState.wasSuccessfulAt),
+                "yyyy-MM-dd'T'HH:mm",
+              )}
+              disabled={true}
+            />
+          ) : (
+            <Form.Control type="text" defaultValue="Not Yet" disabled={true} />
+          )}
+        </Form.Group>
+
+        <Form.Group className="mb-3">
+          <Form.Label>Abandon Desired At</Form.Label>
+          <Form.Control
+            type="datetime-local"
+            defaultValue={format(
+              parseISO(entity.climateControl.desiredState.abandonAfter),
+              "yyyy-MM-dd'T'HH:mm",
+            )}
+            disabled={true}
+          />
+        </Form.Group>
+
+        <Form.Group className="mb-3">
           <Form.Label>Desired HVAC Mode</Form.Label>
           <Form.Control
             type="text"
-            value={
-              parseISO(entity.climateControl.desiredState.endAt) < new Date()
-                ? "N/A"
-                : entity.climateControl.desiredState.hvacMode
-            }
+            value={entity.climateControl.desiredState.hvacMode}
             disabled={true}
           />
         </Form.Group>
@@ -211,11 +237,7 @@ const Detail = () => {
           <Form.Label>Desired Temperature</Form.Label>
           <Form.Control
             type="text"
-            value={
-              parseISO(entity.climateControl.desiredState.endAt) < new Date()
-                ? "N/A"
-                : entity.climateControl.desiredState.temperature
-            }
+            value={entity.climateControl.desiredState.temperature}
             disabled={true}
           />
         </Form.Group>

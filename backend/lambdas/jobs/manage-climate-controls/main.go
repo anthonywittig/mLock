@@ -85,18 +85,23 @@ func HandleRequest(ctx context.Context, event MyEvent) (Response, error) {
 			u := units[ecc.GetFriendlyNamePrefix()]
 			os := u.OccupancyStatusForDay(devices, now)
 
-			if os.At.Occupied {
-				// It's currently occupied, let's kill off the desired state.
-				if ecc.DesiredState.EndAt.After(now) {
-					ecc.DesiredState.EndAt = now
-					climateControlRepository.AppendToAuditLog(ctx, ecc, "Killed off the desired state since the unit is occupied.")
-					climateControlRepository.Put(ctx, ecc)
-				}
+			if !ecc.SyncWithReservations {
+				fmt.Printf("Skipping climate control: %+v\n", ecc.RawClimateControl.Attributes.FriendlyName)
 				continue
 			}
 
-			if ecc.DesiredState.EndAt.After(now) && !ecc.DesiredState.SyncWithSettings {
+			if ecc.DesiredState.WasSuccessfulAt == nil && now.Before(ecc.DesiredState.AbandonAfter) && !ecc.DesiredState.SyncWithSettings {
 				// There's a non-syncing setting in place, don't make a change.
+				continue
+			}
+
+			if os.At.Occupied {
+				// It's currently occupied, let's kill off the desired state.
+				if ecc.DesiredState.WasSuccessfulAt == nil && now.Before(ecc.DesiredState.AbandonAfter) {
+					ecc.DesiredState.AbandonAfter = now
+					climateControlRepository.AppendToAuditLog(ctx, ecc, "Killed off the desired state since the unit is occupied.")
+					climateControlRepository.Put(ctx, ecc)
+				}
 				continue
 			}
 
@@ -105,7 +110,7 @@ func HandleRequest(ctx context.Context, event MyEvent) (Response, error) {
 			if !os.FourPM.Occupied {
 				// It's not occupied now or at 4pm, let's set it to vacant.
 				newDesiredState = &shared.ClimateControlDesiredState{
-					EndAt:            fourPM,
+					AbandonAfter:     fourPM,
 					HVACMode:         miscellaneous.ClimateControlVacantSettings.HVACMode,
 					Note:             "Setting to vacant",
 					SyncWithSettings: true,
@@ -116,7 +121,7 @@ func HandleRequest(ctx context.Context, event MyEvent) (Response, error) {
 			if !os.Noon.Occupied && os.FourPM.Occupied {
 				// It'll change from not occupied to occupied.
 				newDesiredState = &shared.ClimateControlDesiredState{
-					EndAt:            fourPM,
+					AbandonAfter:     fourPM,
 					HVACMode:         miscellaneous.ClimateControlOccupiedSettings.HVACMode,
 					Note:             fmt.Sprintf("Setting to occupied for reservation: %s", os.FourPM.ManagedLockCodes[0].Reservation.ID),
 					SyncWithSettings: true,
@@ -126,16 +131,13 @@ func HandleRequest(ctx context.Context, event MyEvent) (Response, error) {
 
 			if newDesiredState != nil {
 				newIsDifferent := false
-				if !ecc.DesiredState.EndAt.Equal(newDesiredState.EndAt) {
+				if !ecc.DesiredState.AbandonAfter.Equal(newDesiredState.AbandonAfter) {
 					newIsDifferent = true
 				}
 				if ecc.DesiredState.HVACMode != newDesiredState.HVACMode {
 					newIsDifferent = true
 				}
 				if ecc.DesiredState.Note != newDesiredState.Note {
-					newIsDifferent = true
-				}
-				if ecc.DesiredState.SyncWithSettings != newDesiredState.SyncWithSettings {
 					newIsDifferent = true
 				}
 				if ecc.DesiredState.Temperature != newDesiredState.Temperature {
@@ -156,17 +158,13 @@ func HandleRequest(ctx context.Context, event MyEvent) (Response, error) {
 		}
 		attemptedToUpdateAClimateControl := false
 		for _, ecc := range existingClimateControls {
-			if !ecc.SyncWithReservations {
-				fmt.Printf("Skipping climate control: %+v\n", ecc.RawClimateControl.Attributes.FriendlyName)
+			if ecc.DesiredState.WasSuccessfulAt != nil {
 				continue
 			}
 			if ecc.RawClimateControl.State == "unavailable" {
 				continue
 			}
-			if ecc.DesiredState.EndAt.Before(now) {
-				continue
-			}
-			if ecc.DesiredState.HVACMode == ecc.RawClimateControl.State && ecc.DesiredState.Temperature == ecc.RawClimateControl.Attributes.Temperature {
+			if now.After(ecc.DesiredState.AbandonAfter) {
 				continue
 			}
 
@@ -228,6 +226,10 @@ func refreshClimateControls(
 
 		climateControl.LastRefreshedAt = time.Now()
 		climateControl.RawClimateControl = rawClimateControl
+
+		if climateControl.DesiredState.HVACMode == climateControl.RawClimateControl.State && climateControl.DesiredState.Temperature == climateControl.RawClimateControl.Attributes.Temperature {
+			climateControl.DesiredState.WasSuccessfulAt = &climateControl.LastRefreshedAt
+		}
 
 		climateControlRepository.Put(ctx, climateControl)
 	}

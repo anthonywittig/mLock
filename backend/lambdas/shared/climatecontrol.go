@@ -17,11 +17,12 @@ type ClimateControl struct {
 }
 
 type ClimateControlDesiredState struct {
-	EndAt            time.Time `json:"endAt"`
-	HVACMode         string    `json:"hvacMode"`
-	Note             string    `json:"note"`
-	SyncWithSettings bool      `json:"syncWithSettings"`
-	Temperature      int       `json:"temperature"`
+	AbandonAfter     time.Time  `json:"abandonAfter"`
+	HVACMode         string     `json:"hvacMode"`
+	Note             string     `json:"note"`
+	SyncWithSettings bool       `json:"syncWithSettings"`
+	Temperature      int        `json:"temperature"`
+	WasSuccessfulAt  *time.Time `json:"wasSuccessfulAt"`
 }
 
 type ClimateControlHistory struct {
