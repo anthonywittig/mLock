@@ -100,9 +100,11 @@ func (l *LockEngine) UpdateLocks(ctx context.Context) error {
 				return fmt.Errorf("error putting device: %s", err.Error())
 			}
 
-			if err := l.sendEmailForAuditLogs(ctx, d, needToSave); err != nil {
-				return fmt.Errorf("error sending email: %s", err.Error())
-			}
+			/*
+				if err := l.sendEmailForAuditLogs(ctx, d, needToSave); err != nil {
+					return fmt.Errorf("error sending email: %s", err.Error())
+				}
+			*/
 		}
 	}
 

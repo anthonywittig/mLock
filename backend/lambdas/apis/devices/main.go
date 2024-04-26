@@ -257,7 +257,15 @@ func rebootController(ctx context.Context, req events.APIGatewayProxyRequest) (*
 	defer connectionPool.Close()
 
 	deviceController := ezlo.NewDeviceController(connectionPool)
-	deviceController.RebootController(ctx, entity)
+	if err := deviceController.RebootController(ctx, entity); err != nil {
+		return nil, fmt.Errorf("error rebooting controller: %s", err.Error())
+	}
+
+	now := time.Now()
+	entity.LastRebootedControllerAt = &now
+	if _, err := device.NewRepository().Put(ctx, entity); err != nil {
+		return nil, fmt.Errorf("error updating entity: %s", err.Error())
+	}
 
 	return shared.NewAPIResponse(http.StatusOK, ErrorResponse{Error: ""})
 }

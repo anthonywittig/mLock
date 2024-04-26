@@ -12,16 +12,16 @@ type Device struct {
 		LastUpdatedAt *time.Time `json:"lastUpdatedAt"`
 		Level         string     `json:"level"` // Could probably do a numeric type, but this simplifies some things (e.g. "NAN").
 	} `json:"battery"`
-	ControllerID       string                   `json:"controllerId"`
-	History            []DeviceHistory          `json:"history"`
-	ID                 uuid.UUID                `json:"id"`
-	LastRediscoveredAt *time.Time               `json:"lastRediscoveredAt"`
-	LastRefreshedAt    time.Time                `json:"lastRefreshedAt"`
-	LastWentOfflineAt  *time.Time               `json:"lastWentOfflineAt"`
-	LastWentOnlineAt   *time.Time               `json:"lastWentOnlineAt"`
-	ManagedLockCodes   []*DeviceManagedLockCode `json:"managedLockCodes"`
-	RawDevice          RawDevice                `json:"rawDevice"`
-	UnitID             *uuid.UUID               `json:"unitId"`
+	ControllerID             string                   `json:"controllerId"`
+	History                  []DeviceHistory          `json:"history"`
+	ID                       uuid.UUID                `json:"id"`
+	LastRebootedControllerAt *time.Time               `json:"lastRebootedControllerAt"`
+	LastRefreshedAt          time.Time                `json:"lastRefreshedAt"`
+	LastWentOfflineAt        *time.Time               `json:"lastWentOfflineAt"`
+	LastWentOnlineAt         *time.Time               `json:"lastWentOnlineAt"`
+	ManagedLockCodes         []*DeviceManagedLockCode `json:"managedLockCodes"`
+	RawDevice                RawDevice                `json:"rawDevice"`
+	UnitID                   *uuid.UUID               `json:"unitId"`
 }
 
 type DeviceHistory struct {
