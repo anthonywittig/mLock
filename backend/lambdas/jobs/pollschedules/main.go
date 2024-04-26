@@ -99,24 +99,22 @@ func HandleRequest(ctx context.Context, event MyEvent) (Response, error) {
 		return Response{}, fmt.Errorf("error updating lock codes: %s", err.Error())
 	}
 
-	// Rediscover devices if needed.
-	/*
-		if err := rediscoverUnresponsiveDevices(
-			ctx,
-			deviceController,
-			deviceRepository,
-			emailService,
-		); err != nil {
-			return Response{}, fmt.Errorf("error rediscovering unresponsive devices: %s", err.Error())
-		}
-	*/
+	// Reboot any controllers for devices that might benefit from doing so.
+	if err := rebootUnresponsiveDevices(
+		ctx,
+		deviceController,
+		deviceRepository,
+		emailService,
+	); err != nil {
+		return Response{}, fmt.Errorf("error rediscovering unresponsive devices: %s", err.Error())
+	}
 
 	return Response{
 		Message: "ok",
 	}, nil
 }
 
-func rediscoverUnresponsiveDevices(
+func rebootUnresponsiveDevices(
 	ctx context.Context,
 	deviceController *ezlo.DeviceController,
 	deviceRepository *device.Repository,
@@ -131,45 +129,50 @@ func rediscoverUnresponsiveDevices(
 		if d.RawDevice.Status != shared.DeviceStatusOnline {
 			continue
 		}
-		if d.LastRediscoveredAt != nil && time.Since(*d.LastRediscoveredAt) < 4*time.Hour {
+		if d.LastRebootedControllerAt != nil && time.Since(*d.LastRebootedControllerAt) < 30*time.Minute {
 			continue
 		}
 
-		var shouldRediscoverFor *shared.DeviceManagedLockCode = nil
+		var shouldRebootFor *shared.DeviceManagedLockCode = nil
 		for _, mlc := range d.ManagedLockCodes {
 			if mlc.Status != shared.DeviceManagedLockCodeStatus2Adding {
 				continue
 			}
-			if time.Since(*mlc.StartedAddingAt) < 45*time.Minute {
+			if time.Since(*mlc.StartedAddingAt) < 30*time.Minute {
+				// Give it some time before we take action.
 				continue
 			}
-			shouldRediscoverFor = mlc
+			if time.Since(*mlc.StartedAddingAt) > 3*time.Hour {
+				// Doesn't seem like this is helping, give up.
+				continue
+			}
+			shouldRebootFor = mlc
 		}
-		if shouldRediscoverFor == nil {
+		if shouldRebootFor == nil {
 			continue
 		}
 
-		fmt.Printf("Rediscovering device %s\n", d.RawDevice.Name)
-		if err := deviceController.RediscoverDevice(ctx, d); err != nil {
-			return fmt.Errorf("error rediscovering device %s: %s", d.RawDevice.Name, err.Error())
+		fmt.Printf("Rebooting controller for device %s\n", d.RawDevice.Name)
+		if err := deviceController.RebootController(ctx, d); err != nil {
+			return fmt.Errorf("error rebooting controller for device %s: %s", d.RawDevice.Name, err.Error())
 		}
 
 		now := time.Now()
-		d.LastRediscoveredAt = &now
+		d.LastRebootedControllerAt = &now
 		d, err := deviceRepository.Put(ctx, d)
 		if err != nil {
 			return fmt.Errorf("error saving device %s: %s", d.RawDevice.Name, err.Error())
 		}
 
-		shouldRediscoverFor.Note = "Rediscovering device."
-		if err := deviceRepository.AppendToAuditLog(ctx, d, []*shared.DeviceManagedLockCode{shouldRediscoverFor}); err != nil {
+		shouldRebootFor.Note = "Rebooting controller."
+		if err := deviceRepository.AppendToAuditLog(ctx, d, []*shared.DeviceManagedLockCode{shouldRebootFor}); err != nil {
 			return fmt.Errorf("error appending to audit log: %s", err.Error())
 		}
 
 		emailService.SendEmailToDevelopers(
 			ctx,
-			"Rediscovering device",
-			fmt.Sprintf("Rediscovering device %s", d.RawDevice.Name),
+			"Rebooting Controller",
+			fmt.Sprintf("Rebooting controller for device %s", d.RawDevice.Name),
 		)
 	}
 
@@ -214,13 +217,16 @@ func updateDevicesFromController(
 				// We get a ton of these when we're swapping out controllers. This should be temporary (but we know how that goes)...
 				continue
 			}
-			if err2 := emailService.SendEmailToDevelopers(
-				ctx,
-				"zcclock - Error updating devices from controller.",
-				fmt.Sprintf("Controller ID: %s; error: %s", c.PKDevice, err.Error()),
-			); err2 != nil {
-				return fmt.Errorf("error sending error email for updating devices for controller: %s, error: %s", c.PKDevice, err.Error())
-			}
+			fmt.Printf("error updating devices from controller: %s\n", err.Error())
+			/*
+				if err2 := emailService.SendEmailToDevelopers(
+					ctx,
+					"zcclock - Error updating devices from controller.",
+					fmt.Sprintf("Controller ID: %s; error: %s", c.PKDevice, err.Error()),
+				); err2 != nil {
+					return fmt.Errorf("error sending error email for updating devices for controller: %s, error: %s", c.PKDevice, err.Error())
+				}
+			*/
 		}
 		transitioningToOfflineDevices = append(transitioningToOfflineDevices, tTODevices...)
 		offlineDevices = append(offlineDevices, oDevices...)
@@ -240,13 +246,16 @@ func updateDevicesFromController(
 			devices,
 		)
 		if err != nil {
-			if err2 := emailService.SendEmailToDevelopers(
-				ctx,
-				"zcclock - Error updating devices from controller.",
-				fmt.Sprintf("Controller ID: %s; error: %s", c.PKDevice, err.Error()),
-			); err2 != nil {
-				return fmt.Errorf("error sending error email for updating devices for controller: %s, error: %s", c.PKDevice, err.Error())
-			}
+			fmt.Printf("error updating devices from controller: %s\n", err.Error())
+			/*
+				if err2 := emailService.SendEmailToDevelopers(
+					ctx,
+					"zcclock - Error updating devices from controller.",
+					fmt.Sprintf("Controller ID: %s; error: %s", c.PKDevice, err.Error()),
+				); err2 != nil {
+					return fmt.Errorf("error sending error email for updating devices for controller: %s, error: %s", c.PKDevice, err.Error())
+				}
+			*/
 		}
 		transitioningToOfflineDevices = append(transitioningToOfflineDevices, tTODevices...)
 		offlineDevices = append(offlineDevices, oDevices...)

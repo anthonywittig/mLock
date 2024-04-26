@@ -37,6 +37,8 @@ const (
 	DeviceManagedLockCodeStatus5Complete  DeviceManagedLockCodeStatus = "Complete"
 )
 
+const ReservationStartBufferInMinutes = -120
+
 func (m *DeviceManagedLockCode) HasEnded(now time.Time) bool {
 	return now.After(m.EndAt)
 }

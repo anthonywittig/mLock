@@ -73,6 +73,7 @@ func HandleRequest(ctx context.Context, event MyEvent) (Response, error) {
 	}
 
 	now := time.Now().In(tz)
+	abandonNewSettingsAt := now.Add(3 * time.Hour)
 	fourPM := time.Date(now.Year(), now.Month(), now.Day(), 16, 0, 0, 0, tz)
 
 	// We'll only try to set the desired state if it's between 12pm and 4pm.
@@ -92,14 +93,15 @@ func HandleRequest(ctx context.Context, event MyEvent) (Response, error) {
 
 			if ecc.DesiredState.WasSuccessfulAt == nil && now.Before(ecc.DesiredState.AbandonAfter) && !ecc.DesiredState.SyncWithSettings {
 				// There's a non-syncing setting in place, don't make a change.
+				// (These don't actually exist yet.)
 				continue
 			}
 
 			if os.At.Occupied {
 				// It's currently occupied, let's kill off the desired state.
 				if ecc.DesiredState.WasSuccessfulAt == nil && now.Before(ecc.DesiredState.AbandonAfter) {
-					ecc.DesiredState.AbandonAfter = now
-					climateControlRepository.AppendToAuditLog(ctx, ecc, "Killed off the desired state since the unit is occupied.")
+					ecc.DesiredState.AbandonAfter = now.Add(-1 * time.Second) // We do a comparison with `now` a little further down.
+					climateControlRepository.AppendToAuditLog(ctx, ecc, "Abandoning the desired state as the unit is occupied.")
 					climateControlRepository.Put(ctx, ecc)
 				}
 				continue
@@ -110,9 +112,9 @@ func HandleRequest(ctx context.Context, event MyEvent) (Response, error) {
 			if !os.FourPM.Occupied {
 				// It's not occupied now or at 4pm, let's set it to vacant.
 				newDesiredState = &shared.ClimateControlDesiredState{
-					AbandonAfter:     fourPM,
+					AbandonAfter:     abandonNewSettingsAt,
 					HVACMode:         miscellaneous.ClimateControlVacantSettings.HVACMode,
-					Note:             "Setting to vacant",
+					Note:             "Adjusting the climate control for the vacant period.",
 					SyncWithSettings: true,
 					Temperature:      miscellaneous.ClimateControlVacantSettings.Temperature,
 				}
@@ -121,9 +123,9 @@ func HandleRequest(ctx context.Context, event MyEvent) (Response, error) {
 			if !os.Noon.Occupied && os.FourPM.Occupied {
 				// It'll change from not occupied to occupied.
 				newDesiredState = &shared.ClimateControlDesiredState{
-					AbandonAfter:     fourPM,
+					AbandonAfter:     abandonNewSettingsAt,
 					HVACMode:         miscellaneous.ClimateControlOccupiedSettings.HVACMode,
-					Note:             fmt.Sprintf("Setting to occupied for reservation: %s", os.FourPM.ManagedLockCodes[0].Reservation.ID),
+					Note:             fmt.Sprintf("Adjusting the climate control for the upcoming reservation (%s).", os.FourPM.ManagedLockCodes[0].Reservation.ID),
 					SyncWithSettings: true,
 					Temperature:      miscellaneous.ClimateControlOccupiedSettings.Temperature,
 				}
@@ -169,7 +171,15 @@ func HandleRequest(ctx context.Context, event MyEvent) (Response, error) {
 			}
 
 			fmt.Printf("Updating climate control: %+v\n", ecc.RawClimateControl.Attributes.FriendlyName)
-			climateControlRepository.AppendToAuditLog(ctx, ecc, fmt.Sprintf("Attempting to update the climate control's settings; HVAC mode: %s, temperature: %d", ecc.DesiredState.HVACMode, ecc.DesiredState.Temperature))
+			climateControlRepository.AppendToAuditLog(
+				ctx,
+				ecc,
+				fmt.Sprintf(
+					"Attempting to update the climate control's settings; HVAC mode: %s, temperature: %d",
+					ecc.DesiredState.HVACMode,
+					ecc.DesiredState.Temperature,
+				),
+			)
 			if err := haRepository.SetToDesiredState(ctx, ecc); err != nil {
 				// Might need to swallow these errors or at least try all the others before returning.
 				return Response{}, fmt.Errorf("error setting to desired state: %s", err.Error())
