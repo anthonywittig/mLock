@@ -74,10 +74,10 @@ func HandleRequest(ctx context.Context, event MyEvent) (Response, error) {
 
 	now := time.Now().In(tz)
 	abandonNewSettingsAt := now.Add(3 * time.Hour)
+	elevenThirty := time.Date(now.Year(), now.Month(), now.Day(), 11, 30, 0, 0, tz)
 	fourPM := time.Date(now.Year(), now.Month(), now.Day(), 16, 0, 0, 0, tz)
 
-	// We'll only try to set the desired state if it's between 12pm and 4pm.
-	if now.Hour() >= 12 && now.Before(fourPM) {
+	if now.After(elevenThirty) && now.Before(fourPM) {
 		existingClimateControls, err := climateControlRepository.List(ctx)
 		if err != nil {
 			return Response{}, fmt.Errorf("error getting existing climate controls: %s", err.Error())
@@ -147,8 +147,11 @@ func HandleRequest(ctx context.Context, event MyEvent) (Response, error) {
 				}
 				if newIsDifferent {
 					ecc.DesiredState = *newDesiredState
-					climateControlRepository.AppendToAuditLog(ctx, ecc, ecc.DesiredState.Note)
-					climateControlRepository.Put(ctx, ecc)
+
+					if !ecc.ActualStateMatchesDesiredState() {
+						climateControlRepository.AppendToAuditLog(ctx, ecc, ecc.DesiredState.Note)
+						climateControlRepository.Put(ctx, ecc)
+					}
 				}
 			}
 		}
@@ -237,7 +240,10 @@ func refreshClimateControls(
 		climateControl.LastRefreshedAt = time.Now()
 		climateControl.RawClimateControl = rawClimateControl
 
-		if climateControl.DesiredState.HVACMode == climateControl.RawClimateControl.State && climateControl.DesiredState.Temperature == climateControl.RawClimateControl.Attributes.Temperature {
+		climateControl.ActualState.HVACMode = rawClimateControl.State
+		climateControl.ActualState.Temperature = rawClimateControl.Attributes.Temperature
+
+		if climateControl.DesiredState.WasSuccessfulAt == nil && climateControl.ActualStateMatchesDesiredState() {
 			climateControl.DesiredState.WasSuccessfulAt = &climateControl.LastRefreshedAt
 		}
 
