@@ -8,12 +8,18 @@ import (
 )
 
 type ClimateControl struct {
+	ActualState          ClimateControlActualState  `json:"actualState"`
 	DesiredState         ClimateControlDesiredState `json:"desiredState"`
 	History              []ClimateControlHistory    `json:"history"`
 	ID                   uuid.UUID                  `json:"id"`
 	LastRefreshedAt      time.Time                  `json:"lastRefreshedAt"`
 	RawClimateControl    RawClimateControl          `json:"rawClimateControl"`
 	SyncWithReservations bool                       `json:"syncWithReservations"`
+}
+
+type ClimateControlActualState struct {
+	HVACMode    string `json:"hvacMode"`
+	Temperature int    `json:"temperature"`
 }
 
 type ClimateControlDesiredState struct {
@@ -54,6 +60,10 @@ type RawClimateControl struct {
 		// ParentID string `json:"parent_id"` // Not sure what the real type of this is.
 		// UserID string `json:"user_id"`  // Not sure what the real type of this is.
 	} `json:"context"`
+}
+
+func (c *ClimateControl) ActualStateMatchesDesiredState() bool {
+	return c.ActualState.HVACMode == c.DesiredState.HVACMode && c.ActualState.Temperature == c.DesiredState.Temperature
 }
 
 func (c *ClimateControl) GetFriendlyNamePrefix() string {
