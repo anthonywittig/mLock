@@ -60,7 +60,7 @@ func HandleRequest(ctx context.Context, event MyEvent) (Response, error) {
 		return Response{}, fmt.Errorf("error getting miscellaneous: %s", err.Error())
 	}
 	if !ok {
-		return Response{}, fmt.Errorf("miscellaneous not found: %s", err.Error())
+		return Response{}, fmt.Errorf("miscellaneous not found")
 	}
 
 	units, err := unit.NewRepository().ListByName(ctx)
@@ -74,10 +74,10 @@ func HandleRequest(ctx context.Context, event MyEvent) (Response, error) {
 
 	now := time.Now().In(tz)
 	abandonNewSettingsAt := now.Add(3 * time.Hour)
-	elevenThirty := time.Date(now.Year(), now.Month(), now.Day(), 11, 30, 0, 0, tz)
+	elevenAM := time.Date(now.Year(), now.Month(), now.Day(), 11, 0, 0, 0, tz)
 	fourPM := time.Date(now.Year(), now.Month(), now.Day(), 16, 0, 0, 0, tz)
 
-	if now.After(elevenThirty) && now.Before(fourPM) {
+	if now.After(elevenAM) && now.Before(fourPM) {
 		existingClimateControls, err := climateControlRepository.List(ctx)
 		if err != nil {
 			return Response{}, fmt.Errorf("error getting existing climate controls: %s", err.Error())

@@ -62,17 +62,18 @@ func (u *Unit) OccupancyStatusForDay(devices []Device, at time.Time) UnitOccupan
 		if d.UnitID != nil && *d.UnitID == u.ID {
 			for _, mlc := range d.ManagedLockCodes {
 				if mlc.Reservation.ID != "" {
+					reservationRealEnd := mlc.EndAt.Add(-1 * time.Duration(ReservationEndBufferInMinutes) * time.Minute)
 					reservationRealStart := mlc.StartAt.Add(-1 * time.Duration(ReservationStartBufferInMinutes) * time.Minute)
 					// Warning: we're basing these off of the lock start/stop times which should have a buffer around when we expect the unit to be occupied. If we adjust that buffer we might break this logic.
-					if (reservationRealStart.Before(at) || reservationRealStart == at) && mlc.EndAt.After(at) {
+					if (reservationRealStart.Before(at) || reservationRealStart == at) && reservationRealEnd.After(at) {
 						unitOccupiedStatus.At.Occupied = true
 						unitOccupiedStatus.At.ManagedLockCodes = append(unitOccupiedStatus.At.ManagedLockCodes, *mlc)
 					}
-					if (reservationRealStart.Before(noon) || reservationRealStart == noon) && mlc.EndAt.After(noon) {
+					if (reservationRealStart.Before(noon) || reservationRealStart == noon) && reservationRealEnd.After(noon) {
 						unitOccupiedStatus.Noon.Occupied = true
 						unitOccupiedStatus.Noon.ManagedLockCodes = append(unitOccupiedStatus.Noon.ManagedLockCodes, *mlc)
 					}
-					if (reservationRealStart.Before(fourPM) || reservationRealStart == fourPM) && mlc.EndAt.After(fourPM) {
+					if (reservationRealStart.Before(fourPM) || reservationRealStart == fourPM) && reservationRealEnd.After(fourPM) {
 						unitOccupiedStatus.FourPM.Occupied = true
 						unitOccupiedStatus.FourPM.ManagedLockCodes = append(unitOccupiedStatus.FourPM.ManagedLockCodes, *mlc)
 					}
