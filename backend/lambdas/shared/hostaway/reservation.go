@@ -210,7 +210,7 @@ func (r *Repository) getListingsByID(ctx context.Context, authToken authData) (m
 	result := map[int]listing{}
 	page := 0
 	for {
-		pageResult, err := getPage(listingsPage{}, r, ctx, authToken, "listings", page, []string{})
+		pageResult, err := getPage(listingsPage{}, r, ctx, authToken, "listings", page, 500, []string{})
 		if err != nil {
 			return map[int]listing{}, fmt.Errorf("error getting listings page: %s", err.Error())
 		}
@@ -222,7 +222,7 @@ func (r *Repository) getListingsByID(ctx context.Context, authToken authData) (m
 			break
 		}
 		if page > 20 {
-			return map[int]listing{}, fmt.Errorf("too many pages")
+			return map[int]listing{}, fmt.Errorf("too many pages: %d", page)
 		}
 
 		for _, listing := range pageResult.Result {
@@ -242,7 +242,7 @@ func (r *Repository) getReservations(ctx context.Context, authToken authData, un
 	result := []reservation{}
 	page := 0
 	for {
-		pageResult, err := getPage(reservationsPage{}, r, ctx, authToken, "reservations", page, extraParameters)
+		pageResult, err := getPage(reservationsPage{}, r, ctx, authToken, "reservations", page, 500, extraParameters)
 		if err != nil {
 			return []reservation{}, fmt.Errorf("error getting reservations page: %s", err.Error())
 		}
@@ -253,8 +253,8 @@ func (r *Repository) getReservations(ctx context.Context, authToken authData, un
 		if len(pageResult.Result) == 0 {
 			return result, nil
 		}
-		if page > 20 {
-			return []reservation{}, fmt.Errorf("too many pages")
+		if page > 200 {
+			return []reservation{}, fmt.Errorf("too many pages: %d", page)
 		}
 	ReservationLoop:
 		for _, reservation := range pageResult.Result {
@@ -287,9 +287,9 @@ func getPage[T any](
 	authToken authData,
 	resource string,
 	page int,
+	limit int,
 	queryParams []string,
 ) (T, error) {
-	limit := 100
 	offset := page * limit
 
 	extraQueryParams := ""
