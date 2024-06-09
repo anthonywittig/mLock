@@ -253,7 +253,7 @@ func (r *Repository) getReservations(ctx context.Context, authToken authData, un
 		if len(pageResult.Result) == 0 {
 			return result, nil
 		}
-		if page > 200 {
+		if page > 9999 {
 			return []reservation{}, fmt.Errorf("too many pages: %d", page)
 		}
 	ReservationLoop:
@@ -263,12 +263,13 @@ func (r *Repository) getReservations(ctx context.Context, authToken authData, un
 				"declined",
 				"inquiry",
 				"inquiryNotPossible",
+				"inquiryPreapproved",
 			} {
 				if reservation.Status == statusToIgnore {
 					continue ReservationLoop
 				}
 			}
-			if reservation.Status != "new" && reservation.Status != "modified" {
+			if reservation.Status != "new" && reservation.Status != "modified" && reservation.Status != "ownerStay" {
 				fmt.Printf("unhandled reservation status: %s for hostaway reservation ID: %s\n", reservation.Status, reservation.HostawayReservationID)
 			}
 			if reservation.DepartureDate < twoDaysAgo {

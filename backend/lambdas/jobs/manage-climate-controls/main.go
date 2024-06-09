@@ -174,7 +174,7 @@ func HandleRequest(ctx context.Context, event MyEvent) (Response, error) {
 			}
 
 			fmt.Printf("Updating climate control: %+v\n", ecc.RawClimateControl.Attributes.FriendlyName)
-			climateControlRepository.AppendToAuditLog(
+			if err := climateControlRepository.AppendToAuditLog(
 				ctx,
 				ecc,
 				fmt.Sprintf(
@@ -182,10 +182,23 @@ func HandleRequest(ctx context.Context, event MyEvent) (Response, error) {
 					ecc.DesiredState.HVACMode,
 					ecc.DesiredState.Temperature,
 				),
-			)
-			if err := haRepository.SetToDesiredState(ctx, ecc); err != nil {
-				// Might need to swallow these errors or at least try all the others before returning.
-				return Response{}, fmt.Errorf("error setting to desired state: %s", err.Error())
+			); err != nil {
+				return Response{}, fmt.Errorf("error appending to audit log: %s", err.Error())
+			}
+
+			setDesiredStateCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
+			defer cancel()
+			if err := haRepository.SetToDesiredState(setDesiredStateCtx, ecc); err != nil {
+				if err := climateControlRepository.AppendToAuditLog(
+					ctx,
+					ecc,
+					fmt.Sprintf(
+						"error setting to desired state: %s",
+						err.Error(),
+					),
+				); err != nil {
+					return Response{}, fmt.Errorf("error appending to audit log: %s", err.Error())
+				}
 			}
 			attemptedToUpdateAClimateControl = true
 		}
