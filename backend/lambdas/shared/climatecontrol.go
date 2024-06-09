@@ -63,6 +63,10 @@ type RawClimateControl struct {
 }
 
 func (c *ClimateControl) ActualStateMatchesDesiredState() bool {
+	if c.ActualState.HVACMode == c.DesiredState.HVACMode && c.ActualState.HVACMode == "off" {
+		// Some units don't let you update the temperature when the HVACMode is off.
+		return true
+	}
 	return c.ActualState.HVACMode == c.DesiredState.HVACMode && c.ActualState.Temperature == c.DesiredState.Temperature
 }
 
