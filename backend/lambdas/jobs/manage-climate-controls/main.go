@@ -74,10 +74,11 @@ func HandleRequest(ctx context.Context, event MyEvent) (Response, error) {
 
 	now := time.Now().In(tz)
 	abandonNewSettingsAt := now.Add(3 * time.Hour)
-	elevenAM := time.Date(now.Year(), now.Month(), now.Day(), 11, 0, 0, 0, tz)
+	elevenThirtyAM := time.Date(now.Year(), now.Month(), now.Day(), 11, 30, 0, 0, tz)
+	threeFifteenPM := time.Date(now.Year(), now.Month(), now.Day(), 15, 15, 0, 0, tz)
 	fourPM := time.Date(now.Year(), now.Month(), now.Day(), 16, 0, 0, 0, tz)
 
-	if now.After(elevenAM) && now.Before(fourPM) {
+	if now.After(elevenThirtyAM) && now.Before(fourPM) {
 		existingClimateControls, err := climateControlRepository.List(ctx)
 		if err != nil {
 			return Response{}, fmt.Errorf("error getting existing climate controls: %s", err.Error())
@@ -109,8 +110,11 @@ func HandleRequest(ctx context.Context, event MyEvent) (Response, error) {
 
 			var newDesiredState *shared.ClimateControlDesiredState = nil
 
-			if !os.FourPM.Occupied {
-				// It's not occupied now or at 4pm, let's set it to vacant.
+			if now.Before(threeFifteenPM) || !os.FourPM.Occupied {
+				// It's not currently occupied
+				// - it's not 3:15pm yet
+				// - or it won't be occupied at 4pm
+				// use the vacant settings.
 				newDesiredState = &shared.ClimateControlDesiredState{
 					AbandonAfter:     abandonNewSettingsAt,
 					HVACMode:         miscellaneous.ClimateControlVacantSettings.HVACMode,
@@ -118,9 +122,7 @@ func HandleRequest(ctx context.Context, event MyEvent) (Response, error) {
 					SyncWithSettings: true,
 					Temperature:      miscellaneous.ClimateControlVacantSettings.Temperature,
 				}
-			}
-
-			if !os.Noon.Occupied && os.FourPM.Occupied {
+			} else if !os.Noon.Occupied && os.FourPM.Occupied {
 				// It'll change from not occupied to occupied.
 				newDesiredState = &shared.ClimateControlDesiredState{
 					AbandonAfter:     abandonNewSettingsAt,
