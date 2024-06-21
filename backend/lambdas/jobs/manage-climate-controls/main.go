@@ -74,15 +74,15 @@ func HandleRequest(ctx context.Context, event MyEvent) (Response, error) {
 
 	now := time.Now().In(tz)
 	elevenAM := time.Date(now.Year(), now.Month(), now.Day(), 11, 0, 0, 0, tz)
-	noon := time.Date(now.Year(), now.Month(), now.Day(), 12, 0, 0, 0, tz)
+	elevenFortyFiveAM := time.Date(now.Year(), now.Month(), now.Day(), 11, 45, 0, 0, tz)
 	threePM := time.Date(now.Year(), now.Month(), now.Day(), 15, 0, 0, 0, tz)
 	fourPM := time.Date(now.Year(), now.Month(), now.Day(), 16, 0, 0, 0, tz)
 
-	isFirstRunTime := now.After(elevenAM) && now.Before(noon)
+	isFirstRunTime := now.After(elevenAM) && now.Before(elevenFortyFiveAM)
 	isSecondRunTime := now.After(threePM) && now.Before(fourPM)
 
 	if isFirstRunTime || isSecondRunTime {
-		abandonNewSettingsAt := noon
+		abandonNewSettingsAt := elevenFortyFiveAM
 		if isSecondRunTime {
 			abandonNewSettingsAt = fourPM
 		}
