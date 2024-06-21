@@ -73,12 +73,20 @@ func HandleRequest(ctx context.Context, event MyEvent) (Response, error) {
 	}
 
 	now := time.Now().In(tz)
-	abandonNewSettingsAt := now.Add(3 * time.Hour)
-	elevenThirtyAM := time.Date(now.Year(), now.Month(), now.Day(), 11, 30, 0, 0, tz)
-	threeFifteenPM := time.Date(now.Year(), now.Month(), now.Day(), 15, 15, 0, 0, tz)
+	elevenAM := time.Date(now.Year(), now.Month(), now.Day(), 11, 0, 0, 0, tz)
+	noon := time.Date(now.Year(), now.Month(), now.Day(), 12, 0, 0, 0, tz)
+	threePM := time.Date(now.Year(), now.Month(), now.Day(), 15, 0, 0, 0, tz)
 	fourPM := time.Date(now.Year(), now.Month(), now.Day(), 16, 0, 0, 0, tz)
 
-	if now.After(elevenThirtyAM) && now.Before(fourPM) {
+	isFirstRunTime := now.After(elevenAM) && now.Before(noon)
+	isSecondRunTime := now.After(threePM) && now.Before(fourPM)
+
+	if isFirstRunTime || isSecondRunTime {
+		abandonNewSettingsAt := noon
+		if isSecondRunTime {
+			abandonNewSettingsAt = fourPM
+		}
+
 		existingClimateControls, err := climateControlRepository.List(ctx)
 		if err != nil {
 			return Response{}, fmt.Errorf("error getting existing climate controls: %s", err.Error())
@@ -86,11 +94,6 @@ func HandleRequest(ctx context.Context, event MyEvent) (Response, error) {
 		for _, ecc := range existingClimateControls {
 			u := units[ecc.GetFriendlyNamePrefix()]
 			os := u.OccupancyStatusForDay(devices, now)
-
-			if !ecc.SyncWithReservations {
-				fmt.Printf("Skipping climate control: %+v\n", ecc.RawClimateControl.Attributes.FriendlyName)
-				continue
-			}
 
 			if ecc.DesiredState.WasSuccessfulAt == nil && now.Before(ecc.DesiredState.AbandonAfter) && !ecc.DesiredState.SyncWithSettings {
 				// There's a non-syncing setting in place, don't make a change.
@@ -110,9 +113,9 @@ func HandleRequest(ctx context.Context, event MyEvent) (Response, error) {
 
 			var newDesiredState *shared.ClimateControlDesiredState = nil
 
-			if now.Before(threeFifteenPM) || !os.FourPM.Occupied {
+			if now.Before(threePM) || !os.FourPM.Occupied {
 				// It's not currently occupied
-				// - it's not 3:15pm yet
+				// - it's not 3pm yet
 				// - or it won't be occupied at 4pm
 				// use the vacant settings.
 				newDesiredState = &shared.ClimateControlDesiredState{
