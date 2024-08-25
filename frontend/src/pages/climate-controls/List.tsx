@@ -1,9 +1,16 @@
 import React from "react"
 import { Loading } from "../utils/Loading"
 import { StandardFetch } from "../utils/FetchHelper"
-import { formatDistance, isBefore, sub } from "date-fns"
-import { Form, Button, ListGroup, Table } from "react-bootstrap"
+import {
+  Form,
+  Button,
+  ListGroup,
+  Table,
+  OverlayTrigger,
+  Tooltip,
+} from "react-bootstrap"
 import { Link } from "react-router-dom"
+import { formatDistance, isAfter, isBefore, sub } from "date-fns"
 
 const Endpoint = "climate-controls"
 
@@ -40,6 +47,25 @@ const List = () => {
       })
   }, [entities.length])
 
+  const deleteEntity = (id: string) => {
+    setLoading(true)
+
+    StandardFetch(Endpoint + "/" + id, {
+      method: "DELETE",
+    })
+      .then((_) => {
+        setEntities(
+          entities.filter((value) => {
+            return value.climateControl.id !== id
+          }),
+        )
+      })
+      .catch((err) => {
+        // TODO: indicate error.
+        console.log(err)
+      })
+  }
+
   const render = () => {
     return (
       <>
@@ -74,6 +100,7 @@ const List = () => {
             <th scope="col">Set Temperature</th>
             <th scope="col">Actual Temperature</th>
             <th scope="col">Last Updated</th>
+            <th scope="col">Actions</th>
           </tr>
         </thead>
         <tbody>
@@ -105,10 +132,47 @@ const List = () => {
                 }
               </td>
               <td>{renderLastRefreshedAt(entity)}</td>
+              <td>{renderDeleteButton(entity)}</td>
             </tr>
           ))}
         </tbody>
       </Table>
+    )
+  }
+
+  const renderDeleteButton = (entity: ClimateControlT) => {
+    const lr = Date.parse(entity.climateControl.lastRefreshedAt)
+    const recently = sub(new Date(), { minutes: 130 })
+
+    if (isAfter(lr, recently)) {
+      return (
+        <OverlayTrigger
+          overlay={
+            <Tooltip id="tooltip-disabled">
+              The device was recently pulled from the controller.
+            </Tooltip>
+          }
+        >
+          <span className="d-inline-block">
+            <Button
+              variant="secondary"
+              disabled
+              style={{ pointerEvents: "none" }}
+            >
+              Delete
+            </Button>
+          </span>
+        </OverlayTrigger>
+      )
+    }
+
+    return (
+      <Button
+        variant="secondary"
+        onClick={() => deleteEntity(entity.climateControl.id)}
+      >
+        Delete
+      </Button>
     )
   }
 

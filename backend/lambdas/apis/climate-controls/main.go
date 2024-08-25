@@ -26,6 +26,10 @@ type ClimateControlEntity struct {
 	Unit           shared.Unit           `json:"unit"`
 }
 
+type DeleteResponse struct {
+	Error string `json:"error"`
+}
+
 type DetailResponse struct {
 	Entity ClimateControlEntity `json:"entity"`
 	Extra  ExtraEntities        `json:"extra"`
@@ -85,6 +89,8 @@ func HandleRequest(ctx context.Context, req events.APIGatewayProxyRequest) (*sha
 		}
 
 		switch req.HTTPMethod {
+		case "DELETE":
+			return delete(ctx, req, entity)
 		case "GET":
 			return detail(ctx, req, entity)
 		case "PUT":
@@ -101,6 +107,27 @@ func HandleRequest(ctx context.Context, req events.APIGatewayProxyRequest) (*sha
 	default:
 		return shared.NewAPIResponse(http.StatusNotImplemented, "not implemented")
 	}
+}
+
+func delete(ctx context.Context, req events.APIGatewayProxyRequest, entity shared.ClimateControl) (*shared.APIResponse, error) {
+	ok := false
+
+	awhileAgo := time.Now().Add(-2 * time.Hour)
+	if entity.LastRefreshedAt.Before(awhileAgo) {
+		ok = true
+	}
+
+	if !ok {
+		return shared.NewAPIResponse(http.StatusBadRequest, DeleteResponse{
+			Error: "climate control can't be deleted because it was recently refreshed",
+		})
+	}
+
+	if err := climatecontrol.NewRepository().Delete(ctx, entity.ID); err != nil {
+		return nil, fmt.Errorf("error deleting entity: %s", err.Error())
+	}
+
+	return shared.NewAPIResponse(http.StatusOK, DeleteResponse{})
 }
 
 func detail(ctx context.Context, req events.APIGatewayProxyRequest, entity shared.ClimateControl) (*shared.APIResponse, error) {
