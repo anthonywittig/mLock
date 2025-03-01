@@ -38,7 +38,7 @@ const (
 )
 
 const ReservationEndBufferInMinutes = 30
-const ReservationStartBufferInMinutes = -120
+const ReservationStartBufferInMinutes = -240
 
 func (m *DeviceManagedLockCode) HasEnded(now time.Time) bool {
 	return now.After(m.EndAt)

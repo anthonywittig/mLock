@@ -8,6 +8,8 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+
+	"github.com/google/uuid"
 )
 
 // Most of this was taken from https://stackoverflow.com/questions/33436730/unmarshal-json-with-some-known-and-some-unknown-field-names
@@ -144,6 +146,13 @@ func (i *wsItem) getLockCodes() ([]shared.RawDeviceLockCode, error) {
 	sort.Slice(lcs, func(i, j int) bool {
 		return lcs[i].Slot < lcs[j].Slot
 	})
+
+	requestID := uuid.New()
+	slots := []int{}
+	for _, lc := range lcs {
+		slots = append(slots, lc.Slot)
+	}
+	fmt.Printf("[DEBUG] Slots: %s - %+v\n", requestID, slots)
 
 	return lcs, nil
 }

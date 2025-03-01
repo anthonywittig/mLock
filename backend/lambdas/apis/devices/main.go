@@ -141,7 +141,7 @@ func get(ctx context.Context, req events.APIGatewayProxyRequest) (*shared.APIRes
 	return list(ctx, req)
 }
 
-func list(ctx context.Context, req events.APIGatewayProxyRequest) (*shared.APIResponse, error) {
+func list(ctx context.Context, _ events.APIGatewayProxyRequest) (*shared.APIResponse, error) {
 	entities, err := device.NewRepository().List(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("error getting entities: %s", err.Error())
