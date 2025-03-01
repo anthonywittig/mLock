@@ -374,7 +374,16 @@ func updateOnlineDevicesFromController(
 		}
 
 		d.ControllerID = controllerID
+		eULCs := d.GenerateUnmanagedLockCodes()
 		d.RawDevice = rd
+		uLCs := d.GenerateUnmanagedLockCodes()
+		if len(eULCs) < len(uLCs) {
+			emailService.SendEmailToDevelopers(
+				ctx,
+				"zcclock - Device Gained Unmanaged Lock Code(s)",
+				fmt.Sprintf("Device: %s", d.RawDevice.Name),
+			)
+		}
 		d.LastRefreshedAt = time.Now()
 
 		if _, err := deviceRepository.Put(ctx, d); err != nil {
