@@ -44,8 +44,8 @@ func (r *Repository) AppendToAuditLog(ctx context.Context, climateControl shared
 		},
 	)
 
-	if len(al.Entries) > 1000 {
-		al.Entries = al.Entries[len(al.Entries)-1000:]
+	if len(al.Entries) > 100 {
+		al.Entries = al.Entries[len(al.Entries)-100:]
 	}
 
 	if _, err := auditlog.Put(ctx, al); err != nil {

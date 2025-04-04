@@ -51,8 +51,8 @@ func (r *Repository) AppendToAuditLog(ctx context.Context, device shared.Device,
 	}
 
 	// In January 2022 we noticed that an audit log with 157 entries was 29kb. Dynamo has a 400kb limit. It'd be nice to "archive" the older audit log entries, but for now we'll kill them off. Things might start getting slow as we reach this limit.
-	if len(al.Entries) > 1000 {
-		al.Entries = al.Entries[len(al.Entries)-1000:]
+	if len(al.Entries) > 100 {
+		al.Entries = al.Entries[len(al.Entries)-100:]
 	}
 
 	// It'd be nice to tie this to the `device.Put`.
