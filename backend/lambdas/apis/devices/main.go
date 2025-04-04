@@ -181,6 +181,8 @@ func detail(ctx context.Context, req events.APIGatewayProxyRequest, id string) (
 	if !found {
 		auditLog = shared.AuditLog{Entries: []shared.AuditLogEntry{}}
 	}
+
+	// We could probably kill this off mid-2025 since we limit it on update.
 	if len(auditLog.Entries) > 100 {
 		auditLog.Entries = auditLog.Entries[len(auditLog.Entries)-100:]
 	}
