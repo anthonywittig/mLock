@@ -117,22 +117,26 @@ func HandleRequest(ctx context.Context, event MyEvent) (Response, error) {
 				// It's not currently occupied
 				// - it's not 3pm yet
 				// - or it won't be occupied at 4pm
-				// use the vacant settings.
-				newDesiredState = &shared.ClimateControlDesiredState{
-					AbandonAfter:     abandonNewSettingsAt,
-					HVACMode:         miscellaneous.ClimateControlVacantSettings.HVACMode,
-					Note:             "Adjusting the climate control for the vacant period.",
-					SyncWithSettings: true,
-					Temperature:      miscellaneous.ClimateControlVacantSettings.Temperature,
+				// use the vacant settings (unless "no_action" — then do not apply).
+				if miscellaneous.ClimateControlVacantSettings.HVACMode != "no_action" {
+					newDesiredState = &shared.ClimateControlDesiredState{
+						AbandonAfter:     abandonNewSettingsAt,
+						HVACMode:         miscellaneous.ClimateControlVacantSettings.HVACMode,
+						Note:             "Adjusting the climate control for the vacant period.",
+						SyncWithSettings: true,
+						Temperature:      miscellaneous.ClimateControlVacantSettings.Temperature,
+					}
 				}
 			} else if !os.Noon.Occupied && os.FourPM.Occupied {
-				// It'll change from not occupied to occupied.
-				newDesiredState = &shared.ClimateControlDesiredState{
-					AbandonAfter:     abandonNewSettingsAt,
-					HVACMode:         miscellaneous.ClimateControlOccupiedSettings.HVACMode,
-					Note:             fmt.Sprintf("Adjusting the climate control for the upcoming reservation (%s).", os.FourPM.ManagedLockCodes[0].Reservation.ID),
-					SyncWithSettings: true,
-					Temperature:      miscellaneous.ClimateControlOccupiedSettings.Temperature,
+				// It'll change from not occupied to occupied. Use occupied settings (unless "no_action").
+				if miscellaneous.ClimateControlOccupiedSettings.HVACMode != "no_action" {
+					newDesiredState = &shared.ClimateControlDesiredState{
+						AbandonAfter:     abandonNewSettingsAt,
+						HVACMode:         miscellaneous.ClimateControlOccupiedSettings.HVACMode,
+						Note:             fmt.Sprintf("Adjusting the climate control for the upcoming reservation (%s).", os.FourPM.ManagedLockCodes[0].Reservation.ID),
+						SyncWithSettings: true,
+						Temperature:      miscellaneous.ClimateControlOccupiedSettings.Temperature,
+					}
 				}
 			}
 
