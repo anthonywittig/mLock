@@ -210,6 +210,7 @@ const List = () => {
                 <Form.Label>HVAC Mode</Form.Label>
                 <Form.Control
                   as="select"
+                  value={config.settings?.hvacMode ?? "off"}
                   onChange={(evt) =>
                     config.settingsSetter({
                       hvacMode: evt.target.value,
@@ -217,24 +218,10 @@ const List = () => {
                     })
                   }
                 >
-                  <option
-                    value="off"
-                    selected={"off" === config.settings?.hvacMode}
-                  >
-                    Off
-                  </option>
-                  <option
-                    value="cool"
-                    selected={"cool" === config.settings?.hvacMode}
-                  >
-                    Cool
-                  </option>
-                  <option
-                    value="heat"
-                    selected={"heat" === config.settings?.hvacMode}
-                  >
-                    Heat
-                  </option>
+                  <option value="off">Off</option>
+                  <option value="cool">Cool</option>
+                  <option value="heat">Heat</option>
+                  <option value="no_action">No Action</option>
                 </Form.Control>
               </Form.Group>
 
@@ -243,9 +230,15 @@ const List = () => {
                 className="mb-3"
               >
                 <Form.Label>Temperature</Form.Label>
+                {config.settings?.hvacMode === "no_action" && (
+                  <Form.Text className="text-muted d-block mb-1">
+                    Temperature not used when No Action is selected.
+                  </Form.Text>
+                )}
                 <Form.Control
                   type="number"
                   value={config.settings?.temperature}
+                  disabled={config.settings?.hvacMode === "no_action"}
                   onChange={(evt) =>
                     config.settingsSetter({
                       hvacMode: config.settings.hvacMode,
