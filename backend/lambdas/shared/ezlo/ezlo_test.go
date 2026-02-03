@@ -28,12 +28,12 @@ func Test_GetDevices(t *testing.T) {
 	defer cp.Close()
 	dc := NewDeviceController(cp)
 
-	ds, err := dc.GetDevices(context.Background(), "92001809")
+	ds, err := dc.GetDevices(context.Background(), "90029032")
 	assert.Nil(t, err)
 
 	// Just check that we have at least one device (fragile).
 	assert.Greater(t, len(ds), 0)
-	assert.Equal(t, ds[0].Category, "siren")
+	assert.Equal(t, ds[0].Category, "switch")
 
 	// Uncomment to see everything in an error
 	//assert.Nil(t, ds)
